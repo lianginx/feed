@@ -1,8 +1,16 @@
 <script setup lang="ts">
 import { watch, ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
-import { ContextMenuRoot, ContextMenuTrigger, ContextMenuContent, ContextMenuItem } from 'reka-ui'
 import { ExternalLink, Star, Search } from '@lucide/vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+} from '@/components/ui/context-menu'
 import { useArticles } from '../composables/useArticles'
 import { useFeeds } from '../composables/useFeeds'
 
@@ -140,34 +148,40 @@ function openInBrowser(url: string | null): void {
   <div class="h-full border-r border-border flex flex-col">
     <!-- 筛选栏 -->
     <div class="px-4 py-3 border-b border-border flex items-center gap-2">
-      <button v-for="f in [
-        { key: 'all', label: '全部' },
-        { key: 'unread', label: '未读' },
-        { key: 'starred', label: '星标' }
-      ] as const" :key="f.key" class="text-sm px-2 py-1 rounded transition-colors" :class="filter === f.key ? 'bg-accent text-white' : 'text-text-secondary hover:bg-bg-tertiary'
-        " @click="setFilter(f.key)">
+      <Button
+        v-for="f in [
+          { key: 'all', label: '全部' },
+          { key: 'unread', label: '未读' },
+          { key: 'starred', label: '星标' }
+        ] as const"
+        :key="f.key"
+        variant="ghost"
+        size="sm"
+        :class="filter === f.key ? 'bg-accent text-accent-foreground hover:bg-accent' : ''"
+        @click="setFilter(f.key)"
+      >
         {{ f.label }}
-      </button>
+      </Button>
       <div class="flex-1" />
-      <button class="text-text-tertiary hover:text-text-secondary hover:bg-bg-tertiary transition-colors p-1 rounded"
-        title="搜索" @click="toggleSearch">
+      <Button variant="ghost" size="icon" title="搜索" @click="toggleSearch">
         <Search class="w-4 h-4" />
-      </button>
+      </Button>
     </div>
 
     <!-- 搜索框 -->
     <div v-if="showSearch" class="px-4 py-2 border-b border-border">
-      <input ref="searchInput" v-model="searchQuery" type="text" placeholder="搜索文章..."
-        class="w-full px-3 py-1.5 rounded-lg border border-border bg-bg-primary text-text-primary text-sm focus:outline-none transition-colors"
-        @input="onSearchInput" @keyup.escape="clearSearch" />
+      <Input ref="searchInput" v-model="searchQuery" type="text" placeholder="搜索文章..." @input="onSearchInput"
+        @keyup.escape="clearSearch" />
     </div>
 
     <!-- 文章列表 -->
     <div ref="parentRef" class="flex-1 overflow-y-overlay" @scroll="onScroll">
-      <div v-if="loading" class="flex items-center justify-center h-32 text-text-tertiary text-sm">
-        加载中...
+      <div v-if="loading" class="space-y-2 p-4">
+        <Skeleton class="h-20 w-full" />
+        <Skeleton class="h-20 w-full" />
+        <Skeleton class="h-20 w-full" />
       </div>
-      <div v-else-if="articles.length === 0" class="flex items-center justify-center h-32 text-text-tertiary text-sm">
+      <div v-else-if="articles.length === 0" class="flex items-center justify-center h-32 text-muted-foreground text-sm">
         暂无文章
       </div>
       <div v-else :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
@@ -181,14 +195,13 @@ function openInBrowser(url: string | null): void {
         }">
           <!-- "加载更多"按钮 -->
           <div v-if="hasMore && row.index === articles.length" class="flex items-center justify-center h-full">
-            <button class="text-sm text-text-tertiary hover:text-text-secondary transition-colors"
-              :disabled="loadingMore" @click="loadMore">
+            <Button variant="ghost" size="sm" :disabled="loadingMore" @click="loadMore">
               {{ loadingMore ? '加载中...' : '加载更多' }}
-            </button>
+            </Button>
           </div>
           <!-- 文章条目 -->
-          <ContextMenuRoot v-else>
-            <ContextMenuTrigger as-child>
+          <ContextMenu v-else>
+            <ContextMenuTrigger>
               <button class="w-full h-full text-left px-4 border-b border-border transition-colors hover:bg-accent/10"
                 :class="{
                   'bg-accent/5': !articles[row.index].is_read
@@ -200,15 +213,15 @@ function openInBrowser(url: string | null): void {
                         <span v-if="!articles[row.index].is_read"
                           class="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />
                         <span v-if="articles[row.index].is_starred" class="text-yellow-500 text-xs">★</span>
-                        <h3 class="text-sm font-medium text-text-primary truncate">
+                        <h3 class="text-sm font-medium text-foreground truncate">
                           {{ articles[row.index].title }}
                         </h3>
                       </div>
-                      <p v-if="articles[row.index].summary" class="text-xs text-text-tertiary mt-1 line-clamp-2">
+                      <p v-if="articles[row.index].summary" class="text-xs text-muted-foreground mt-1 line-clamp-2">
                         {{ articles[row.index].summary }}
                       </p>
                     </div>
-                    <div class="flex items-center gap-2 mt-auto text-xs text-text-tertiary">
+                    <div class="flex items-center gap-2 mt-auto text-xs text-muted-foreground">
                       <span>{{ articles[row.index].feed_title }}</span>
                       <span>{{ formatDate(articles[row.index].published_at) }}</span>
                     </div>
@@ -216,24 +229,18 @@ function openInBrowser(url: string | null): void {
                 </div>
               </button>
             </ContextMenuTrigger>
-            <Teleport to="body">
-              <ContextMenuContent
-                class="min-w-[160px] bg-bg-secondary border border-border rounded-lg shadow-lg p-1 z-[9999]">
-                <ContextMenuItem v-if="articles[row.index].url"
-                  class="px-3 py-1.5 text-sm text-text-secondary hover:bg-accent/10 hover:text-accent rounded-md cursor-pointer flex items-center gap-2"
-                  @select="openInBrowser(articles[row.index].url)">
-                  <ExternalLink class="w-3.5 h-3.5" />
-                  在浏览器中打开
-                </ContextMenuItem>
-                <ContextMenuItem
-                  class="px-3 py-1.5 text-sm text-text-secondary hover:bg-accent/10 hover:text-accent rounded-md cursor-pointer flex items-center gap-2"
-                  @select="toggleStar(articles[row.index].id)">
-                  <Star class="w-3.5 h-3.5" />
-                  {{ articles[row.index].is_starred ? '取消星标' : '星标' }}
-                </ContextMenuItem>
-              </ContextMenuContent>
-            </Teleport>
-          </ContextMenuRoot>
+            <ContextMenuContent>
+              <ContextMenuItem v-if="articles[row.index].url"
+                @select="openInBrowser(articles[row.index].url)">
+                <ExternalLink class="w-3.5 h-3.5" />
+                在浏览器中打开
+              </ContextMenuItem>
+              <ContextMenuItem @select="toggleStar(articles[row.index].id)">
+                <Star class="w-3.5 h-3.5" />
+                {{ articles[row.index].is_starred ? '取消星标' : '星标' }}
+              </ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
         </div>
       </div>
     </div>

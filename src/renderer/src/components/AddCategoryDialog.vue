@@ -1,5 +1,15 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 const props = withDefaults(
   defineProps<{
@@ -52,29 +62,28 @@ async function handleSubmit(): Promise<void> {
 </script>
 
 <template>
-  <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="close">
-    <div class="bg-bg-secondary rounded-xl shadow-lg w-80 p-6">
-      <h2 class="text-lg font-semibold text-text-primary mb-4">
-        {{ isEditing() ? '编辑分类' : '添加分类' }}
-      </h2>
+  <Dialog :open="open" @update:open="emit('update:open', $event)">
+    <DialogContent class="sm:max-w-[320px]">
+      <DialogHeader>
+        <DialogTitle>{{ isEditing() ? '编辑分类' : '添加分类' }}</DialogTitle>
+      </DialogHeader>
 
-      <div>
-        <input v-model="name" type="text" placeholder="分类名称"
-          class="w-full px-3 py-2 rounded-lg border border-border bg-bg-primary text-text-primary text-sm focus:outline-none"
-          @keyup.enter="handleSubmit" />
-        <p v-if="error" class="text-red-500 text-sm mt-1">{{ error }}</p>
+      <div class="grid gap-2">
+        <Label for="category-name">分类名称</Label>
+        <Input
+          id="category-name"
+          v-model="name"
+          type="text"
+          placeholder="分类名称"
+          @keyup.enter="handleSubmit"
+        />
+        <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
       </div>
 
-      <div class="flex justify-end gap-2 mt-4">
-        <button class="px-4 py-2 rounded-lg text-sm text-text-secondary hover:bg-bg-tertiary transition-colors"
-          @click="close">
-          取消
-        </button>
-        <button class="px-4 py-2 rounded-lg text-sm bg-accent text-white hover:bg-accent/90 transition-colors"
-          @click="handleSubmit">
-          {{ isEditing() ? '保存' : '添加' }}
-        </button>
-      </div>
-    </div>
-  </div>
+      <DialogFooter>
+        <Button variant="outline" @click="close">取消</Button>
+        <Button @click="handleSubmit">{{ isEditing() ? '保存' : '添加' }}</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>

@@ -1,6 +1,22 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Upload, Download, CheckCircle2 } from '@lucide/vue'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
+import { Slider } from '@/components/ui/slider'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useApp, type Theme } from '../composables/useApp'
 import { useFeeds } from '../composables/useFeeds'
 import { useToast } from '../composables/useToast'
@@ -84,116 +100,119 @@ function close(): void {
 </script>
 
 <template>
-  <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="close">
-    <div class="bg-bg-secondary rounded-xl shadow-lg w-[28rem] p-6 max-h-[90vh] overflow-y-overlay">
-      <h2 class="text-lg font-semibold text-text-primary mb-4">设置</h2>
+  <Dialog :open="open" @update:open="emit('update:open', $event)">
+    <DialogContent class="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>设置</DialogTitle>
+      </DialogHeader>
 
-      <div class="space-y-5">
+      <div class="grid gap-6 py-2">
         <!-- 主题 -->
-        <div>
-          <label class="text-sm text-text-secondary mb-2 block">主题</label>
-          <div class="flex gap-2">
-            <button v-for="t in themes" :key="t.value" class="px-3 py-1.5 rounded-lg text-sm transition-colors" :class="theme === t.value
-              ? 'bg-accent text-white'
-              : 'bg-bg-tertiary text-text-secondary hover:bg-bg-tertiary/80'
-              " @click="setTheme(t.value)">
-              {{ t.label }}
-            </button>
-          </div>
+        <div class="grid gap-2">
+          <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">主题</label>
+          <Select :model-value="theme" @update:model-value="(v) => setTheme(v as Theme)">
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="t in themes" :key="t.value" :value="t.value">
+                {{ t.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <!-- 刷新间隔 -->
-        <div>
-          <label class="text-sm text-text-secondary mb-2 block">自动刷新</label>
-          <select :value="updateInterval"
-            class="w-full px-3 py-1.5 rounded-lg text-sm bg-bg-tertiary text-text-primary border border-border focus:outline-none"
-            @change="setUpdateInterval(Number(($event.target as HTMLSelectElement).value))">
-            <option v-for="opt in intervalOptions" :key="opt.value" :value="opt.value">
-              {{ opt.label }}
-            </option>
-          </select>
+        <div class="grid gap-2">
+          <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">自动刷新</label>
+          <Select :model-value="String(updateInterval)" @update:model-value="(v) => setUpdateInterval(Number(v))">
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="opt in intervalOptions" :key="opt.value" :value="String(opt.value)">
+                {{ opt.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <!-- 快捷键开关 -->
         <div class="flex items-center justify-between">
-          <label class="text-sm text-text-secondary">启用快捷键</label>
-          <button class="w-10 h-5 rounded-full transition-colors relative"
-            :class="shortcutsEnabled ? 'bg-accent' : 'bg-bg-tertiary'" @click="setShortcutsEnabled(!shortcutsEnabled)">
-            <span class="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"
-              :class="shortcutsEnabled ? 'translate-x-5' : 'translate-x-0.5'" />
-          </button>
+          <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">启用快捷键</label>
+          <Switch :checked="shortcutsEnabled" @update:checked="setShortcutsEnabled" />
         </div>
 
         <!-- 快捷键列表 -->
         <div v-if="shortcutsEnabled">
-          <label class="text-sm text-text-secondary mb-2 block">快捷键</label>
-          <div class="space-y-1 text-sm">
+          <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block">快捷键</label>
+          <div class="space-y-1.5 text-sm">
             <div class="flex justify-between">
-              <span class="text-text-secondary">下移 / 上移</span>
-              <span class="text-text-tertiary font-mono">↓ / ↑</span>
+              <span class="text-muted-foreground">下移 / 上移</span>
+              <span class="text-muted-foreground font-mono">↓ / ↑</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-text-secondary">打开文章</span>
-              <span class="text-text-tertiary font-mono">Enter</span>
+              <span class="text-muted-foreground">打开文章</span>
+              <span class="text-muted-foreground font-mono">Enter</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-text-secondary">返回列表</span>
-              <span class="text-text-tertiary font-mono">Esc</span>
+              <span class="text-muted-foreground">返回列表</span>
+              <span class="text-muted-foreground font-mono">Esc</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-text-secondary">切换星标</span>
-              <span class="text-text-tertiary font-mono">⌘B</span>
+              <span class="text-muted-foreground">切换星标</span>
+              <span class="text-muted-foreground font-mono">⌘B</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-text-secondary">刷新</span>
-              <span class="text-text-tertiary font-mono">⌘R</span>
+              <span class="text-muted-foreground">刷新</span>
+              <span class="text-muted-foreground font-mono">⌘R</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-text-secondary">全部标为已读</span>
-              <span class="text-text-tertiary font-mono">⌘⇧A</span>
+              <span class="text-muted-foreground">全部标为已读</span>
+              <span class="text-muted-foreground font-mono">⌘⇧A</span>
             </div>
           </div>
         </div>
 
         <!-- 字体大小 -->
-        <div>
-          <label class="text-sm text-text-secondary mb-2 block">字体大小：{{ fontSize }}px</label>
-          <input :value="fontSize" type="range" min="12" max="24" class="w-full accent-accent"
-            @input="setFontSize(Number(($event.target as HTMLInputElement).value))" />
+        <div class="grid gap-2">
+          <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">字体大小：{{ fontSize }}px</label>
+          <Slider
+            :model-value="[fontSize]"
+            @update:model-value="(v) => setFontSize((v ?? [fontSize])[0])"
+            :min="12"
+            :max="24"
+            :step="1"
+          />
+        </div>
+
+        <!-- OPML 导入导出 -->
+        <div class="grid gap-2">
+          <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">OPML</label>
+          <div class="flex gap-2">
+            <Button variant="outline" class="flex-1" @click="handleImportOpml">
+              <Upload class="w-4 h-4 mr-2" />
+              导入
+            </Button>
+            <Button variant="outline" class="flex-1" @click="handleExportOpml">
+              <Download class="w-4 h-4 mr-2" />
+              导出
+            </Button>
+          </div>
+          <div
+            v-if="importResult"
+            class="mt-1 px-3 py-1.5 rounded-lg text-xs text-primary bg-primary/5 flex items-center gap-1 cursor-pointer"
+            @click="importResult = null"
+          >
+            <CheckCircle2 class="w-3 h-3" />
+            {{ importResult }}
+          </div>
         </div>
       </div>
 
-      <!-- OPML 导入导出 -->
-      <div>
-        <label class="text-sm text-text-secondary mb-2 block">OPML</label>
-        <div class="flex gap-2">
-          <button
-            class="flex-1 px-3 py-2 rounded-lg text-sm bg-bg-tertiary text-text-secondary hover:bg-bg-tertiary/80 transition-colors flex items-center justify-center gap-2"
-            @click="handleImportOpml">
-            <Upload class="w-4 h-4" />
-            导入
-          </button>
-          <button
-            class="flex-1 px-3 py-2 rounded-lg text-sm bg-bg-tertiary text-text-secondary hover:bg-bg-tertiary/80 transition-colors flex items-center justify-center gap-2"
-            @click="handleExportOpml">
-            <Download class="w-4 h-4" />
-            导出
-          </button>
-        </div>
-        <div v-if="importResult"
-          class="mt-2 px-3 py-1.5 rounded-lg text-xs text-accent bg-accent/5 flex items-center gap-1"
-          @click="importResult = null">
-          <CheckCircle2 class="w-3 h-3" />
-          {{ importResult }}
-        </div>
+      <div class="flex justify-end">
+        <Button variant="outline" @click="close">关闭</Button>
       </div>
-
-      <div class="flex justify-end mt-6">
-        <button class="px-4 py-2 rounded-lg text-sm text-text-secondary hover:bg-bg-tertiary transition-colors"
-          @click="close">
-          关闭
-        </button>
-      </div>
-    </div>
-  </div>
+    </DialogContent>
+  </Dialog>
 </template>

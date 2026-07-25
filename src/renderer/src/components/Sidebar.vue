@@ -1,14 +1,21 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { CollapsibleRoot, CollapsibleTrigger, CollapsibleContent } from 'reka-ui'
+import { RefreshCw, Plus, Settings, CheckCheck, LoaderCircle } from '@lucide/vue'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 import {
-  ContextMenuRoot,
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from '@/components/ui/collapsible'
+import {
+  ContextMenu,
   ContextMenuTrigger,
   ContextMenuContent,
   ContextMenuItem,
-  ContextMenuSeparator
-} from 'reka-ui'
-import { RefreshCw, Plus, Settings, CheckCheck, LoaderCircle } from '@lucide/vue'
+  ContextMenuSeparator,
+} from '@/components/ui/context-menu'
 import { useFeeds, type FeedItem } from '../composables/useFeeds'
 import { useArticles } from '../composables/useArticles'
 import { useToast } from '../composables/useToast'
@@ -16,8 +23,6 @@ import AddFeedDialog from './AddFeedDialog.vue'
 import AddCategoryDialog from './AddCategoryDialog.vue'
 import ConfirmDialog from './ConfirmDialog.vue'
 import SettingsDialog from './SettingsDialog.vue'
-import ToastNotification from './ToastNotification.vue'
-
 const {
   categories,
   feeds,
@@ -34,7 +39,7 @@ const {
   refreshAllFeeds
 } = useFeeds()
 
-const { toast, showToast, removeToast } = useToast()
+const { showToast } = useToast()
 
 const showAddFeed = ref(false)
 const showAddCategory = ref(false)
@@ -233,19 +238,17 @@ function onDragOverCategory(event: DragEvent): void {
 </script>
 
 <template>
-  <aside class="h-full bg-bg-secondary border-r border-border flex flex-col">
+  <aside class="h-full bg-muted/50 border-r border-border flex flex-col">
     <!-- 标题 -->
     <div class="px-4 py-3 border-b border-border flex items-center justify-between">
-      <h1 class="text-lg font-semibold text-text-primary">Feed</h1>
+      <h1 class="text-lg font-semibold text-foreground">Feed</h1>
       <div class="flex items-center gap-1.5">
-        <button class="text-text-tertiary hover:text-text-secondary hover:bg-bg-tertiary transition-colors p-1 rounded"
-          title="添加订阅源" @click="showAddFeed = true">
+        <Button variant="ghost" size="icon" title="添加订阅源" @click="showAddFeed = true">
           <Plus class="w-4 h-4" />
-        </button>
-        <button class="text-text-tertiary hover:text-text-secondary hover:bg-bg-tertiary transition-colors p-1 rounded"
-          title="刷新全部" :disabled="refreshingFeedIds.size > 0" @click="handleRefreshAll">
+        </Button>
+        <Button variant="ghost" size="icon" title="刷新全部" :disabled="refreshingFeedIds.size > 0" @click="handleRefreshAll">
           <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': refreshingFeedIds.size > 0 }" />
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -253,36 +256,36 @@ function onDragOverCategory(event: DragEvent): void {
     <div class="px-2 pt-2">
       <button class="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors" :class="selectedFeedId === null && selectedCategoryId === null
         ? 'bg-accent/10 text-accent'
-        : 'text-text-secondary hover:bg-bg-tertiary'
+        : 'text-muted-foreground hover:bg-accent/5'
         " @click="handleSelectAll">
         <span class="flex items-center justify-between">
           <span>全部文章</span>
-          <span v-if="unreadCount > 0" class="text-xs text-text-tertiary">{{ unreadCount }}</span>
+          <Badge v-if="unreadCount > 0" variant="secondary" class="text-xs">{{ unreadCount }}</Badge>
         </span>
       </button>
     </div>
-    <div class="mx-2 my-3 border-t border-border"></div>
+    <Separator class="mx-2 my-3" />
     <!-- 分类与订阅源列表 -->
     <div class="flex-1 overflow-y-overlay px-2 pb-2">
       <!-- 空白区域右键菜单：添加分类 -->
-      <ContextMenuRoot>
-        <ContextMenuTrigger as-child>
+      <ContextMenu>
+        <ContextMenuTrigger>
           <div class="min-h-full" @dragover.prevent="onDragOverCategory" @drop="onDropToCategory(null, $event)">
             <!-- 分类区块 -->
             <div v-for="cat in categories" :key="cat.id" class="mt-2" @dragover.prevent="onDragOverCategory"
               @drop="onDropToCategory(cat.id, $event)">
-              <CollapsibleRoot :open="!isCategoryCollapsed(cat.id)" class="w-full"
+              <Collapsible :open="!isCategoryCollapsed(cat.id)" class="w-full"
                 @update:open="(open: boolean) => (collapsedCategories[cat.id] = !open)">
-                <ContextMenuRoot>
-                  <ContextMenuTrigger as-child>
+                <ContextMenu>
+                  <ContextMenuTrigger>
                     <button
                       class="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between"
                       :class="selectedCategoryId === cat.id
                         ? 'bg-accent/10 text-accent'
-                        : 'text-text-secondary hover:bg-bg-tertiary'
+                        : 'text-muted-foreground hover:bg-accent/5'
                         " @click="handleSelectCategory(cat.id)" @dblclick="toggleCategory(cat.id)">
                       <span class="flex items-center gap-1.5">
-                        <CollapsibleTrigger as-child>
+                        <CollapsibleTrigger>
                           <span @click.stop>
                             <svg class="w-3.5 h-3.5 transition-transform duration-200"
                               :class="{ 'rotate-90': !isCategoryCollapsed(cat.id) }" viewBox="0 0 24 24" fill="none"
@@ -295,45 +298,34 @@ function onDragOverCategory(event: DragEvent): void {
                       </span>
                     </button>
                   </ContextMenuTrigger>
-                  <Teleport to="body">
-                    <ContextMenuContent
-                      class="min-w-[160px] bg-bg-secondary border border-border rounded-lg shadow-lg p-1 z-[9999]">
-                      <ContextMenuItem
-                        class="px-3 py-1.5 text-sm text-text-secondary hover:bg-accent/10 hover:text-accent rounded-md cursor-pointer flex items-center gap-2"
-                        @select="handleMarkAllReadByCategory(cat.id)">
-                        <CheckCheck class="w-3.5 h-3.5" />
-                        全部标为已读
-                      </ContextMenuItem>
-                      <ContextMenuItem
-                        class="px-3 py-1.5 text-sm text-text-secondary hover:bg-accent/10 hover:text-accent rounded-md cursor-pointer flex items-center gap-2"
-                        @select="handleRefreshCategory(cat.id, $event)">
-                        <RefreshCw class="w-3.5 h-3.5" />
-                        刷新
-                      </ContextMenuItem>
-                      <ContextMenuSeparator class="h-px bg-border my-1" />
-                      <ContextMenuItem
-                        class="px-3 py-1.5 text-sm text-text-secondary hover:bg-accent/10 hover:text-accent rounded-md cursor-pointer flex items-center gap-2"
-                        @select="handleEditCategory(cat)">
-                        编辑分类
-                      </ContextMenuItem>
-                      <ContextMenuItem
-                        class="px-3 py-1.5 text-sm text-red-500 hover:bg-red-500/10 rounded-md cursor-pointer flex items-center gap-2"
-                        @select="handleDeleteCategory(cat.id)">
-                        删除分类
-                      </ContextMenuItem>
-                    </ContextMenuContent>
-                  </Teleport>
-                </ContextMenuRoot>
+                  <ContextMenuContent>
+                    <ContextMenuItem @select="handleMarkAllReadByCategory(cat.id)">
+                      <CheckCheck class="w-3.5 h-3.5" />
+                      全部标为已读
+                    </ContextMenuItem>
+                    <ContextMenuItem @select="handleRefreshCategory(cat.id, $event)">
+                      <RefreshCw class="w-3.5 h-3.5" />
+                      刷新
+                    </ContextMenuItem>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem @select="handleEditCategory(cat)">
+                      编辑分类
+                    </ContextMenuItem>
+                    <ContextMenuItem class="!text-destructive focus:text-destructive" @select="handleDeleteCategory(cat.id)">
+                      删除分类
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
 
                 <CollapsibleContent>
                   <div class="ml-2 mt-1 space-y-0.5">
-                    <ContextMenuRoot v-for="feed in feeds.filter((f) => f.category_id === cat.id)" :key="feed.id">
-                      <ContextMenuTrigger as-child>
+                    <ContextMenu v-for="feed in feeds.filter((f) => f.category_id === cat.id)" :key="feed.id">
+                      <ContextMenuTrigger>
                         <button :draggable="true"
                           class="w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center justify-between group"
                           :class="{
                             'bg-accent/10 text-accent': selectedFeedId === feed.id,
-                            'text-text-secondary hover:bg-bg-tertiary': selectedFeedId !== feed.id,
+                            'text-muted-foreground hover:bg-accent/5': selectedFeedId !== feed.id,
                             'opacity-50': dragFeedId === feed.id
                           }" @click="selectFeed(feed.id)" @dragstart="onDragStart(feed.id, $event)"
                           @dragend="onDragEnd" @dragover.prevent="onDragOverCategory"
@@ -341,14 +333,14 @@ function onDragOverCategory(event: DragEvent): void {
                           <span class="flex items-center gap-2 truncate min-w-0">
                             <!-- Favicon 图片 -->
                             <span
-                              class="w-4 h-4 flex-shrink-0 rounded bg-bg-tertiary flex items-center justify-center text-[10px] overflow-hidden">
+                              class="w-4 h-4 flex-shrink-0 rounded bg-muted flex items-center justify-center text-[10px] overflow-hidden">
                               <img v-if="feed.favicon_url" :src="feed.favicon_url" alt=""
                                 class="w-full h-full object-contain" @error="
                                   (e: Event) => {
                                     ; (e.target as HTMLImageElement).style.display = 'none'
                                   }
                                 " />
-                              <span v-else class="text-text-tertiary">{{
+                              <span v-else class="text-muted-foreground">{{
                                 feed.title.charAt(0)
                               }}</span>
                             </span>
@@ -358,71 +350,60 @@ function onDragOverCategory(event: DragEvent): void {
                             <span v-if="refreshingFeedIds.has(feed.id)" class="text-accent animate-spin">
                               <LoaderCircle class="w-3 h-3" />
                             </span>
-                            <span v-if="feed.unread_count > 0" class="text-xs text-text-tertiary">
+                            <Badge v-if="feed.unread_count > 0" variant="secondary" class="text-xs">
                               {{ feed.unread_count }}
-                            </span>
+                            </Badge>
                           </span>
                         </button>
                       </ContextMenuTrigger>
-                      <Teleport to="body">
-                        <ContextMenuContent
-                          class="min-w-[160px] bg-bg-secondary border border-border rounded-lg shadow-lg p-1 z-[9999]">
-                          <ContextMenuItem
-                            class="px-3 py-1.5 text-sm text-text-secondary hover:bg-accent/10 hover:text-accent rounded-md cursor-pointer flex items-center gap-2"
-                            @select="handleMarkAllRead(feed.id)">
-                            <CheckCheck class="w-3.5 h-3.5" />
-                            全部标为已读
-                          </ContextMenuItem>
-                          <ContextMenuItem
-                            class="px-3 py-1.5 text-sm text-text-secondary hover:bg-accent/10 hover:text-accent rounded-md cursor-pointer flex items-center gap-2"
-                            @select="handleRefreshFeed(feed.id, $event)">
-                            <RefreshCw class="w-3.5 h-3.5" />
-                            刷新
-                          </ContextMenuItem>
-                          <ContextMenuSeparator class="h-px bg-border my-1" />
-                          <ContextMenuItem
-                            class="px-3 py-1.5 text-sm text-text-secondary hover:bg-accent/10 hover:text-accent rounded-md cursor-pointer flex items-center gap-2"
-                            @select="handleEditFeed(feed.id)">
-                            编辑
-                          </ContextMenuItem>
-                          <ContextMenuItem
-                            class="px-3 py-1.5 text-sm text-red-500 hover:bg-red-500/10 rounded-md cursor-pointer flex items-center gap-2"
-                            @select="handleDeleteFeed(feed.id)">
-                            删除
-                          </ContextMenuItem>
-                        </ContextMenuContent>
-                      </Teleport>
-                    </ContextMenuRoot>
+                      <ContextMenuContent>
+                        <ContextMenuItem @select="handleMarkAllRead(feed.id)">
+                          <CheckCheck class="w-3.5 h-3.5" />
+                          全部标为已读
+                        </ContextMenuItem>
+                        <ContextMenuItem @select="handleRefreshFeed(feed.id, $event)">
+                          <RefreshCw class="w-3.5 h-3.5" />
+                          刷新
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem @select="handleEditFeed(feed.id)">
+                          编辑
+                        </ContextMenuItem>
+                        <ContextMenuItem class="!text-destructive focus:text-destructive" @select="handleDeleteFeed(feed.id)">
+                          删除
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                   </div>
                 </CollapsibleContent>
-              </CollapsibleRoot>
+              </Collapsible>
             </div>
 
             <!-- 无分类的订阅源 -->
             <div v-if="feeds.filter((f) => f.category_id === null).length > 0" class="mt-2"
               @dragover.prevent="onDragOverCategory" @drop="onDropToCategory(null, $event)">
-              <div class="text-xs text-text-tertiary px-3 py-1">未分类</div>
+              <div class="text-xs text-muted-foreground px-3 py-1">未分类</div>
               <div class="ml-2 mt-1 space-y-0.5">
-                <ContextMenuRoot v-for="feed in feeds.filter((f) => f.category_id === null)" :key="feed.id">
-                  <ContextMenuTrigger as-child>
+                <ContextMenu v-for="feed in feeds.filter((f) => f.category_id === null)" :key="feed.id">
+                  <ContextMenuTrigger>
                     <button :draggable="true"
                       class="w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center justify-between group"
                       :class="{
                         'bg-accent/10 text-accent': selectedFeedId === feed.id,
-                        'text-text-secondary hover:bg-bg-tertiary': selectedFeedId !== feed.id,
+                        'text-muted-foreground hover:bg-accent/5': selectedFeedId !== feed.id,
                         'opacity-50': dragFeedId === feed.id
                       }" @click="selectFeed(feed.id)" @dragstart="onDragStart(feed.id, $event)" @dragend="onDragEnd"
                       @dragover.prevent="onDragOverCategory" @drop="onDropReorder(null, feed.id, $event)">
                       <span class="flex items-center gap-2 truncate min-w-0">
                         <span
-                          class="w-4 h-4 flex-shrink-0 rounded bg-bg-tertiary flex items-center justify-center text-[10px] overflow-hidden">
+                          class="w-4 h-4 flex-shrink-0 rounded bg-muted flex items-center justify-center text-[10px] overflow-hidden">
                           <img v-if="feed.favicon_url" :src="feed.favicon_url" alt=""
                             class="w-full h-full object-contain" @error="
                               (e: Event) => {
                                 ; (e.target as HTMLImageElement).style.display = 'none'
                               }
                             " />
-                          <span v-else class="text-text-tertiary">{{ feed.title.charAt(0) }}</span>
+                          <span v-else class="text-muted-foreground">{{ feed.title.charAt(0) }}</span>
                         </span>
                         <span class="truncate">{{ feed.title }}</span>
                       </span>
@@ -430,72 +411,51 @@ function onDragOverCategory(event: DragEvent): void {
                         <span v-if="refreshingFeedIds.has(feed.id)" class="text-accent animate-spin">
                           <LoaderCircle class="w-3 h-3" />
                         </span>
-                        <span v-if="feed.unread_count > 0" class="text-xs text-text-tertiary">
+                        <Badge v-if="feed.unread_count > 0" variant="secondary" class="text-xs">
                           {{ feed.unread_count }}
-                        </span>
+                        </Badge>
                       </span>
                     </button>
                   </ContextMenuTrigger>
-                  <Teleport to="body">
-                    <ContextMenuContent
-                      class="min-w-[160px] bg-bg-secondary border border-border rounded-lg shadow-lg p-1 z-[9999]">
-                      <ContextMenuItem
-                        class="px-3 py-1.5 text-sm text-text-secondary hover:bg-accent/10 hover:text-accent rounded-md cursor-pointer flex items-center gap-2"
-                        @select="handleMarkAllRead(feed.id)">
-                        <CheckCheck class="w-3.5 h-3.5" />
-                        全部标为已读
-                      </ContextMenuItem>
-                      <ContextMenuItem
-                        class="px-3 py-1.5 text-sm text-text-secondary hover:bg-accent/10 hover:text-accent rounded-md cursor-pointer flex items-center gap-2"
-                        @select="handleRefreshFeed(feed.id, $event)">
-                        <RefreshCw class="w-3.5 h-3.5" />
-                        刷新
-                      </ContextMenuItem>
-                      <ContextMenuSeparator class="h-px bg-border my-1" />
-                      <ContextMenuItem
-                        class="px-3 py-1.5 text-sm text-text-secondary hover:bg-accent/10 hover:text-accent rounded-md cursor-pointer flex items-center gap-2"
-                        @select="handleEditFeed(feed.id)">
-                        编辑
-                      </ContextMenuItem>
-                      <ContextMenuItem
-                        class="px-3 py-1.5 text-sm text-red-500 hover:bg-red-500/10 rounded-md cursor-pointer flex items-center gap-2"
-                        @select="handleDeleteFeed(feed.id)">
-                        删除
-                      </ContextMenuItem>
-                    </ContextMenuContent>
-                  </Teleport>
-                </ContextMenuRoot>
+                  <ContextMenuContent>
+                    <ContextMenuItem @select="handleMarkAllRead(feed.id)">
+                      <CheckCheck class="w-3.5 h-3.5" />
+                      全部标为已读
+                    </ContextMenuItem>
+                    <ContextMenuItem @select="handleRefreshFeed(feed.id, $event)">
+                      <RefreshCw class="w-3.5 h-3.5" />
+                      刷新
+                    </ContextMenuItem>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem @select="handleEditFeed(feed.id)">
+                      编辑
+                    </ContextMenuItem>
+                    <ContextMenuItem class="!text-destructive focus:text-destructive" @select="handleDeleteFeed(feed.id)">
+                      删除
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               </div>
             </div>
           </div>
         </ContextMenuTrigger>
-        <Teleport to="body">
-          <ContextMenuContent
-            class="min-w-[160px] bg-bg-secondary border border-border rounded-lg shadow-lg p-1 z-[9999]">
-            <ContextMenuItem
-              class="px-3 py-1.5 text-sm text-text-secondary hover:bg-accent/10 hover:text-accent rounded-md cursor-pointer flex items-center gap-2"
-              @select="showAddCategory = true">
-              <Plus class="w-3.5 h-3.5" />
-              添加分类
-            </ContextMenuItem>
-          </ContextMenuContent>
-        </Teleport>
-      </ContextMenuRoot>
+        <ContextMenuContent>
+          <ContextMenuItem @select="showAddCategory = true">
+            <Plus class="w-3.5 h-3.5" />
+            添加分类
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
     </div>
 
     <!-- 底部操作栏 -->
     <div class="p-2 border-t border-border">
-      <button
-        class="w-full text-left px-3 py-2 rounded-lg text-sm text-text-tertiary hover:text-text-secondary hover:bg-bg-tertiary transition-colors flex items-center gap-2"
-        @click="showSettings = true">
+      <Button variant="ghost" class="w-full justify-start gap-2" @click="showSettings = true">
         <Settings class="w-4 h-4" />
         设置
-      </button>
+      </Button>
     </div>
   </aside>
-
-  <!-- Toast 通知 -->
-  <ToastNotification :toasts="toast" @dismiss="removeToast" />
 
   <!-- 对话框 -->
   <AddFeedDialog v-model:open="showAddFeed" />

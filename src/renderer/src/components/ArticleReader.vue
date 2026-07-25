@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ArrowLeft, Star, ExternalLink, CheckCheck } from '@lucide/vue'
+import { Button } from '@/components/ui/button'
 import { useArticles } from '../composables/useArticles'
 import { sanitizeHtml } from '../utils/sanitize'
 
@@ -29,13 +30,13 @@ async function handleMarkRead(): Promise<void> {
     <!-- 空状态 - 未选中文章 -->
     <div v-if="!currentArticle" class="flex-1 flex items-center justify-center">
       <div class="text-center">
-        <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-bg-tertiary flex items-center justify-center">
-          <svg class="w-6 h-6 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+          <svg class="w-6 h-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
               d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
           </svg>
         </div>
-        <p class="text-sm text-text-tertiary">选择一篇文章开始阅读</p>
+        <p class="text-sm text-muted-foreground">选择一篇文章开始阅读</p>
       </div>
     </div>
 
@@ -43,41 +44,43 @@ async function handleMarkRead(): Promise<void> {
     <template v-else>
       <!-- 工具栏 -->
       <div class="px-6 py-3 border-b border-border flex items-center gap-3">
-        <button class="text-sm text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1"
-          @click="closeArticle">
-          <ArrowLeft class="w-4 h-4" />
+        <Button variant="ghost" size="sm" @click="closeArticle">
+          <ArrowLeft class="w-4 h-4 mr-1" />
           返回
-        </button>
+        </Button>
         <div class="flex-1" />
-        <button class="text-sm transition-colors flex items-center gap-1" :class="currentArticle.is_read
-          ? 'text-green-500'
-          : 'text-text-tertiary hover:text-text-secondary'
-          " @click="handleMarkRead">
-          <CheckCheck class="w-4 h-4" />
+        <Button
+          variant="ghost"
+          size="sm"
+          :class="currentArticle.is_read ? 'text-green-500' : ''"
+          @click="handleMarkRead"
+        >
+          <CheckCheck class="w-4 h-4 mr-1" />
           {{ currentArticle.is_read ? '已读' : '标记已读' }}
-        </button>
-        <button class="text-sm transition-colors flex items-center gap-1" :class="currentArticle.is_starred
-          ? 'text-yellow-500'
-          : 'text-text-tertiary hover:text-text-secondary'
-          " @click="toggleStar(currentArticle.id)">
-          <Star class="w-4 h-4" :fill="currentArticle.is_starred ? 'currentColor' : 'none'" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          :class="currentArticle.is_starred ? 'text-yellow-500' : ''"
+          @click="toggleStar(currentArticle.id)"
+        >
+          <Star class="w-4 h-4 mr-1" :fill="currentArticle.is_starred ? 'currentColor' : 'none'" />
           {{ currentArticle.is_starred ? '已星标' : '星标' }}
-        </button>
-        <button class="text-sm text-text-tertiary hover:text-text-secondary transition-colors flex items-center gap-1"
-          @click="openInBrowser(currentArticle.url)">
-          <ExternalLink class="w-4 h-4" />
+        </Button>
+        <Button variant="ghost" size="sm" @click="openInBrowser(currentArticle.url)">
+          <ExternalLink class="w-4 h-4 mr-1" />
           在浏览器打开
-        </button>
+        </Button>
       </div>
 
       <!-- 文章内容 -->
       <div class="flex-1 overflow-y-overlay">
         <article class="max-w-3xl mx-auto px-8 py-6" style="user-select: text">
           <header class="mb-6">
-            <h1 class="text-2xl font-bold text-text-primary leading-snug mb-3">
+            <h1 class="text-2xl font-bold text-foreground leading-snug mb-3">
               {{ currentArticle.title }}
             </h1>
-            <div class="flex items-center gap-3 text-sm text-text-tertiary">
+            <div class="flex items-center gap-3 text-sm text-muted-foreground">
               <span>{{ currentArticle.feed_title }}</span>
               <span v-if="currentArticle.author">· {{ currentArticle.author }}</span>
               <span>· {{ formatDate(currentArticle.published_at) }}</span>
@@ -85,9 +88,9 @@ async function handleMarkRead(): Promise<void> {
           </header>
 
           <!-- eslint-disable-next-line vue/no-v-html -- HTML 已通过 DOMPurify 净化，安全 -->
-          <div v-if="currentArticle.content" class="prose prose-sm max-w-none text-text-primary"
+          <div v-if="currentArticle.content" class="prose prose-sm max-w-none text-foreground"
             :style="{ fontSize: '15px', lineHeight: '1.75' }" v-html="sanitizeHtml(currentArticle.content)" />
-          <div v-else class="text-text-tertiary text-sm">暂无内容</div>
+          <div v-else class="text-muted-foreground text-sm">暂无内容</div>
         </article>
       </div>
     </template>

@@ -6,6 +6,7 @@ import { useShortcuts } from './composables/useShortcuts'
 import Sidebar from './components/Sidebar.vue'
 import ArticleList from './components/ArticleList.vue'
 import ArticleReader from './components/ArticleReader.vue'
+import ToastNotification from './components/ToastNotification.vue'
 
 const { loadSettings } = useApp()
 const { loadFeeds } = useFeeds()
@@ -33,4 +34,5 @@ onMounted(async () => {
       <ArticleReader />
     </div>
   </div>
+  <ToastNotification />
 </template>

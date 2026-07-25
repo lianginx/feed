@@ -6,11 +6,15 @@
     "config": "",
     "css": "src/renderer/src/assets/css/main.css",
     "baseColor": "neutral",
-    "cssVariables": false
+    "cssVariables": true
   },
   "aliases": {
     "components": "@/components",
-    "utils": "@/lib/utils"
-  }
+    "utils": "@/lib/utils",
+    "ui": "@/components/ui",
+    "lib": "@/lib",
+    "composables": "@/composables"
+  },
+  "iconLibrary": "lucide"
 }
 

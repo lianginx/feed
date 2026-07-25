@@ -1,4 +1,17 @@
 <script setup lang="ts">
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+
 withDefaults(
   defineProps<{
     open?: boolean
@@ -24,24 +37,31 @@ const emit = defineEmits<{
 function close(): void {
   emit('update:open', false)
 }
+
+function handleConfirm(): void {
+  emit('confirm')
+}
 </script>
 
 <template>
-  <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="close">
-    <div class="bg-bg-secondary rounded-xl shadow-lg w-80 p-6">
-      <h2 class="text-lg font-semibold text-text-primary mb-2">{{ title }}</h2>
-      <p class="text-sm text-text-secondary mb-6">{{ message }}</p>
-      <div class="flex justify-end gap-2">
-        <button class="px-4 py-2 rounded-lg text-sm text-text-secondary hover:bg-bg-tertiary transition-colors"
-          @click="close">
-          取消
-        </button>
-        <button class="px-4 py-2 rounded-lg text-sm text-white transition-colors"
-          :class="variant === 'danger' ? 'bg-red-500 hover:bg-red-600' : 'bg-accent hover:bg-accent/90'"
-          @click="emit('confirm')">
+  <AlertDialog :open="open" @update:open="emit('update:open', $event)">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>{{ title }}</AlertDialogTitle>
+        <AlertDialogDescription v-if="message">{{ message }}</AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel @click="close">取消</AlertDialogCancel>
+        <AlertDialogAction
+          :class="cn(
+            buttonVariants(),
+            variant === 'danger' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''
+          )"
+          @click="handleConfirm"
+        >
           {{ confirmText }}
-        </button>
-      </div>
-    </div>
-  </div>
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
 </template>
