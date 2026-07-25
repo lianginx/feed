@@ -246,7 +246,8 @@ function onDragOverCategory(event: DragEvent): void {
         <Button variant="ghost" size="icon" title="添加订阅源" @click="showAddFeed = true">
           <Plus class="w-4 h-4" />
         </Button>
-        <Button variant="ghost" size="icon" title="刷新全部" :disabled="refreshingFeedIds.size > 0" @click="handleRefreshAll">
+        <Button variant="ghost" size="icon" title="刷新全部" :disabled="refreshingFeedIds.size > 0"
+          @click="handleRefreshAll">
           <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': refreshingFeedIds.size > 0 }" />
         </Button>
       </div>
@@ -311,7 +312,8 @@ function onDragOverCategory(event: DragEvent): void {
                     <ContextMenuItem @select="handleEditCategory(cat)">
                       编辑分类
                     </ContextMenuItem>
-                    <ContextMenuItem class="!text-destructive focus:text-destructive" @select="handleDeleteCategory(cat.id)">
+                    <ContextMenuItem class="!text-destructive focus:text-destructive"
+                      @select="handleDeleteCategory(cat.id)">
                       删除分类
                     </ContextMenuItem>
                   </ContextMenuContent>
@@ -342,7 +344,7 @@ function onDragOverCategory(event: DragEvent): void {
                                 " />
                               <span v-else class="text-muted-foreground">{{
                                 feed.title.charAt(0)
-                              }}</span>
+                                }}</span>
                             </span>
                             <span class="truncate">{{ feed.title }}</span>
                           </span>
@@ -369,7 +371,8 @@ function onDragOverCategory(event: DragEvent): void {
                         <ContextMenuItem @select="handleEditFeed(feed.id)">
                           编辑
                         </ContextMenuItem>
-                        <ContextMenuItem class="!text-destructive focus:text-destructive" @select="handleDeleteFeed(feed.id)">
+                        <ContextMenuItem class="!text-destructive focus:text-destructive"
+                          @select="handleDeleteFeed(feed.id)">
                           删除
                         </ContextMenuItem>
                       </ContextMenuContent>
@@ -430,7 +433,8 @@ function onDragOverCategory(event: DragEvent): void {
                     <ContextMenuItem @select="handleEditFeed(feed.id)">
                       编辑
                     </ContextMenuItem>
-                    <ContextMenuItem class="!text-destructive focus:text-destructive" @select="handleDeleteFeed(feed.id)">
+                    <ContextMenuItem class="!text-destructive focus:text-destructive"
+                      @select="handleDeleteFeed(feed.id)">
                       删除
                     </ContextMenuItem>
                   </ContextMenuContent>

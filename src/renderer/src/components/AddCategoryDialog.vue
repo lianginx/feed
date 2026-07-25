@@ -70,13 +70,7 @@ async function handleSubmit(): Promise<void> {
 
       <div class="grid gap-2">
         <Label for="category-name">分类名称</Label>
-        <Input
-          id="category-name"
-          v-model="name"
-          type="text"
-          placeholder="分类名称"
-          @keyup.enter="handleSubmit"
-        />
+        <Input id="category-name" v-model="name" type="text" placeholder="分类名称" @keyup.enter="handleSubmit" />
         <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
       </div>
 

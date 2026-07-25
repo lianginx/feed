@@ -109,7 +109,8 @@ function close(): void {
       <div class="grid gap-6 py-2">
         <!-- 主题 -->
         <div class="grid gap-2">
-          <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">主题</label>
+          <label
+            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">主题</label>
           <Select :model-value="theme" @update:model-value="(v) => setTheme(v as Theme)">
             <SelectTrigger>
               <SelectValue />
@@ -124,7 +125,8 @@ function close(): void {
 
         <!-- 刷新间隔 -->
         <div class="grid gap-2">
-          <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">自动刷新</label>
+          <label
+            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">自动刷新</label>
           <Select :model-value="String(updateInterval)" @update:model-value="(v) => setUpdateInterval(Number(v))">
             <SelectTrigger>
               <SelectValue />
@@ -139,13 +141,15 @@ function close(): void {
 
         <!-- 快捷键开关 -->
         <div class="flex items-center justify-between">
-          <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">启用快捷键</label>
+          <label
+            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">启用快捷键</label>
           <Switch :checked="shortcutsEnabled" @update:checked="setShortcutsEnabled" />
         </div>
 
         <!-- 快捷键列表 -->
         <div v-if="shortcutsEnabled">
-          <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block">快捷键</label>
+          <label
+            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block">快捷键</label>
           <div class="space-y-1.5 text-sm">
             <div class="flex justify-between">
               <span class="text-muted-foreground">下移 / 上移</span>
@@ -176,19 +180,17 @@ function close(): void {
 
         <!-- 字体大小 -->
         <div class="grid gap-2">
-          <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">字体大小：{{ fontSize }}px</label>
-          <Slider
-            :model-value="[fontSize]"
-            @update:model-value="(v) => setFontSize((v ?? [fontSize])[0])"
-            :min="12"
-            :max="24"
-            :step="1"
-          />
+          <label
+            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">字体大小：{{
+            fontSize }}px</label>
+          <Slider :model-value="[fontSize]" @update:model-value="(v) => setFontSize((v ?? [fontSize])[0])" :min="12"
+            :max="24" :step="1" />
         </div>
 
         <!-- OPML 导入导出 -->
         <div class="grid gap-2">
-          <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">OPML</label>
+          <label
+            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">OPML</label>
           <div class="flex gap-2">
             <Button variant="outline" class="flex-1" @click="handleImportOpml">
               <Upload class="w-4 h-4 mr-2" />
@@ -199,11 +201,9 @@ function close(): void {
               导出
             </Button>
           </div>
-          <div
-            v-if="importResult"
+          <div v-if="importResult"
             class="mt-1 px-3 py-1.5 rounded-lg text-xs text-primary bg-primary/5 flex items-center gap-1 cursor-pointer"
-            @click="importResult = null"
-          >
+            @click="importResult = null">
             <CheckCircle2 class="w-3 h-3" />
             {{ importResult }}
           </div>

@@ -49,21 +49,13 @@ async function handleMarkRead(): Promise<void> {
           返回
         </Button>
         <div class="flex-1" />
-        <Button
-          variant="ghost"
-          size="sm"
-          :class="currentArticle.is_read ? 'text-green-500' : ''"
-          @click="handleMarkRead"
-        >
+        <Button variant="ghost" size="sm" :class="currentArticle.is_read ? 'text-green-500' : ''"
+          @click="handleMarkRead">
           <CheckCheck class="w-4 h-4 mr-1" />
           {{ currentArticle.is_read ? '已读' : '标记已读' }}
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          :class="currentArticle.is_starred ? 'text-yellow-500' : ''"
-          @click="toggleStar(currentArticle.id)"
-        >
+        <Button variant="ghost" size="sm" :class="currentArticle.is_starred ? 'text-yellow-500' : ''"
+          @click="toggleStar(currentArticle.id)">
           <Star class="w-4 h-4 mr-1" :fill="currentArticle.is_starred ? 'currentColor' : 'none'" />
           {{ currentArticle.is_starred ? '已星标' : '星标' }}
         </Button>

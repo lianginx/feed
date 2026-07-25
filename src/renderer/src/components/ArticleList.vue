@@ -148,18 +148,12 @@ function openInBrowser(url: string | null): void {
   <div class="h-full border-r border-border flex flex-col">
     <!-- 筛选栏 -->
     <div class="px-4 py-3 border-b border-border flex items-center gap-2">
-      <Button
-        v-for="f in [
-          { key: 'all', label: '全部' },
-          { key: 'unread', label: '未读' },
-          { key: 'starred', label: '星标' }
-        ] as const"
-        :key="f.key"
-        variant="ghost"
-        size="sm"
-        :class="filter === f.key ? 'bg-accent text-accent-foreground hover:bg-accent' : ''"
-        @click="setFilter(f.key)"
-      >
+      <Button v-for="f in [
+        { key: 'all', label: '全部' },
+        { key: 'unread', label: '未读' },
+        { key: 'starred', label: '星标' }
+      ] as const" :key="f.key" variant="ghost" size="sm"
+        :class="filter === f.key ? 'bg-accent text-accent-foreground hover:bg-accent' : ''" @click="setFilter(f.key)">
         {{ f.label }}
       </Button>
       <div class="flex-1" />
@@ -181,7 +175,8 @@ function openInBrowser(url: string | null): void {
         <Skeleton class="h-20 w-full" />
         <Skeleton class="h-20 w-full" />
       </div>
-      <div v-else-if="articles.length === 0" class="flex items-center justify-center h-32 text-muted-foreground text-sm">
+      <div v-else-if="articles.length === 0"
+        class="flex items-center justify-center h-32 text-muted-foreground text-sm">
         暂无文章
       </div>
       <div v-else :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
@@ -230,8 +225,7 @@ function openInBrowser(url: string | null): void {
               </button>
             </ContextMenuTrigger>
             <ContextMenuContent>
-              <ContextMenuItem v-if="articles[row.index].url"
-                @select="openInBrowser(articles[row.index].url)">
+              <ContextMenuItem v-if="articles[row.index].url" @select="openInBrowser(articles[row.index].url)">
                 <ExternalLink class="w-3.5 h-3.5" />
                 在浏览器中打开
               </ContextMenuItem>
