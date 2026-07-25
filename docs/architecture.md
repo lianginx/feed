@@ -11,13 +11,15 @@
 ### Content-Security-Policy
 
 ```html
-<meta http-equiv="Content-Security-Policy"
+<meta
+  http-equiv="Content-Security-Policy"
   content="default-src 'self';
          script-src 'self';
          style-src 'self' 'unsafe-inline';
          img-src 'self' data: https:;
          media-src 'self' https:;
-         font-src 'self' data:;">
+         font-src 'self' data:;"
+/>
 ```
 
 - `img-src` 允许 `https:` — RSS 文章中的外部图片可正常加载
@@ -32,6 +34,7 @@
 ## IPC 通信设计
 
 沿用 electron-vite 默认的 preload 设计：
+
 - `window.electron`：electron-vite 内置的 `electronAPI`（ipcRenderer 封装）
 - `window.api`：业务 API 对象（在 preload/index.ts 的 `api` 对象中扩展）
 
@@ -45,14 +48,14 @@ const api = {
     update: (id: number, data: Partial<Feed>) => ipcRenderer.invoke('feeds:update', id, data),
     delete: (id: number) => ipcRenderer.invoke('feeds:delete', id),
     updateSortOrder: (feeds: { id: number; sort_order: number }[]) =>
-      ipcRenderer.invoke('feeds:updateSortOrder', feeds),
+      ipcRenderer.invoke('feeds:updateSortOrder', feeds)
   },
   // 分类相关
   categories: {
     list: () => ipcRenderer.invoke('categories:list'),
     add: (name: string) => ipcRenderer.invoke('categories:add', name),
     update: (id: number, name: string) => ipcRenderer.invoke('categories:update', id, name),
-    delete: (id: number) => ipcRenderer.invoke('categories:delete', id),
+    delete: (id: number) => ipcRenderer.invoke('categories:delete', id)
   },
   // 文章相关
   articles: {
@@ -66,18 +69,18 @@ const api = {
     markRead: (id: number) => ipcRenderer.invoke('articles:markRead', id),
     markAllRead: (feedId?: number) => ipcRenderer.invoke('articles:markAllRead', feedId),
     toggleStar: (id: number) => ipcRenderer.invoke('articles:toggleStar', id),
-    search: (query: string) => ipcRenderer.invoke('articles:search', query),
+    search: (query: string) => ipcRenderer.invoke('articles:search', query)
   },
   // 配置相关
   config: {
     get: () => ipcRenderer.invoke('config:get'),
-    update: (settings: Partial<AppSettings>) => ipcRenderer.invoke('config:update', settings),
+    update: (settings: Partial<AppSettings>) => ipcRenderer.invoke('config:update', settings)
   },
   // 刷新相关
   sync: {
     refreshFeed: (feedId: number) => ipcRenderer.invoke('sync:refreshFeed', feedId),
-    refreshAll: () => ipcRenderer.invoke('sync:refreshAll'),
-  },
+    refreshAll: () => ipcRenderer.invoke('sync:refreshAll')
+  }
 }
 ```
 
@@ -89,7 +92,9 @@ const api = {
 // Main 进程 IPC handler 示例
 ipcMain.handle('feeds:add', async (_event, feed: AddFeedParams) => {
   try {
-    const result = db.prepare('INSERT INTO feeds (url, title, category_id) VALUES (?, ?, ?)').run(feed.url, feed.title, feed.categoryId)
+    const result = db
+      .prepare('INSERT INTO feeds (url, title, category_id) VALUES (?, ?, ?)')
+      .run(feed.url, feed.title, feed.categoryId)
     return { success: true, data: { id: result.lastInsertRowid } }
   } catch (error) {
     return { success: false, error: error.message }
@@ -99,7 +104,7 @@ ipcMain.handle('feeds:add', async (_event, feed: AddFeedParams) => {
 // Renderer 进程调用示例
 const result = await window.api.feeds.add({ url: '...', title: '...', categoryId: 1 })
 if (!result.success) {
-  toast.error(result.error)  // 使用 shadcn-vue 的 Toast 组件显示错误
+  toast.error(result.error) // 使用 shadcn-vue 的 Toast 组件显示错误
 }
 ```
 

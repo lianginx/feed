@@ -27,7 +27,7 @@
 }
 
 /* 深色主题 */
-[data-theme="dark"] {
+[data-theme='dark'] {
   --bg-primary: #0a0a0a;
   --bg-secondary: #171717;
   --bg-tertiary: #262626;
@@ -53,7 +53,7 @@
 ### 入口 CSS（src/assets/main.css）
 
 ```css
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
   --bg-primary: #fafafa;
@@ -66,7 +66,7 @@
   --accent: #2563eb;
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   --bg-primary: #0a0a0a;
   --bg-secondary: #171717;
   --bg-tertiary: #262626;

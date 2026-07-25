@@ -5,9 +5,11 @@
 ## 1. AI 文章摘要
 
 ### 目标
+
 接入 LLM API 自动生成文章摘要，提升阅读效率。
 
 ### 技术方案
+
 - 适配 OpenAI API 兼容格式（支持 OpenAI、DeepSeek、Moonshot 等）
 - 使用 `fetch` 直接调用 API，无需额外依赖
 - 在文章详情页添加"生成摘要"按钮
@@ -17,21 +19,24 @@
 
 ```typescript
 interface LLMConfig {
-  baseUrl: string      // API 地址，如 https://api.openai.com/v1
-  apiKey: string       // API Key
-  model: string        // 模型名称，如 gpt-4o-mini
-  maxTokens?: number   // 最大 token 数
+  baseUrl: string // API 地址，如 https://api.openai.com/v1
+  apiKey: string // API Key
+  model: string // 模型名称，如 gpt-4o-mini
+  maxTokens?: number // 最大 token 数
 }
 ```
 
 ### 存储方式
+
 API Key 使用 **electron-store 明文存储**（不做加密，与 VSCode/OpenCode 等主流工具一致）。
 
 ### 实现位置
+
 - Main 进程：`src/main/services/llm.ts`（LLM 服务封装）
 - Renderer 进程：设置弹窗配置 API、文章详情页调用摘要
 
 ### UI 设计
+
 - 设置弹窗：LLM API 配置表单（baseUrl、apiKey、model）
 - 文章详情页：工具栏添加"AI 摘要"按钮
 - 摘要展示：折叠面板，显示在文章标题下方
@@ -41,12 +46,15 @@ API Key 使用 **electron-store 明文存储**（不做加密，与 VSCode/OpenC
 ## 2. GitHub Gist 云同步
 
 ### 目标
+
 通过 GitHub Private Gist 实现订阅源和配置的跨设备同步。
 
 ### 参考实现
+
 [great-start](https://github.com/lianginx/great-start) 项目的 `useGistBackup.ts`
 
 ### 技术方案
+
 - 使用 GitHub Gist API v3（REST API）
 - 用户提供 GitHub Personal Access Token（需 `gist` 权限）
 - 同步数据：订阅源列表、分类、用户配置（不含文章数据）
@@ -56,22 +64,25 @@ API Key 使用 **electron-store 明文存储**（不做加密，与 VSCode/OpenC
 
 ```typescript
 interface GistData {
-  feeds: Feed[]           // 订阅源列表
-  categories: Category[]  // 分类
-  settings: AppSettings   // 用户配置
-  version: number         // 数据版本号
-  updatedAt: number       // 更新时间戳
+  feeds: Feed[] // 订阅源列表
+  categories: Category[] // 分类
+  settings: AppSettings // 用户配置
+  version: number // 数据版本号
+  updatedAt: number // 更新时间戳
 }
 ```
 
 ### 存储方式
+
 GitHub Token 使用 **electron-store 明文存储**（不做加密，与 VSCode/OpenCode 等主流工具一致）。
 
 ### 实现位置
+
 - Main 进程：`src/main/services/gist.ts`（Gist API 封装）
 - Renderer 进程：设置弹窗同步管理 UI
 
 ### UI 设计
+
 - 设置弹窗：同步设置区域
   - Token 输入框（密码输入，显示掩码）
   - 连接状态指示（已连接/未连接）
