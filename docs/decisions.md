@@ -1,0 +1,98 @@
+# 技术文档索引与决策记录
+
+> 开发时请查阅以下官方文档获取最新信息，避免使用过时的 LLM 训练数据。
+
+## ⚠️ 安全注意事项
+
+- **RSS 文章内容必须使用 DOMPurify 净化后再渲染**（rss-parser 不做任何 XSS 过滤）
+- **禁止使用 `v-html` 直接渲染未净化的 HTML**（Electron 中 XSS 危害更大）
+- 详见：https://github.com/cure53/DOMPurify#readme
+
+## ⚠️ 原生模块注意事项
+
+- **better-sqlite3** 是原生模块，在 Electron 中使用需要重新编译
+- 可能需要安装 `@electron/rebuild` 或使用 `electron-rebuild`
+- 详见：https://github.com/WiseLibs/better-sqlite3#electron--electron-builder
+
+## 核心框架
+
+| 技术          | 版本 | 官方文档                                  |
+| ------------- | ---- | ----------------------------------------- |
+| Electron      | ^39  | https://www.electronjs.org/docs           |
+| Vue 3         | ^3.5 | https://vuejs.org/guide/introduction.html |
+| TypeScript    | ^5.9 | https://www.typescriptlang.org/docs/      |
+| Vite          | ^7.2 | https://vite.dev/guide/                   |
+| electron-vite | ^5.0 | https://electron-vite.org/guide/          |
+
+## UI & 样式
+
+| 技术         | 版本        | 官方文档                                       |
+| ------------ | ----------- | ---------------------------------------------- |
+| shadcn-vue   | latest (v4) | https://www.shadcn-vue.com/                    |
+| Tailwind CSS | v4          | https://tailwindcss.com/docs                   |
+| Reka UI      | latest      | https://reka-ui.com/ （shadcn-vue 底层原语库） |
+| Lucide Icons | latest      | https://lucide.dev/icons/                      |
+
+## 状态管理
+
+| 技术           | 版本 | 官方文档                                                |
+| -------------- | ---- | ------------------------------------------------------- |
+| Vue 组合式 API | —    | https://vuejs.org/guide/extras/reactivity-in-depth.html |
+
+## 功能库
+
+| 技术                         | 版本   | 用途                                 | 官方文档                                                           |
+| ---------------------------- | ------ | ------------------------------------ | ------------------------------------------------------------------ |
+| rss-parser                   | ^3.13  | RSS/Atom 解析                        | https://www.npmjs.com/package/rss-parser                           |
+| better-sqlite3               | ^13    | SQLite 数据库                        | https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md |
+| electron-store               | ^11    | 配置存储                             | https://github.com/sindresorhus/electron-store#readme              |
+| @tanstack/vue-virtual        | latest | 虚拟滚动                             | https://tanstack.com/virtual/latest                                |
+| vue-dnd-kit                  | ^2.4   | 拖拽排序                             | https://github.com/ZiZIGY/vue-dnd-kit                              |
+| dompurify                    | latest | HTML 净化（防 XSS）                  | https://github.com/cure53/DOMPurify#readme                         |
+| @vueuse/core                 | latest | 快捷键绑定（useMagicKeys）等工具函数 | https://vueuse.org/core/useMagicKeys/                              |
+| vue-draggable-plus（备选）   | ^0.6   | 拖拽排序                             | https://vue-draggable-plus.pages.dev/                              |
+| @vueuse/integrations（备选） | latest | 拖拽排序                             | https://vueuse.org/integrations/useSortable/                       |
+| SortableJS（备选）           | ^1.15  | 拖拽底层库                           | https://sortablejs.github.io/Sortable/                             |
+
+## 开发工具
+
+| 技术             | 版本  | 官方文档                        |
+| ---------------- | ----- | ------------------------------- |
+| ESLint           | ^9.39 | https://eslint.org/docs/latest/ |
+| Prettier         | ^3.7  | https://prettier.io/docs/       |
+| electron-builder | ^26   | https://www.electron.build/     |
+
+## 决策记录
+
+| 决策             | 选择                                            | 理由                                                                  |
+| ---------------- | ----------------------------------------------- | --------------------------------------------------------------------- |
+| 模块系统         | ESM（`"type": "module"`）                       | electron-store v11 等纯 ESM 包需要，项目本身已在用 ESM 语法，风险极低 |
+| 存储方案         | 分层存储（electron-store + better-sqlite3）     | 配置轻量、文章数据量大，分开管理                                      |
+| UI 框架          | shadcn-vue + TailwindCSS v4                     | 源码级组件高度可定制、设计现代简约、AI 友好                           |
+| 状态管理         | Vue 组合式 API（Composable）                    | 零依赖、代码直观、TypeScript 类型推断优秀                             |
+| 快捷键绑定       | @vueuse/core useMagicKeys（方案 A）             | 一期固定绑定+开关，自定义绑定延后                                     |
+| RSS 解析         | rss-parser                                      | API 简洁、TypeScript 支持好、自动处理多种格式                         |
+| HTML 净化        | DOMPurify                                       | rss-parser 不做 XSS 过滤，Electron 中 v-html 必须净化                 |
+| OPML 导入导出    | opml（Dave Winer）                              | 最成熟的 OPML 库，支持 parse/stringify                                |
+| 虚拟滚动         | @tanstack/vue-virtual                           | 配合 shadcn-vue 使用，性能优秀                                        |
+| 拖拽排序         | vue-dnd-kit（首选），vue-draggable-plus（备选） | vue-dnd-kit 自研、零依赖、持续活跃；vue-draggable-plus 开箱即用       |
+| 图标             | @lucide/vue                                     | 与 shadcn-vue 原生集成，图标简洁现代                                  |
+| 架构设计         | 清晰的进程分层                                  | Renderer 负责 UI，Main 负责业务逻辑和数据存储                         |
+| 应用名称         | Feed                                            | 简洁直接                                                              |
+| 关闭行为         | 最小化到系统托盘                                | 不退出应用，托盘右键菜单恢复/退出                                     |
+| 文章存储         | 存完整 HTML（DOMPurify 净化后）                 | 支持离线阅读                                                          |
+| 数据库 schema    | 三张表 + FTS5                                   | feeds/categories/articles + 全文搜索虚拟表                            |
+| 文章去重         | UNIQUE(feed_id, guid)                           | 同一订阅源内文章唯一，防止重复入库                                    |
+| 文章内容更新     | 覆盖保存                                        | 匹配到已有 article 则直接覆盖 content/title/author，不保留历史        |
+| 数据库索引       | 6 个索引（含复合索引）                          | 保障文章列表查询性能                                                  |
+| 分页策略         | Keyset Pagination（游标分页）                   | 基于 (published_at, id) 游标，默认 50 条/页，支持无限滚动             |
+| 数据库迁移       | DIY 零依赖（_migrations 表 + .sql 文件）        | 完全控制，无额外依赖，事务安全                                        |
+| 容错策略         | 15s 超时 + 连续错误 ≥5 次自动暂停               | 避免频繁请求被封，优雅处理网络异常                                    |
+| CSP 策略         | img-src/media-src 允许 https:                   | 安全同时保证 RSS 文章中的图片/视频正常加载                            |
+| Tailwind v4 集成 | @theme inline + @custom-variant dark            | 桥接设计变量到 Tailwind 工具类，data-theme 属性驱动暗色模式           |
+| Favicon 方案     | 自实现 5 层降级 + 磁盘缓存                      | 无需外部库，NetNewsWire 已验证的模式                                  |
+| OPML 导入冲突    | 静默跳过 + toast 汇总报告                       | 符合 Miniflux/FreshRSS/NetNewsWire 等行业共识做法                     |
+| 窗口状态记忆     | debounce(500ms) 持续保存                        | 异常崩溃也不丢失窗口位置                                              |
+| API Key 存储     | electron-store 明文                             | 与 VSCode/OpenCode 等主流做法一致，不做过度设计                       |
+| 格式支持         | RSS + Atom                                      | rss-parser 原生支持，文档统一表述                                     |
+| IPC 错误处理     | `{ success, data?, error? }`                    | 统一格式，调用方只需判断 success                                      |
