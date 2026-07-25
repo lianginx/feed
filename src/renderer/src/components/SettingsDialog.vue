@@ -94,8 +94,8 @@ function close(): void {
           <label class="text-sm text-text-secondary mb-2 block">主题</label>
           <div class="flex gap-2">
             <button v-for="t in themes" :key="t.value" class="px-3 py-1.5 rounded-lg text-sm transition-colors" :class="theme === t.value
-                ? 'bg-accent text-white'
-                : 'bg-bg-tertiary text-text-secondary hover:bg-bg-tertiary/80'
+              ? 'bg-accent text-white'
+              : 'bg-bg-tertiary text-text-secondary hover:bg-bg-tertiary/80'
               " @click="setTheme(t.value)">
               {{ t.label }}
             </button>
