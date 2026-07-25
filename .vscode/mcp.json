@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "shadcn": {
+      "command": "pnpm",
+      "args": [
+        "dlx",
+        "shadcn-vue@latest",
+        "mcp"
+      ]
+    }
+  }
+}
