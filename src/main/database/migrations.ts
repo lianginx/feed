@@ -1,5 +1,16 @@
--- 001_initial.sql: 初始建表
+import type Database from 'better-sqlite3'
 
+export interface Migration {
+  version: number
+  name: string
+  up: string | ((db: Database.Database) => void)
+}
+
+export const migrations: Migration[] = [
+  {
+    version: 1,
+    name: 'create-initial-tables',
+    up: `
 CREATE TABLE IF NOT EXISTS categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL UNIQUE,
@@ -43,7 +54,6 @@ CREATE VIRTUAL TABLE IF NOT EXISTS articles_fts USING fts5(
   content_rowid='id'
 );
 
--- FTS5 同步触发器
 CREATE TRIGGER IF NOT EXISTS articles_ai AFTER INSERT ON articles BEGIN
   INSERT INTO articles_fts(rowid, title, content, author)
   VALUES (new.id, new.title, new.content, new.author);
@@ -61,10 +71,12 @@ CREATE TRIGGER IF NOT EXISTS articles_au AFTER UPDATE ON articles BEGIN
   VALUES (new.id, new.title, new.content, new.author);
 END;
 
--- 索引
 CREATE INDEX IF NOT EXISTS idx_articles_feed_id ON articles(feed_id);
 CREATE INDEX IF NOT EXISTS idx_articles_is_read ON articles(is_read);
 CREATE INDEX IF NOT EXISTS idx_articles_is_starred ON articles(is_starred);
 CREATE INDEX IF NOT EXISTS idx_articles_published_at ON articles(published_at);
 CREATE INDEX IF NOT EXISTS idx_articles_feed_read_pub ON articles(feed_id, is_read, published_at DESC);
 CREATE INDEX IF NOT EXISTS idx_articles_read_pub ON articles(is_read, published_at DESC);
+`
+  }
+]
