@@ -1,4 +1,4 @@
-import { ipcMain, dialog } from 'electron'
+import { ipcMain, dialog, nativeTheme, BrowserWindow } from 'electron'
 import { readFileSync, writeFileSync } from 'fs'
 import { getConnection } from './database/connection'
 import { getSettings, updateSettings, type AppSettings } from './config'
@@ -547,7 +547,9 @@ function registerSyncHandlers(): void {
   ipcMain.handle('sync:refreshCategory', async (_event, categoryId: number) => {
     try {
       const db = getConnection()
-      const feeds = db.prepare('SELECT id, url FROM feeds WHERE category_id = ?').all(categoryId) as {
+      const feeds = db
+        .prepare('SELECT id, url FROM feeds WHERE category_id = ?')
+        .all(categoryId) as {
         id: number
         url: string
       }[]
@@ -556,8 +558,7 @@ function registerSyncHandlers(): void {
       for (const feed of feeds) {
         try {
           const feedInfo = db.prepare('SELECT error_count FROM feeds WHERE id = ?').get(feed.id) as
-            | { error_count: number }
-            | undefined
+            { error_count: number } | undefined
           if (feedInfo && feedInfo.error_count >= 5) {
             results.push({ feedId: feed.id, success: false, error: '已暂停（连续错误 ≥5 次）' })
             continue
@@ -635,6 +636,17 @@ function registerConfigHandlers(): void {
   ipcMain.handle('config:update', async (_event, settings: Partial<AppSettings>) => {
     try {
       const updated = updateSettings(settings)
+      // 主题变更：同步到原生窗口
+      if (settings.theme !== undefined) {
+        nativeTheme.themeSource = settings.theme
+        const wins = BrowserWindow.getAllWindows()
+        if (wins.length > 0) {
+          const isDark =
+            settings.theme === 'dark' ||
+            (settings.theme === 'system' && nativeTheme.shouldUseDarkColors)
+          wins[0].setBackgroundColor(isDark ? '#0a0a0a' : '#fafafa')
+        }
+      }
       // 如果更新了刷新间隔，重启调度器
       if (settings.updateInterval !== undefined) {
         startScheduler()

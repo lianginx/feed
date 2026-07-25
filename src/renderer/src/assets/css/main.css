@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 
 :root {
+  color-scheme: light;
   --bg-primary: #fafafa;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f5f5f5;
@@ -37,6 +38,7 @@
 }
 
 [data-theme='dark'] {
+  color-scheme: dark;
   --bg-primary: #0a0a0a;
   --bg-secondary: #171717;
   --bg-tertiary: #262626;

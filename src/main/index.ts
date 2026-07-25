@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, Tray, Menu, nativeImage } from 'electron'
+import { app, ipcMain, shell, BrowserWindow, Tray, Menu, nativeImage, nativeTheme } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -15,6 +15,10 @@ function createWindow(): void {
   const settings = getSettings()
   const bounds = settings.windowBounds
 
+  nativeTheme.themeSource = settings.theme
+
+  const isDark = settings.theme === 'dark' || (settings.theme === 'system' && nativeTheme.shouldUseDarkColors)
+
   mainWindow = new BrowserWindow({
     width: bounds.width || 1200,
     height: bounds.height || 800,
@@ -22,6 +26,7 @@ function createWindow(): void {
     y: bounds.y,
     show: false,
     autoHideMenuBar: true,
+    backgroundColor: isDark ? '#0a0a0a' : '#fafafa',
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
@@ -75,9 +80,9 @@ function createWindow(): void {
 }
 
 function createTray(): void {
-  // macOS 使用 Template 图标（自动适配深色/浅色）
   const trayIcon = nativeImage.createFromPath(icon)
   if (process.platform === 'darwin') {
+    trayIcon.setTemplateImage(true)
     tray = new Tray(trayIcon.resize({ width: 16, height: 16 }))
   } else {
     tray = new Tray(trayIcon.resize({ width: 16, height: 16 }))
@@ -128,7 +133,7 @@ function createTray(): void {
 }
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.feed.app')
+  electronApp.setAppUserModelId('com.lianginx.feed')
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
@@ -137,12 +142,48 @@ app.whenReady().then(() => {
   // 初始化数据库
   initializeDatabase()
 
+  // 监听所有 IPC 通信（开发环境）— 必须在注册处理器之前
+  if (is.dev) {
+    app.on('web-contents-created', (_event, contents) => {
+      contents.on('ipc-message', (_event, channel, ...args) => {
+        console.log(`[IPC] >> ${channel}`, args.length > 0 ? args : '')
+      })
+      contents.on('ipc-message-sync', (_event, channel, ...args) => {
+        console.log(`[IPC] >> ${channel} (sync)`, args.length > 0 ? args : '')
+      })
+    })
+
+    const origHandle = ipcMain.handle.bind(ipcMain)
+    ipcMain.handle = ((channel, listener) => {
+      console.log(`[IPC] registered handler: ${channel}`)
+      return origHandle(channel, async (event, ...args) => {
+        console.log(`[IPC] >> ${channel}`, args.length > 0 ? args : '')
+        try {
+          const result = await listener(event, ...args)
+          console.log(`[IPC] << ${channel}`, result)
+          return result
+        } catch (err) {
+          console.error(`[IPC] !! ${channel}`, err)
+          throw err
+        }
+      })
+    }) as typeof ipcMain.handle
+  }
+
   // 注册 IPC 处理器
   registerAllHandlers()
 
   // 创建窗口和托盘
   createWindow()
   createTray()
+
+  nativeTheme.on('updated', () => {
+    const savedTheme = getSettings().theme
+    if (savedTheme === 'system' && mainWindow) {
+      const isDark = nativeTheme.shouldUseDarkColors
+      mainWindow.setBackgroundColor(isDark ? '#0a0a0a' : '#fafafa')
+    }
+  })
 
   // 启动定时刷新
   startScheduler()
