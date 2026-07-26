@@ -54,8 +54,8 @@ async function refreshAllFeeds(): Promise<void> {
       ).run(feed.id)
 
       const insertStmt = db.prepare(
-        `INSERT OR IGNORE INTO articles (feed_id, guid, title, url, author, content, summary, published_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT OR IGNORE INTO articles (feed_id, guid, title, url, author, content, summary, published_at, cover_image)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
 
       db.transaction(() => {
@@ -75,7 +75,8 @@ async function refreshAllFeeds(): Promise<void> {
             item.author || null,
             sanitizedContent,
             item.summary || null,
-            publishedAt
+            publishedAt,
+            item.coverImage || null
           )
         }
       })()

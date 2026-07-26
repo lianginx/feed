@@ -47,6 +47,7 @@ interface Article {
   feed_icon?: string | null
   favicon_url?: string | null
   site_url?: string | null
+  cover_image?: string | null
 }
 
 interface ArticleListResult {

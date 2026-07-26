@@ -78,5 +78,12 @@ CREATE INDEX IF NOT EXISTS idx_articles_published_at ON articles(published_at);
 CREATE INDEX IF NOT EXISTS idx_articles_feed_read_pub ON articles(feed_id, is_read, published_at DESC);
 CREATE INDEX IF NOT EXISTS idx_articles_read_pub ON articles(is_read, published_at DESC);
 `
+  },
+  {
+    version: 2,
+    name: 'add-article-cover-image',
+    up: `
+ALTER TABLE articles ADD COLUMN cover_image TEXT;
+`
   }
 ]

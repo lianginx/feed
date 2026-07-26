@@ -268,7 +268,7 @@ function registerArticleHandlers(): void {
       const articles = db
         .prepare(
           `
-        SELECT a.id, a.feed_id, a.title, a.author, a.summary, a.published_at, a.is_read, a.is_starred, a.url,
+        SELECT a.id, a.feed_id, a.title, a.author, a.summary, a.published_at, a.is_read, a.is_starred, a.url, a.cover_image,
           f.title as feed_title, f.favicon_url
         FROM articles a
         JOIN feeds f ON a.feed_id = f.id
@@ -353,7 +353,7 @@ function registerArticleHandlers(): void {
       const articles = db
         .prepare(
           `
-        SELECT a.id, a.feed_id, a.title, a.author, a.summary, a.published_at, a.is_read, a.is_starred, a.url,
+        SELECT a.id, a.feed_id, a.title, a.author, a.summary, a.published_at, a.is_read, a.is_starred, a.url, a.cover_image,
           f.title as feed_title, f.favicon_url
         FROM articles_fts fts
         JOIN articles a ON fts.rowid = a.id
@@ -412,11 +412,11 @@ function registerSyncHandlers(): void {
 
       // 插入文章（去重）
       const insertStmt = db.prepare(`
-        INSERT OR IGNORE INTO articles (feed_id, guid, title, url, author, content, summary, published_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT OR IGNORE INTO articles (feed_id, guid, title, url, author, content, summary, published_at, cover_image)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       const updateStmt = db.prepare(`
-        UPDATE articles SET title = ?, content = ?, author = ?, published_at = ?
+        UPDATE articles SET title = ?, content = ?, author = ?, published_at = ?, cover_image = ?
         WHERE feed_id = ? AND guid = ?
       `)
 
@@ -443,6 +443,7 @@ function registerSyncHandlers(): void {
               sanitizedContent,
               item.author || null,
               publishedAt,
+              item.coverImage || null,
               feedId,
               item.guid
             )
@@ -456,7 +457,8 @@ function registerSyncHandlers(): void {
               item.author || null,
               sanitizedContent,
               item.summary || null,
-              publishedAt
+              publishedAt,
+              item.coverImage || null
             )
             inserted++
           }

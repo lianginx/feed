@@ -13,6 +13,7 @@ interface ArticleItem {
   url: string | null
   feed_title: string
   favicon_url?: string | null
+  cover_image?: string | null
 }
 
 interface ArticleDetail extends ArticleItem {

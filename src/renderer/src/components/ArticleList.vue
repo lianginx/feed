@@ -226,13 +226,13 @@ function openInBrowser(url: string | null): void {
                 @click="openArticle(articles[row.index].id)"
                 @dblclick="openInBrowser(articles[row.index].url)"
               >
-                <div class="flex items-start gap-2 py-2.5 h-full">
+                <div class="flex items-start gap-3 py-2.5 h-full">
                   <div class="flex-1 min-w-0 h-full flex flex-col">
                     <div>
                       <div class="flex items-center gap-1.5">
                         <span
                           v-if="!articles[row.index].is_read"
-                          class="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0"
+                          class="w-1.5 h-1.5 rounded-full bg-accent shrink-0"
                         />
                         <span v-if="articles[row.index].is_starred" class="text-yellow-500 text-xs"
                           >★</span
@@ -253,6 +253,13 @@ function openInBrowser(url: string | null): void {
                       <span>{{ formatDate(articles[row.index].published_at) }}</span>
                     </div>
                   </div>
+                  <img
+                    v-if="articles[row.index].cover_image"
+                    :src="articles[row.index].cover_image ?? undefined"
+                    class="h-full aspect-4/3 rounded-md object-cover shrink-0 mt-0.5 bg-muted"
+                    loading="lazy"
+                    @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
+                  />
                 </div>
               </button>
             </ContextMenuTrigger>
@@ -261,7 +268,7 @@ function openInBrowser(url: string | null): void {
                 v-if="articles[row.index].url"
                 @select="openInBrowser(articles[row.index].url)"
               >
-                <ExternalLink class="w-3.5 h-3.5" />
+                <ExternalLink class="size-3.5" />
                 在浏览器中打开
               </ContextMenuItem>
               <ContextMenuItem @select="toggleStar(articles[row.index].id)">

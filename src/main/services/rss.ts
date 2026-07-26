@@ -1,9 +1,24 @@
 import Parser from 'rss-parser'
+import { extractCoverImage } from './extractCoverImage'
 
-const parser = new Parser({
+type CustomItem = {
+  creator?: string
+  author?: string
+  enclosure?: { url?: string; type?: string }
+  'media:thumbnail'?: { $?: { url?: string } }
+  'media:content'?: { $?: { url?: string; medium?: string; type?: string } }
+}
+
+const parser = new Parser<Record<string, unknown>, CustomItem>({
   timeout: 15000,
   headers: {
     'User-Agent': 'Feed/1.0 (RSS Reader)'
+  },
+  customFields: {
+    item: [
+      ['media:thumbnail', 'media:thumbnail', { keepArray: false }],
+      ['media:content', 'media:content', { keepArray: false }]
+    ]
   }
 })
 
@@ -24,6 +39,7 @@ export interface ParsedArticle {
   summary?: string
   pubDate?: string
   author?: string
+  coverImage?: string
 }
 
 /**
@@ -37,16 +53,21 @@ export async function parseFeed(url: string): Promise<ParsedFeed> {
     description: feed.description,
     link: feed.link,
     image: feed.image ? { url: feed.image.url, title: feed.image.title } : undefined,
-    items: (feed.items || []).map((item) => ({
-      guid: item.guid || item.link || item.title || '',
-      title: item.title || '(无标题)',
-      link: item.link,
-      content: item.content,
-      contentSnippet: item.contentSnippet,
-      summary: item.summary || item.contentSnippet,
-      pubDate: item.pubDate || item.isoDate,
-      author: item.creator || item.author
-    }))
+    items: (feed.items || []).map((item) => {
+      const parsedItem = {
+        guid: item.guid || item.link || item.title || '',
+        title: item.title || '(无标题)',
+        link: item.link,
+        content: item.content,
+        contentSnippet: item.contentSnippet,
+        summary: item.summary || item.contentSnippet,
+        pubDate: item.pubDate || item.isoDate,
+        author: item.creator || item.author,
+        coverImage: undefined as string | undefined
+      }
+      parsedItem.coverImage = extractCoverImage(item as CustomItem)
+      return parsedItem
+    })
   }
 }
 
