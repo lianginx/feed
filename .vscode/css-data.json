@@ -1,0 +1,12 @@
+{
+  "atDirectives": [
+    {
+      "name": "@theme",
+      "description": "Tailwind CSS v4 theme directive - defines design tokens and theme values"
+    },
+    {
+      "name": "@custom-variant",
+      "description": "Tailwind CSS v4 custom variant directive - defines custom variants like dark mode"
+    }
+  ]
+}
