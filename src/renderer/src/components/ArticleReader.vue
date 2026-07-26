@@ -31,9 +31,18 @@ async function handleMarkRead(): Promise<void> {
     <div v-if="!currentArticle" class="flex-1 flex items-center justify-center">
       <div class="text-center">
         <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-          <svg class="w-6 h-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-              d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+          <svg
+            class="w-6 h-6 text-muted-foreground"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+            />
           </svg>
         </div>
         <p class="text-sm text-muted-foreground">选择一篇文章开始阅读</p>
@@ -49,13 +58,21 @@ async function handleMarkRead(): Promise<void> {
           返回
         </Button>
         <div class="flex-1" />
-        <Button variant="ghost" size="sm" :class="currentArticle.is_read ? 'text-green-500' : ''"
-          @click="handleMarkRead">
+        <Button
+          variant="ghost"
+          size="sm"
+          :class="currentArticle.is_read ? 'text-green-500' : ''"
+          @click="handleMarkRead"
+        >
           <CheckCheck class="w-4 h-4 mr-1" />
           {{ currentArticle.is_read ? '已读' : '标记已读' }}
         </Button>
-        <Button variant="ghost" size="sm" :class="currentArticle.is_starred ? 'text-yellow-500' : ''"
-          @click="toggleStar(currentArticle.id)">
+        <Button
+          variant="ghost"
+          size="sm"
+          :class="currentArticle.is_starred ? 'text-yellow-500' : ''"
+          @click="toggleStar(currentArticle.id)"
+        >
           <Star class="w-4 h-4 mr-1" :fill="currentArticle.is_starred ? 'currentColor' : 'none'" />
           {{ currentArticle.is_starred ? '已星标' : '星标' }}
         </Button>
@@ -79,9 +96,12 @@ async function handleMarkRead(): Promise<void> {
             </div>
           </header>
 
-          <!-- eslint-disable-next-line vue/no-v-html -- HTML 已通过 DOMPurify 净化，安全 -->
-          <div v-if="currentArticle.content" class="prose prose-sm max-w-none text-foreground"
-            :style="{ fontSize: '15px', lineHeight: '1.75' }" v-html="sanitizeHtml(currentArticle.content)" />
+          <div
+            v-if="currentArticle.content"
+            class="prose prose-sm max-w-none text-foreground"
+            :style="{ fontSize: '15px', lineHeight: '1.75' }"
+            v-html="sanitizeHtml(currentArticle.content)"
+          />
           <div v-else class="text-muted-foreground text-sm">暂无内容</div>
         </article>
       </div>

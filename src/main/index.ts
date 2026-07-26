@@ -17,7 +17,8 @@ function createWindow(): void {
 
   nativeTheme.themeSource = settings.theme
 
-  const isDark = settings.theme === 'dark' || (settings.theme === 'system' && nativeTheme.shouldUseDarkColors)
+  const isDark =
+    settings.theme === 'dark' || (settings.theme === 'system' && nativeTheme.shouldUseDarkColors)
 
   mainWindow = new BrowserWindow({
     width: bounds.width || 1200,

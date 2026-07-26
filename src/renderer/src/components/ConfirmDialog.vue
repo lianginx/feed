@@ -7,7 +7,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogCancel,
-  AlertDialogAction,
+  AlertDialogAction
 } from '@/components/ui/alert-dialog'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -52,10 +52,17 @@ function handleConfirm(): void {
       </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogCancel @click="close">取消</AlertDialogCancel>
-        <AlertDialogAction :class="cn(
-          buttonVariants(),
-          variant === 'danger' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''
-        )" @click="handleConfirm">
+        <AlertDialogAction
+          :class="
+            cn(
+              buttonVariants(),
+              variant === 'danger'
+                ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                : ''
+            )
+          "
+          @click="handleConfirm"
+        >
           {{ confirmText }}
         </AlertDialogAction>
       </AlertDialogFooter>

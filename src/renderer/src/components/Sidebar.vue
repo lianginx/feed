@@ -4,17 +4,13 @@ import { RefreshCw, Plus, Settings, CheckCheck, LoaderCircle } from '@lucide/vue
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from '@/components/ui/collapsible'
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 import {
   ContextMenu,
   ContextMenuTrigger,
   ContextMenuContent,
   ContextMenuItem,
-  ContextMenuSeparator,
+  ContextMenuSeparator
 } from '@/components/ui/context-menu'
 import { useFeeds, type FeedItem } from '../composables/useFeeds'
 import { useArticles } from '../composables/useArticles'
@@ -114,9 +110,10 @@ async function handleDeleteCategory(catId: number): Promise<void> {
   const feedCount = feeds.value.filter((f) => f.category_id === catId).length
   confirmDialogCategoryId.value = catId
   confirmDialogTitle.value = '删除分类'
-  confirmDialogMessage.value = feedCount > 0
-    ? `「${cat.name}」下有 ${feedCount} 个订阅源，删除后将一并移除，确定？`
-    : `确定要删除分类「${cat.name}」吗？`
+  confirmDialogMessage.value =
+    feedCount > 0
+      ? `「${cat.name}」下有 ${feedCount} 个订阅源，删除后将一并移除，确定？`
+      : `确定要删除分类「${cat.name}」吗？`
   confirmDialogFeedCount.value = feedCount
   showConfirmDialog.value = true
 }
@@ -246,8 +243,13 @@ function onDragOverCategory(event: DragEvent): void {
         <Button variant="ghost" size="icon" title="添加订阅源" @click="showAddFeed = true">
           <Plus class="w-4 h-4" />
         </Button>
-        <Button variant="ghost" size="icon" title="刷新全部" :disabled="refreshingFeedIds.size > 0"
-          @click="handleRefreshAll">
+        <Button
+          variant="ghost"
+          size="icon"
+          title="刷新全部"
+          :disabled="refreshingFeedIds.size > 0"
+          @click="handleRefreshAll"
+        >
           <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': refreshingFeedIds.size > 0 }" />
         </Button>
       </div>
@@ -255,13 +257,20 @@ function onDragOverCategory(event: DragEvent): void {
 
     <!-- 全部文章（固定在顶部） -->
     <div class="px-2 pt-2">
-      <button class="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors" :class="selectedFeedId === null && selectedCategoryId === null
-        ? 'bg-accent/10 text-accent'
-        : 'text-muted-foreground hover:bg-accent/5'
-        " @click="handleSelectAll">
+      <button
+        class="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
+        :class="
+          selectedFeedId === null && selectedCategoryId === null
+            ? 'bg-accent/10 text-accent'
+            : 'text-muted-foreground hover:bg-accent/5'
+        "
+        @click="handleSelectAll"
+      >
         <span class="flex items-center justify-between">
           <span>全部文章</span>
-          <Badge v-if="unreadCount > 0" variant="secondary" class="text-xs">{{ unreadCount }}</Badge>
+          <Badge v-if="unreadCount > 0" variant="secondary" class="text-xs">{{
+            unreadCount
+          }}</Badge>
         </span>
       </button>
     </div>
@@ -271,26 +280,47 @@ function onDragOverCategory(event: DragEvent): void {
       <!-- 空白区域右键菜单：添加分类 -->
       <ContextMenu>
         <ContextMenuTrigger>
-          <div class="min-h-full" @dragover.prevent="onDragOverCategory" @drop="onDropToCategory(null, $event)">
+          <div
+            class="min-h-full"
+            @dragover.prevent="onDragOverCategory"
+            @drop="onDropToCategory(null, $event)"
+          >
             <!-- 分类区块 -->
-            <div v-for="cat in categories" :key="cat.id" class="mt-2" @dragover.prevent="onDragOverCategory"
-              @drop="onDropToCategory(cat.id, $event)">
-              <Collapsible :open="!isCategoryCollapsed(cat.id)" class="w-full"
-                @update:open="(open: boolean) => (collapsedCategories[cat.id] = !open)">
+            <div
+              v-for="cat in categories"
+              :key="cat.id"
+              class="mt-2"
+              @dragover.prevent="onDragOverCategory"
+              @drop="onDropToCategory(cat.id, $event)"
+            >
+              <Collapsible
+                :open="!isCategoryCollapsed(cat.id)"
+                class="w-full"
+                @update:open="(open: boolean) => (collapsedCategories[cat.id] = !open)"
+              >
                 <ContextMenu>
                   <ContextMenuTrigger>
                     <button
                       class="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between"
-                      :class="selectedCategoryId === cat.id
-                        ? 'bg-accent/10 text-accent'
-                        : 'text-muted-foreground hover:bg-accent/5'
-                        " @click="handleSelectCategory(cat.id)" @dblclick="toggleCategory(cat.id)">
+                      :class="
+                        selectedCategoryId === cat.id
+                          ? 'bg-accent/10 text-accent'
+                          : 'text-muted-foreground hover:bg-accent/5'
+                      "
+                      @click="handleSelectCategory(cat.id)"
+                      @dblclick="toggleCategory(cat.id)"
+                    >
                       <span class="flex items-center gap-1.5">
                         <CollapsibleTrigger>
                           <span @click.stop>
-                            <svg class="w-3.5 h-3.5 transition-transform duration-200"
-                              :class="{ 'rotate-90': !isCategoryCollapsed(cat.id) }" viewBox="0 0 24 24" fill="none"
-                              stroke="currentColor" stroke-width="2">
+                            <svg
+                              class="w-3.5 h-3.5 transition-transform duration-200"
+                              :class="{ 'rotate-90': !isCategoryCollapsed(cat.id) }"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                            >
                               <path d="m9 18 6-6-6-6" />
                             </svg>
                           </span>
@@ -309,11 +339,11 @@ function onDragOverCategory(event: DragEvent): void {
                       刷新
                     </ContextMenuItem>
                     <ContextMenuSeparator />
-                    <ContextMenuItem @select="handleEditCategory(cat)">
-                      编辑分类
-                    </ContextMenuItem>
-                    <ContextMenuItem class="!text-destructive focus:text-destructive"
-                      @select="handleDeleteCategory(cat.id)">
+                    <ContextMenuItem @select="handleEditCategory(cat)"> 编辑分类 </ContextMenuItem>
+                    <ContextMenuItem
+                      class="text-destructive! focus:text-destructive"
+                      @select="handleDeleteCategory(cat.id)"
+                    >
                       删除分类
                     </ContextMenuItem>
                   </ContextMenuContent>
@@ -321,35 +351,52 @@ function onDragOverCategory(event: DragEvent): void {
 
                 <CollapsibleContent>
                   <div class="ml-2 mt-1 space-y-0.5">
-                    <ContextMenu v-for="feed in feeds.filter((f) => f.category_id === cat.id)" :key="feed.id">
+                    <ContextMenu
+                      v-for="feed in feeds.filter((f) => f.category_id === cat.id)"
+                      :key="feed.id"
+                    >
                       <ContextMenuTrigger>
-                        <button :draggable="true"
+                        <button
+                          :draggable="true"
                           class="w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center justify-between group"
                           :class="{
                             'bg-accent/10 text-accent': selectedFeedId === feed.id,
                             'text-muted-foreground hover:bg-accent/5': selectedFeedId !== feed.id,
                             'opacity-50': dragFeedId === feed.id
-                          }" @click="selectFeed(feed.id)" @dragstart="onDragStart(feed.id, $event)"
-                          @dragend="onDragEnd" @dragover.prevent="onDragOverCategory"
-                          @drop="onDropReorder(cat.id, feed.id, $event)">
+                          }"
+                          @click="selectFeed(feed.id)"
+                          @dragstart="onDragStart(feed.id, $event)"
+                          @dragend="onDragEnd"
+                          @dragover.prevent="onDragOverCategory"
+                          @drop="onDropReorder(cat.id, feed.id, $event)"
+                        >
                           <span class="flex items-center gap-2 truncate min-w-0">
                             <!-- Favicon 图片 -->
                             <span
-                              class="w-4 h-4 flex-shrink-0 rounded bg-muted flex items-center justify-center text-[10px] overflow-hidden">
-                              <img v-if="feed.favicon_url" :src="feed.favicon_url" alt=""
-                                class="w-full h-full object-contain" @error="
+                              class="w-4 h-4 shrink-0 rounded bg-muted flex items-center justify-center text-[10px] overflow-hidden"
+                            >
+                              <img
+                                v-if="feed.favicon_url"
+                                :src="feed.favicon_url"
+                                alt=""
+                                class="w-full h-full object-contain"
+                                @error="
                                   (e: Event) => {
-                                    ; (e.target as HTMLImageElement).style.display = 'none'
+                                    ;(e.target as HTMLImageElement).style.display = 'none'
                                   }
-                                " />
+                                "
+                              />
                               <span v-else class="text-muted-foreground">{{
                                 feed.title.charAt(0)
-                                }}</span>
+                              }}</span>
                             </span>
                             <span class="truncate">{{ feed.title }}</span>
                           </span>
-                          <span class="flex items-center gap-1 flex-shrink-0">
-                            <span v-if="refreshingFeedIds.has(feed.id)" class="text-accent animate-spin">
+                          <span class="flex items-center gap-1 shrink-0">
+                            <span
+                              v-if="refreshingFeedIds.has(feed.id)"
+                              class="text-accent animate-spin"
+                            >
                               <LoaderCircle class="w-3 h-3" />
                             </span>
                             <Badge v-if="feed.unread_count > 0" variant="secondary" class="text-xs">
@@ -368,11 +415,11 @@ function onDragOverCategory(event: DragEvent): void {
                           刷新
                         </ContextMenuItem>
                         <ContextMenuSeparator />
-                        <ContextMenuItem @select="handleEditFeed(feed.id)">
-                          编辑
-                        </ContextMenuItem>
-                        <ContextMenuItem class="!text-destructive focus:text-destructive"
-                          @select="handleDeleteFeed(feed.id)">
+                        <ContextMenuItem @select="handleEditFeed(feed.id)"> 编辑 </ContextMenuItem>
+                        <ContextMenuItem
+                          class="text-destructive! focus:text-destructive"
+                          @select="handleDeleteFeed(feed.id)"
+                        >
                           删除
                         </ContextMenuItem>
                       </ContextMenuContent>
@@ -383,35 +430,59 @@ function onDragOverCategory(event: DragEvent): void {
             </div>
 
             <!-- 无分类的订阅源 -->
-            <div v-if="feeds.filter((f) => f.category_id === null).length > 0" class="mt-2"
-              @dragover.prevent="onDragOverCategory" @drop="onDropToCategory(null, $event)">
+            <div
+              v-if="feeds.filter((f) => f.category_id === null).length > 0"
+              class="mt-2"
+              @dragover.prevent="onDragOverCategory"
+              @drop="onDropToCategory(null, $event)"
+            >
               <div class="text-xs text-muted-foreground px-3 py-1">未分类</div>
               <div class="ml-2 mt-1 space-y-0.5">
-                <ContextMenu v-for="feed in feeds.filter((f) => f.category_id === null)" :key="feed.id">
+                <ContextMenu
+                  v-for="feed in feeds.filter((f) => f.category_id === null)"
+                  :key="feed.id"
+                >
                   <ContextMenuTrigger>
-                    <button :draggable="true"
+                    <button
+                      :draggable="true"
                       class="w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center justify-between group"
                       :class="{
                         'bg-accent/10 text-accent': selectedFeedId === feed.id,
                         'text-muted-foreground hover:bg-accent/5': selectedFeedId !== feed.id,
                         'opacity-50': dragFeedId === feed.id
-                      }" @click="selectFeed(feed.id)" @dragstart="onDragStart(feed.id, $event)" @dragend="onDragEnd"
-                      @dragover.prevent="onDragOverCategory" @drop="onDropReorder(null, feed.id, $event)">
+                      }"
+                      @click="selectFeed(feed.id)"
+                      @dragstart="onDragStart(feed.id, $event)"
+                      @dragend="onDragEnd"
+                      @dragover.prevent="onDragOverCategory"
+                      @drop="onDropReorder(null, feed.id, $event)"
+                    >
                       <span class="flex items-center gap-2 truncate min-w-0">
                         <span
-                          class="w-4 h-4 flex-shrink-0 rounded bg-muted flex items-center justify-center text-[10px] overflow-hidden">
-                          <img v-if="feed.favicon_url" :src="feed.favicon_url" alt=""
-                            class="w-full h-full object-contain" @error="
+                          class="w-4 h-4 shrink-0 rounded bg-muted flex items-center justify-center text-[10px] overflow-hidden"
+                        >
+                          <img
+                            v-if="feed.favicon_url"
+                            :src="feed.favicon_url"
+                            alt=""
+                            class="w-full h-full object-contain"
+                            @error="
                               (e: Event) => {
-                                ; (e.target as HTMLImageElement).style.display = 'none'
+                                ;(e.target as HTMLImageElement).style.display = 'none'
                               }
-                            " />
-                          <span v-else class="text-muted-foreground">{{ feed.title.charAt(0) }}</span>
+                            "
+                          />
+                          <span v-else class="text-muted-foreground">{{
+                            feed.title.charAt(0)
+                          }}</span>
                         </span>
                         <span class="truncate">{{ feed.title }}</span>
                       </span>
-                      <span class="flex items-center gap-1 flex-shrink-0">
-                        <span v-if="refreshingFeedIds.has(feed.id)" class="text-accent animate-spin">
+                      <span class="flex items-center gap-1 shrink-0">
+                        <span
+                          v-if="refreshingFeedIds.has(feed.id)"
+                          class="text-accent animate-spin"
+                        >
                           <LoaderCircle class="w-3 h-3" />
                         </span>
                         <Badge v-if="feed.unread_count > 0" variant="secondary" class="text-xs">
@@ -430,11 +501,11 @@ function onDragOverCategory(event: DragEvent): void {
                       刷新
                     </ContextMenuItem>
                     <ContextMenuSeparator />
-                    <ContextMenuItem @select="handleEditFeed(feed.id)">
-                      编辑
-                    </ContextMenuItem>
-                    <ContextMenuItem class="!text-destructive focus:text-destructive"
-                      @select="handleDeleteFeed(feed.id)">
+                    <ContextMenuItem @select="handleEditFeed(feed.id)"> 编辑 </ContextMenuItem>
+                    <ContextMenuItem
+                      class="text-destructive! focus:text-destructive"
+                      @select="handleDeleteFeed(feed.id)"
+                    >
                       删除
                     </ContextMenuItem>
                   </ContextMenuContent>
@@ -463,10 +534,21 @@ function onDragOverCategory(event: DragEvent): void {
 
   <!-- 对话框 -->
   <AddFeedDialog v-model:open="showAddFeed" />
-  <AddCategoryDialog :open="showAddCategory || editCategoryData !== null" :edit-category-id="editCategoryData?.id"
-    :edit-category-name="editCategoryData?.name" @update:open="closeCategoryDialog" @add="handleAddCategory"
-    @update="handleUpdateCategory" />
+  <AddCategoryDialog
+    :open="showAddCategory || editCategoryData !== null"
+    :edit-category-id="editCategoryData?.id"
+    :edit-category-name="editCategoryData?.name"
+    @update:open="closeCategoryDialog"
+    @add="handleAddCategory"
+    @update="handleUpdateCategory"
+  />
   <SettingsDialog v-model:open="showSettings" />
-  <ConfirmDialog v-model:open="showConfirmDialog" :title="confirmDialogTitle" :message="confirmDialogMessage"
-    confirm-text="删除" variant="danger" @confirm="confirmDeleteCategory" />
+  <ConfirmDialog
+    v-model:open="showConfirmDialog"
+    :title="confirmDialogTitle"
+    :message="confirmDialogMessage"
+    confirm-text="删除"
+    variant="danger"
+    @confirm="confirmDeleteCategory"
+  />
 </template>

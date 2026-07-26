@@ -5,7 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
+  DialogFooter
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -74,8 +74,13 @@ async function handleSubmit(): Promise<void> {
       <div class="grid gap-4 py-2">
         <div class="grid gap-2">
           <Label for="url">RSS 地址 *</Label>
-          <Input id="url" v-model="url" type="url" placeholder="https://example.com/feed.xml"
-            @keyup.enter="handleSubmit" />
+          <Input
+            id="url"
+            v-model="url"
+            type="url"
+            placeholder="https://example.com/feed.xml"
+            @keyup.enter="handleSubmit"
+          />
         </div>
         <div class="grid gap-2">
           <Label for="title">标题（可选）</Label>

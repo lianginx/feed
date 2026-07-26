@@ -9,7 +9,7 @@ import {
   ContextMenu,
   ContextMenuTrigger,
   ContextMenuContent,
-  ContextMenuItem,
+  ContextMenuItem
 } from '@/components/ui/context-menu'
 import { useArticles } from '../composables/useArticles'
 import { useFeeds } from '../composables/useFeeds'
@@ -148,12 +148,18 @@ function openInBrowser(url: string | null): void {
   <div class="h-full border-r border-border flex flex-col">
     <!-- 筛选栏 -->
     <div class="px-4 py-3 border-b border-border flex items-center gap-2">
-      <Button v-for="f in [
-        { key: 'all', label: '全部' },
-        { key: 'unread', label: '未读' },
-        { key: 'starred', label: '星标' }
-      ] as const" :key="f.key" variant="ghost" size="sm"
-        :class="filter === f.key ? 'bg-accent text-accent-foreground hover:bg-accent' : ''" @click="setFilter(f.key)">
+      <Button
+        v-for="f in [
+          { key: 'all', label: '全部' },
+          { key: 'unread', label: '未读' },
+          { key: 'starred', label: '星标' }
+        ] as const"
+        :key="f.key"
+        variant="ghost"
+        size="sm"
+        :class="filter === f.key ? 'bg-accent text-accent-foreground hover:bg-accent' : ''"
+        @click="setFilter(f.key)"
+      >
         {{ f.label }}
       </Button>
       <div class="flex-1" />
@@ -164,8 +170,14 @@ function openInBrowser(url: string | null): void {
 
     <!-- 搜索框 -->
     <div v-if="showSearch" class="px-4 py-2 border-b border-border">
-      <Input ref="searchInput" v-model="searchQuery" type="text" placeholder="搜索文章..." @input="onSearchInput"
-        @keyup.escape="clearSearch" />
+      <Input
+        ref="searchInput"
+        v-model="searchQuery"
+        type="text"
+        placeholder="搜索文章..."
+        @input="onSearchInput"
+        @keyup.escape="clearSearch"
+      />
     </div>
 
     <!-- 文章列表 -->
@@ -175,21 +187,30 @@ function openInBrowser(url: string | null): void {
         <Skeleton class="h-20 w-full" />
         <Skeleton class="h-20 w-full" />
       </div>
-      <div v-else-if="articles.length === 0"
-        class="flex items-center justify-center h-32 text-muted-foreground text-sm">
+      <div
+        v-else-if="articles.length === 0"
+        class="flex items-center justify-center h-32 text-muted-foreground text-sm"
+      >
         暂无文章
       </div>
       <div v-else :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
-        <div v-for="row in virtualizer.getVirtualItems()" :key="`article-${row.index}`" :style="{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: `${row.size}px`,
-          transform: `translateY(${row.start}px)`
-        }">
+        <div
+          v-for="row in virtualizer.getVirtualItems()"
+          :key="`article-${row.index}`"
+          :style="{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: `${row.size}px`,
+            transform: `translateY(${row.start}px)`
+          }"
+        >
           <!-- "加载更多"按钮 -->
-          <div v-if="hasMore && row.index === articles.length" class="flex items-center justify-center h-full">
+          <div
+            v-if="hasMore && row.index === articles.length"
+            class="flex items-center justify-center h-full"
+          >
             <Button variant="ghost" size="sm" :disabled="loadingMore" @click="loadMore">
               {{ loadingMore ? '加载中...' : '加载更多' }}
             </Button>
@@ -197,22 +218,33 @@ function openInBrowser(url: string | null): void {
           <!-- 文章条目 -->
           <ContextMenu v-else>
             <ContextMenuTrigger>
-              <button class="w-full h-full text-left px-4 border-b border-border transition-colors hover:bg-accent/10"
+              <button
+                class="w-full h-full text-left px-4 border-b border-border transition-colors hover:bg-accent/10"
                 :class="{
                   'bg-accent/5': !articles[row.index].is_read
-                }" @click="openArticle(articles[row.index].id)" @dblclick="openInBrowser(articles[row.index].url)">
+                }"
+                @click="openArticle(articles[row.index].id)"
+                @dblclick="openInBrowser(articles[row.index].url)"
+              >
                 <div class="flex items-start gap-2 py-2.5 h-full">
                   <div class="flex-1 min-w-0 h-full flex flex-col">
                     <div>
                       <div class="flex items-center gap-1.5">
-                        <span v-if="!articles[row.index].is_read"
-                          class="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />
-                        <span v-if="articles[row.index].is_starred" class="text-yellow-500 text-xs">★</span>
+                        <span
+                          v-if="!articles[row.index].is_read"
+                          class="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0"
+                        />
+                        <span v-if="articles[row.index].is_starred" class="text-yellow-500 text-xs"
+                          >★</span
+                        >
                         <h3 class="text-sm font-medium text-foreground truncate">
                           {{ articles[row.index].title }}
                         </h3>
                       </div>
-                      <p v-if="articles[row.index].summary" class="text-xs text-muted-foreground mt-1 line-clamp-2">
+                      <p
+                        v-if="articles[row.index].summary"
+                        class="text-xs text-muted-foreground mt-1 line-clamp-2"
+                      >
                         {{ articles[row.index].summary }}
                       </p>
                     </div>
@@ -225,7 +257,10 @@ function openInBrowser(url: string | null): void {
               </button>
             </ContextMenuTrigger>
             <ContextMenuContent>
-              <ContextMenuItem v-if="articles[row.index].url" @select="openInBrowser(articles[row.index].url)">
+              <ContextMenuItem
+                v-if="articles[row.index].url"
+                @select="openInBrowser(articles[row.index].url)"
+              >
                 <ExternalLink class="w-3.5 h-3.5" />
                 在浏览器中打开
               </ContextMenuItem>
