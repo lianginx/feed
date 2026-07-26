@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ArrowLeft, Star, ExternalLink, CheckCheck } from '@lucide/vue'
+import {  Star, ExternalLink } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { useArticles } from '../composables/useArticles'
 import { sanitizeHtml } from '../utils/sanitize'
 
-const { currentArticle, toggleStar, closeArticle } = useArticles()
+const { currentArticle, toggleStar } = useArticles()
 
 function formatDate(timestamp: number | null): string {
   if (!timestamp) return ''
@@ -14,13 +14,6 @@ function formatDate(timestamp: number | null): string {
 function openInBrowser(url: string | null): void {
   if (url) {
     window.open(url, '_blank')
-  }
-}
-
-async function handleMarkRead(): Promise<void> {
-  if (currentArticle.value) {
-    await window.api.articles.markRead(currentArticle.value.id)
-    currentArticle.value.is_read = 1
   }
 }
 </script>
@@ -52,32 +45,19 @@ async function handleMarkRead(): Promise<void> {
     <!-- 文章内容 - 已选中文章 -->
     <template v-else>
       <!-- 工具栏 -->
-      <div class="px-6 py-3 border-b border-border flex items-center gap-3">
-        <Button variant="ghost" size="sm" @click="closeArticle">
-          <ArrowLeft class="w-4 h-4 mr-1" />
-          返回
-        </Button>
+      <div class="px-6 py-3.5 border-b border-border flex items-center gap-3">
         <div class="flex-1" />
-        <Button
-          variant="ghost"
-          size="sm"
-          :class="currentArticle.is_read ? 'text-green-500' : ''"
-          @click="handleMarkRead"
-        >
-          <CheckCheck class="w-4 h-4 mr-1" />
-          {{ currentArticle.is_read ? '已读' : '标记已读' }}
-        </Button>
         <Button
           variant="ghost"
           size="sm"
           :class="currentArticle.is_starred ? 'text-yellow-500' : ''"
           @click="toggleStar(currentArticle.id)"
         >
-          <Star class="w-4 h-4 mr-1" :fill="currentArticle.is_starred ? 'currentColor' : 'none'" />
+          <Star class="w-4 h-4" :fill="currentArticle.is_starred ? 'currentColor' : 'none'" />
           {{ currentArticle.is_starred ? '已星标' : '星标' }}
         </Button>
         <Button variant="ghost" size="sm" @click="openInBrowser(currentArticle.url)">
-          <ExternalLink class="w-4 h-4 mr-1" />
+          <ExternalLink class="w-4 h-4" />
           在浏览器打开
         </Button>
       </div>
@@ -89,10 +69,10 @@ async function handleMarkRead(): Promise<void> {
             <h1 class="text-2xl font-bold text-foreground leading-snug mb-3">
               {{ currentArticle.title }}
             </h1>
-            <div class="flex items-center gap-3 text-sm text-muted-foreground">
+            <div class="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               <span>{{ currentArticle.feed_title }}</span>
-              <span v-if="currentArticle.author">· {{ currentArticle.author }}</span>
-              <span>· {{ formatDate(currentArticle.published_at) }}</span>
+              <span v-if="currentArticle.author">{{ currentArticle.author }}</span>
+              <span>{{ formatDate(currentArticle.published_at) }}</span>
             </div>
           </header>
 
