@@ -1,6 +1,6 @@
 {
   "servers": {
-    "shadcn": {
+    "shadcn-vue": {
       "command": "pnpm",
       "args": [
         "dlx",
