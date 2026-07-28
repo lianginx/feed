@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {  Star, ExternalLink } from '@lucide/vue'
+import { Star, ExternalLink } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { useArticles } from '../composables/useArticles'
 import { sanitizeHtml } from '../utils/sanitize'

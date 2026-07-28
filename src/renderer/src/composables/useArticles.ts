@@ -42,14 +42,20 @@ export function useArticles() {
   async function loadArticles(feedId?: number, reset = true): Promise<void> {
     if (reset) {
       cursor = null
-      articles.value = []
       hasMore.value = true
       currentFeedId = feedId ?? null
       currentArticle.value = null // 切换时关闭文章详情栏
+      // 不立即清空 articles，避免快速切换时列表闪烁
     }
 
-    loading.value = reset
-    loadingMore.value = !reset
+    // 延迟显示 loading，避免快速加载时的骨架屏闪烁
+    const loadingTimer = setTimeout(() => {
+      if (reset) {
+        loading.value = true
+      } else {
+        loadingMore.value = true
+      }
+    }, 150)
 
     try {
       const result = await window.api.articles.list({
@@ -58,6 +64,8 @@ export function useArticles() {
         cursor: cursor ?? undefined,
         limit: 50
       })
+
+      clearTimeout(loadingTimer)
 
       if (result.success && result.data) {
         if (reset) {
@@ -78,6 +86,7 @@ export function useArticles() {
     } finally {
       loading.value = false
       loadingMore.value = false
+      clearTimeout(loadingTimer)
     }
   }
 
@@ -96,6 +105,9 @@ export function useArticles() {
         // 更新列表中该文章的已读状态
         const item = articles.value.find((a) => a.id === id)
         if (item) item.is_read = 1
+        // 同步刷新侧边栏未读计数
+        const { loadFeeds } = useFeeds()
+        await loadFeeds()
       }
     }
   }

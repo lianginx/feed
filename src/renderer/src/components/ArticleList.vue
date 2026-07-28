@@ -182,7 +182,7 @@ function openInBrowser(url: string | null): void {
 
     <!-- 文章列表 -->
     <div ref="parentRef" class="flex-1 overflow-y-overlay" @scroll="onScroll">
-      <div v-if="loading" class="space-y-2 p-4">
+      <div v-if="loading && articles.length === 0" class="space-y-2 p-4">
         <Skeleton class="h-20 w-full" />
         <Skeleton class="h-20 w-full" />
         <Skeleton class="h-20 w-full" />
