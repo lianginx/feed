@@ -148,10 +148,10 @@ function openInBrowser(url: string | null): void {
   <div class="h-full border-r border-border flex flex-col">
     <!-- 筛选栏（可拖动区域） -->
     <div
-      class="px-4 py-3 border-b border-border flex items-center gap-2"
+      class="px-2 py-1.5 border-b border-border flex items-center gap-2 min-h-9.5"
       style="-webkit-app-region: drag"
     >
-      <div style="-webkit-app-region: no-drag" class="flex items-center gap-2">
+      <div style="-webkit-app-region: no-drag" class="flex items-center gap-1">
         <Button
           v-for="f in [
             { key: 'all', label: '全部' },
@@ -161,6 +161,7 @@ function openInBrowser(url: string | null): void {
           :key="f.key"
           variant="ghost"
           size="sm"
+          class="h-7 px-2 text-xs"
           :class="filter === f.key ? 'bg-accent text-accent-foreground hover:bg-accent' : ''"
           @click="setFilter(f.key)"
         >
@@ -169,8 +170,8 @@ function openInBrowser(url: string | null): void {
       </div>
       <div class="flex-1" />
       <div style="-webkit-app-region: no-drag">
-        <Button variant="ghost" size="icon" title="搜索" @click="toggleSearch">
-          <Search class="w-4 h-4" />
+        <Button class="h-7" variant="ghost" size="icon-sm" title="搜索" @click="toggleSearch">
+          <Search />
         </Button>
       </div>
     </div>

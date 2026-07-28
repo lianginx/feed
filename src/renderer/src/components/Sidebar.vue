@@ -258,22 +258,29 @@ function onDragOverCategory(event: DragEvent): void {
   <aside class="h-full bg-muted/50 border-r border-border flex flex-col">
     <!-- 标题（可拖动区域） -->
     <div
-      class="px-4 py-3 border-b border-border flex items-center justify-between"
+      class="px-2 py-1.5 border-b border-border flex items-center justify-between min-h-9.5"
       style="-webkit-app-region: drag"
     >
-      <h1 class="text-lg font-semibold text-foreground">Feed</h1>
-      <div class="flex items-center gap-1.5" style="-webkit-app-region: no-drag">
-        <Button variant="ghost" size="icon" title="添加订阅源" @click="showAddFeed = true">
-          <Plus class="w-4 h-4" />
+      <div />
+      <div class="flex items-center gap-1" style="-webkit-app-region: no-drag">
+        <Button
+          class="h-7"
+          variant="ghost"
+          size="icon-sm"
+          title="添加订阅源"
+          @click="showAddFeed = true"
+        >
+          <Plus />
         </Button>
         <Button
+          class="h-7"
           variant="ghost"
-          size="icon"
+          size="icon-sm"
           title="刷新全部"
           :disabled="refreshingFeedIds.size > 0"
           @click="handleRefreshAll"
         >
-          <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': refreshingFeedIds.size > 0 }" />
+          <RefreshCw :class="{ 'animate-spin': refreshingFeedIds.size > 0 }" />
         </Button>
       </div>
     </div>
