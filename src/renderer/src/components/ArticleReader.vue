@@ -89,8 +89,8 @@ function openInBrowser(url: string | null): void {
 
           <div
             v-if="currentArticle.content"
-            class="prose prose-sm max-w-none text-foreground"
-            :style="{ fontSize: '15px', lineHeight: '1.75' }"
+            v-highlight
+            class="prose prose-sm prose-neutral max-w-none dark:prose-invert"
             v-html="sanitizeHtml(currentArticle.content)"
           />
           <div v-else class="text-muted-foreground text-sm">暂无内容</div>

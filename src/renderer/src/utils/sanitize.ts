@@ -56,6 +56,7 @@ export function sanitizeHtml(html: string): string {
       'height',
       'class',
       'id',
+      'data-highlighted',
       'controls',
       'autoplay',
       'loop',

@@ -1,0 +1,48 @@
+/* 内联代码 - 柔和背景 + 品牌色 */
+.prose :where(code):not(:where(pre code, pre *)) {
+  background-color: var(--bg-tertiary);
+  color: var(--accent);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.875em;
+  font-weight: 500;
+}
+
+/* 去掉 Tailwind Typography 默认给行内代码加的反引号 */
+.prose :where(code):not(:where(pre code, pre *))::before,
+.prose :where(code):not(:where(pre code, pre *))::after {
+  content: none !important;
+}
+
+[data-theme='dark'] .prose :where(code):not(:where(pre code, pre *)) {
+  background-color: color-mix(in srgb, var(--bg-tertiary) 80%, transparent);
+}
+
+/* 代码块 - 纯背景，无边框，与侧边栏同色系 */
+.prose :where(pre) {
+  background-color: var(--bg-secondary);
+  border: none;
+  border-radius: 8px;
+  padding: 1.25rem 0;
+  font-size: 0.875em;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+.prose :where(pre code) {
+  display: block;
+  padding: 0 1.5rem;
+  width: fit-content;
+  min-width: 100%;
+  background-color: transparent;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: 400;
+}
+
+/* 行内代码在暗色下降低亮度 */
+[data-theme='dark'] .prose :where(code):not(:where(pre code, pre *)) {
+  background-color: color-mix(in srgb, var(--bg-tertiary) 80%, transparent);
+  color: var(--accent);
+}

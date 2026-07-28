@@ -1,5 +1,7 @@
 @import 'tailwindcss';
+@plugin "@tailwindcss/typography";
 @import './theme.css';
+@import './prose.css';
 
 html {
   font-family: var(--font-sans);

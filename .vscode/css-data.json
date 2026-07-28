@@ -7,6 +7,10 @@
     {
       "name": "@custom-variant",
       "description": "Tailwind CSS v4 custom variant directive - defines custom variants like dark mode"
+    },
+    {
+      "name": "@plugin",
+      "description": "Tailwind CSS v4 plugin directive - loads Tailwind plugins like @tailwindcss/typography"
     }
   ]
 }
