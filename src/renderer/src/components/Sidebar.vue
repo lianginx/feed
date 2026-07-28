@@ -258,13 +258,13 @@ function onDragOverCategory(event: DragEvent): void {
   <aside class="h-full bg-muted/50 border-r border-border flex flex-col">
     <!-- 标题（可拖动区域） -->
     <div
-      class="px-2 py-1.5 border-b border-border flex items-center justify-between min-h-9.5"
+      class="p-2 border-b border-border flex items-center justify-between min-h-9.5"
       style="-webkit-app-region: drag"
     >
       <div />
       <div class="flex items-center gap-1" style="-webkit-app-region: no-drag">
         <Button
-          class="h-7"
+          class="size-8"
           variant="ghost"
           size="icon-sm"
           title="添加订阅源"
@@ -273,7 +273,7 @@ function onDragOverCategory(event: DragEvent): void {
           <Plus />
         </Button>
         <Button
-          class="h-7"
+          class="size-8"
           variant="ghost"
           size="icon-sm"
           title="刷新全部"

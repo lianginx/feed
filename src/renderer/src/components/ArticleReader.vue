@@ -46,28 +46,28 @@ function openInBrowser(url: string | null): void {
     <template v-else>
       <!-- 工具栏（可拖动区域） -->
       <div
-        class="px-4 py-1.5 border-b border-border flex items-center gap-2 min-h-9.5"
+        class="p-2 border-b border-border flex items-center gap-2 min-h-9.5"
         style="-webkit-app-region: drag"
       >
         <div class="flex-1" />
         <div style="-webkit-app-region: no-drag" class="flex items-center gap-1">
           <Button
+            class="h-8 text-xs"
             variant="ghost"
             size="sm"
-            class="h-7 px-2 text-xs"
             :class="currentArticle.is_starred ? 'text-yellow-500' : ''"
             @click="toggleStar(currentArticle.id)"
           >
-            <Star class="w-3.5 h-3.5" :fill="currentArticle.is_starred ? 'currentColor' : 'none'" />
+            <Star :fill="currentArticle.is_starred ? 'currentColor' : 'none'" />
             {{ currentArticle.is_starred ? '已星标' : '星标' }}
           </Button>
           <Button
+            class="h-8 text-xs"
             variant="ghost"
             size="sm"
-            class="h-7 px-2 text-xs"
             @click="openInBrowser(currentArticle.url)"
           >
-            <ExternalLink class="w-3.5 h-3.5" />
+            <ExternalLink />
             在浏览器打开
           </Button>
         </div>

@@ -5,6 +5,7 @@ import { ExternalLink, Star, Search } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   ContextMenu,
   ContextMenuTrigger,
@@ -23,7 +24,6 @@ const {
   loadArticles,
   loadMore,
   openArticle,
-  setFilter,
   search,
   toggleStar
 } = useArticles()
@@ -148,32 +148,36 @@ function openInBrowser(url: string | null): void {
   <div class="h-full border-r border-border flex flex-col">
     <!-- 筛选栏（可拖动区域） -->
     <div
-      class="px-2 py-1.5 border-b border-border flex items-center gap-2 min-h-9.5"
+      class="p-2 border-b border-border flex items-center gap-2 min-h-9.5"
       style="-webkit-app-region: drag"
     >
-      <div style="-webkit-app-region: no-drag" class="flex items-center gap-1">
-        <Button
-          v-for="f in [
-            { key: 'all', label: '全部' },
-            { key: 'unread', label: '未读' },
-            { key: 'starred', label: '星标' }
-          ] as const"
-          :key="f.key"
-          variant="ghost"
-          size="sm"
-          class="h-7 px-2 text-xs"
-          :class="filter === f.key ? 'bg-accent text-accent-foreground hover:bg-accent' : ''"
-          @click="setFilter(f.key)"
-        >
-          {{ f.label }}
-        </Button>
-      </div>
+      <Tabs v-model="filter" style="-webkit-app-region: no-drag">
+        <TabsList class="h-8">
+          <TabsTrigger
+            v-for="f in [
+              { key: 'all', label: '全部' },
+              { key: 'unread', label: '未读' },
+              { key: 'starred', label: '星标' }
+            ] as const"
+            :key="f.key"
+            :value="f.key"
+            class="h-6.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+          >
+            {{ f.label }}
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
       <div class="flex-1" />
-      <div style="-webkit-app-region: no-drag">
-        <Button class="h-7" variant="ghost" size="icon-sm" title="搜索" @click="toggleSearch">
-          <Search />
-        </Button>
-      </div>
+      <Button
+        class="size-8"
+        style="-webkit-app-region: no-drag"
+        variant="ghost"
+        size="icon-sm"
+        title="搜索"
+        @click="toggleSearch"
+      >
+        <Search />
+      </Button>
     </div>
 
     <!-- 搜索框 -->
