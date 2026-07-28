@@ -256,10 +256,13 @@ function onDragOverCategory(event: DragEvent): void {
 
 <template>
   <aside class="h-full bg-muted/50 border-r border-border flex flex-col">
-    <!-- 标题 -->
-    <div class="px-4 py-3 border-b border-border flex items-center justify-between">
+    <!-- 标题（可拖动区域） -->
+    <div
+      class="px-4 py-3 border-b border-border flex items-center justify-between"
+      style="-webkit-app-region: drag"
+    >
       <h1 class="text-lg font-semibold text-foreground">Feed</h1>
-      <div class="flex items-center gap-1.5">
+      <div class="flex items-center gap-1.5" style="-webkit-app-region: no-drag">
         <Button variant="ghost" size="icon" title="添加订阅源" @click="showAddFeed = true">
           <Plus class="w-4 h-4" />
         </Button>

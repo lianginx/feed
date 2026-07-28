@@ -44,22 +44,27 @@ function openInBrowser(url: string | null): void {
 
     <!-- 文章内容 - 已选中文章 -->
     <template v-else>
-      <!-- 工具栏 -->
-      <div class="px-6 py-3.5 border-b border-border flex items-center gap-3">
+      <!-- 工具栏（可拖动区域） -->
+      <div
+        class="px-6 py-3.5 border-b border-border flex items-center gap-3"
+        style="-webkit-app-region: drag"
+      >
         <div class="flex-1" />
-        <Button
-          variant="ghost"
-          size="sm"
-          :class="currentArticle.is_starred ? 'text-yellow-500' : ''"
-          @click="toggleStar(currentArticle.id)"
-        >
-          <Star class="w-4 h-4" :fill="currentArticle.is_starred ? 'currentColor' : 'none'" />
-          {{ currentArticle.is_starred ? '已星标' : '星标' }}
-        </Button>
-        <Button variant="ghost" size="sm" @click="openInBrowser(currentArticle.url)">
-          <ExternalLink class="w-4 h-4" />
-          在浏览器打开
-        </Button>
+        <div style="-webkit-app-region: no-drag" class="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            :class="currentArticle.is_starred ? 'text-yellow-500' : ''"
+            @click="toggleStar(currentArticle.id)"
+          >
+            <Star class="w-4 h-4" :fill="currentArticle.is_starred ? 'currentColor' : 'none'" />
+            {{ currentArticle.is_starred ? '已星标' : '星标' }}
+          </Button>
+          <Button variant="ghost" size="sm" @click="openInBrowser(currentArticle.url)">
+            <ExternalLink class="w-4 h-4" />
+            在浏览器打开
+          </Button>
+        </div>
       </div>
 
       <!-- 文章内容 -->
