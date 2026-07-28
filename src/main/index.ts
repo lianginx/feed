@@ -28,10 +28,12 @@ function createWindow(): void {
     show: false,
     autoHideMenuBar: true,
     backgroundColor: isDark ? '#0a0a0a' : '#fafafa',
+    ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' } : {}),
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
-      sandbox: false
+      sandbox: false,
+      spellcheck: false
     }
   })
 
@@ -71,6 +73,33 @@ function createWindow(): void {
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
+  })
+
+  // 拦截 webContents 层内置快捷键（菜单移除后这些仍然有效）
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    const isCmdOrCtrl = input.control || input.meta
+
+    // 阻止页面刷新（Cmd/Ctrl+R — 我们用于刷新订阅源）
+    if (isCmdOrCtrl && input.key.toLowerCase() === 'r') {
+      event.preventDefault()
+    }
+
+    // 阻止 DevTools 快捷键
+    if (input.key === 'F12') {
+      event.preventDefault()
+    }
+    if (isCmdOrCtrl && input.shift && input.key.toLowerCase() === 'i') {
+      event.preventDefault()
+    }
+    if (isCmdOrCtrl && input.alt && input.key.toLowerCase() === 'i') {
+      event.preventDefault()
+    }
+    if (isCmdOrCtrl && input.shift && input.key.toLowerCase() === 'j') {
+      event.preventDefault()
+    }
+    if (isCmdOrCtrl && input.shift && input.key.toLowerCase() === 'c') {
+      event.preventDefault()
+    }
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -135,6 +164,46 @@ function createTray(): void {
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.lianginx.feed')
+
+  // 替换为极简菜单：只保留 macOS 必需的 App 菜单和编辑操作，
+  // 去掉所有浏览器菜单项（文件、视图、窗口、帮助），
+  // 这样 Cmd+W/N/T/U/S/P 等快捷键因没有绑定的菜单项而自动失效
+  const minimalMenu = Menu.buildFromTemplate([
+    {
+      label: app.name,
+      submenu: [
+        { role: 'about' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' }
+      ]
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' }
+      ]
+    },
+    {
+      label: 'Feed',
+      submenu: [
+        {
+          label: 'Add Feed',
+          accelerator: 'CmdOrCtrl+N',
+          click: () => mainWindow?.webContents.send('menu:addFeed')
+        },
+        { type: 'separator' },
+        { role: 'close' }
+      ]
+    }
+  ])
+  Menu.setApplicationMenu(minimalMenu)
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)

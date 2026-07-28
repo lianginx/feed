@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useApp } from './composables/useApp'
 import { useFeeds } from './composables/useFeeds'
 import { useShortcuts } from './composables/useShortcuts'
@@ -13,9 +13,21 @@ const { loadFeeds } = useFeeds()
 
 useShortcuts()
 
+// 全局禁用浏览器默认右键菜单（自定义 ContextMenu 已自行处理 preventDefault）
+function onContextMenu(e: MouseEvent): void {
+  if (!e.defaultPrevented) {
+    e.preventDefault()
+  }
+}
+
 onMounted(async () => {
+  document.addEventListener('contextmenu', onContextMenu)
   await loadSettings()
   await loadFeeds()
+})
+
+onUnmounted(() => {
+  document.removeEventListener('contextmenu', onContextMenu)
 })
 </script>
 

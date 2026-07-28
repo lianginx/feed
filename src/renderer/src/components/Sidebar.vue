@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { RefreshCw, Plus, Settings, CheckCheck, LoaderCircle } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -142,6 +142,17 @@ function handleSelectAll(): void {
   selectFeed(null)
   selectCategory(null)
 }
+
+// 监听主菜单快捷键（Cmd+N 新增订阅）
+onMounted(() => {
+  window.electron.ipcRenderer.on('menu:addFeed', () => {
+    showAddFeed.value = true
+  })
+})
+
+onUnmounted(() => {
+  window.electron.ipcRenderer.removeAllListeners('menu:addFeed')
+})
 
 function handleSelectCategory(id: number): void {
   selectCategory(id)

@@ -1,4 +1,4 @@
-import { watch } from 'vue'
+import { watch, onMounted, onUnmounted } from 'vue'
 import { useMagicKeys } from '@vueuse/core'
 import { useApp } from './useApp'
 import { useFeeds } from './useFeeds'
@@ -19,6 +19,36 @@ export function useShortcuts(): void {
   } = useArticles()
 
   const keys = useMagicKeys()
+
+  // 拦截浏览器默认快捷键行为，避免与我们的快捷键冲突
+  function onKeydown(e: KeyboardEvent): void {
+    const isCmdOrCtrl = e.metaKey || e.ctrlKey
+
+    // 阻止页面刷新（Cmd/Ctrl+R — 我们用于刷新订阅源）
+    if (isCmdOrCtrl && e.key.toLowerCase() === 'r') {
+      e.preventDefault()
+    }
+    // 阻止浏览器搜索（Cmd/Ctrl+F — 我们有自定义搜索）
+    if (isCmdOrCtrl && e.key.toLowerCase() === 'f') {
+      e.preventDefault()
+    }
+    // 阻止加粗等文本格式化快捷键
+    if (isCmdOrCtrl && e.key.toLowerCase() === 'b') {
+      e.preventDefault()
+    }
+    // 阻止全选（Cmd/Ctrl+Shift+A — 我们用于全部已读）
+    if (isCmdOrCtrl && e.shiftKey && e.key.toLowerCase() === 'a') {
+      e.preventDefault()
+    }
+  }
+
+  onMounted(() => {
+    document.addEventListener('keydown', onKeydown)
+  })
+
+  onUnmounted(() => {
+    document.removeEventListener('keydown', onKeydown)
+  })
 
   // Enter：打开当前聚焦的文章
   watch(keys.Enter, (pressed) => {
