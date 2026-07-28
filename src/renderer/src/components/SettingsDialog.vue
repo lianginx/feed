@@ -96,7 +96,7 @@ function close(): void {
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent class="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
+    <DialogContent class="sm:max-w-120 max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>设置</DialogTitle>
       </DialogHeader>
