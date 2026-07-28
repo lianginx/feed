@@ -73,6 +73,9 @@ async function handleMarkAllReadByCategory(catId: number): Promise<void> {
 async function handleRefreshCategory(catId: number, event: Event): Promise<void> {
   event.stopPropagation()
   await refreshCategoryFeeds(catId)
+  // 刷新后重新加载文章列表
+  const { loadArticles } = useArticles()
+  await loadArticles(selectedFeedId.value ?? undefined)
   showToast('已刷新该分类下所有订阅源')
 }
 
@@ -153,10 +156,16 @@ async function handleAddCategory(name: string): Promise<void> {
 async function handleRefreshFeed(feedId: number, event: Event): Promise<void> {
   event.stopPropagation()
   await refreshSingleFeed(feedId)
+  // 刷新后重新加载文章列表
+  const { loadArticles } = useArticles()
+  await loadArticles(feedId)
 }
 
 async function handleRefreshAll(): Promise<void> {
   await refreshAllFeeds()
+  // 刷新后重新加载文章列表
+  const { loadArticles } = useArticles()
+  await loadArticles(selectedFeedId.value ?? undefined)
   showToast('已刷新全部订阅源')
 }
 
