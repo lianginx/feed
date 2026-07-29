@@ -33,8 +33,10 @@ body {
   outline: none !important;
 }
 
+/* 原生体验：按 Tab 不显示焦点环（macOS 默认行为） */
 *:focus-visible {
   outline: none !important;
+  box-shadow: none !important;
 }
 
 .overflow-y-overlay {
