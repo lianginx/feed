@@ -92,7 +92,7 @@ export function useFeeds() {
 
   async function updateFeed(
     id: number,
-    data: { title?: string; categoryId?: number }
+    data: { title?: string; categoryId?: number | null }
   ): Promise<boolean> {
     const result = await window.api.feeds.update(id, data)
     if (result.success) {

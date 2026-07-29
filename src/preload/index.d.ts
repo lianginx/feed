@@ -80,7 +80,7 @@ interface FeedApi {
   }) => Promise<ApiResponse<{ id: number }>>
   update: (
     id: number,
-    data: { title?: string; categoryId?: number }
+    data: { title?: string; categoryId?: number | null }
   ) => Promise<ApiResponse<{ id: number }>>
   delete: (id: number) => Promise<ApiResponse<{ id: number }>>
   updateSortOrder: (

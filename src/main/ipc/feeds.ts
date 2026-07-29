@@ -67,7 +67,7 @@ export function registerFeedHandlers(): void {
 
   ipcMain.handle(
     'feeds:update',
-    async (_event, id: number, data: { title?: string; categoryId?: number }) => {
+    async (_event, id: number, data: { title?: string; categoryId?: number | null }) => {
       try {
         const db = getConnection()
         const fields: string[] = []
