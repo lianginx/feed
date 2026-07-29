@@ -8,7 +8,8 @@ import {
   Tray,
   Menu,
   nativeImage,
-  nativeTheme
+  nativeTheme,
+  session
 } from 'electron'
 import { join } from 'path'
 import { electronApp, is } from '@electron-toolkit/utils'
@@ -149,6 +150,14 @@ function createTray(): void {
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.lianginx.feed')
+
+  // 图片请求不发送 Referer，避免防盗链 403
+  session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+    if (details.resourceType === 'image') {
+      delete details.requestHeaders['Referer']
+    }
+    callback({ requestHeaders: details.requestHeaders })
+  })
 
   // 注册 favicon:// 协议，用于从本地缓存加载 favicon
   protocol.handle('favicon', (request) => {
