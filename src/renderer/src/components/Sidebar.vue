@@ -38,6 +38,9 @@ const { showAddFeed } = useAddFeedDialog()
 const { showAddCategory, handleEditCategory, handleDeleteCategory } = useAddCategoryDialog()
 const { showSettings } = useSettingsDialog()
 const dragFeedId = ref<number | null>(null)
+const dragOverFeedId = ref<number | null>(null)
+const dragOverCategoryId = ref<number | null>(null)
+const dropPosition = ref<'before' | 'after'>('after')
 const collapsedCategories = reactive<Record<number, boolean>>({})
 
 function isCategoryCollapsed(catId: number): boolean {
@@ -101,8 +104,36 @@ function onDragStart(feedId: number, event: DragEvent): void {
   }
 }
 
+function onDragOverFeed(feedId: number, event: DragEvent): void {
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+  dragOverFeedId.value = feedId
+  dragOverCategoryId.value = null
+  const el = event.currentTarget as HTMLElement
+  const rect = el.getBoundingClientRect()
+  dropPosition.value = event.clientY - rect.top < rect.height / 2 ? 'before' : 'after'
+}
+
+function onDragLeaveFeed(): void {
+  dragOverFeedId.value = null
+}
+
+function onDragOverCategory(catId: number | null, event: DragEvent): void {
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+  if ((event.target as HTMLElement).closest('[draggable="true"]')) return
+  dragOverCategoryId.value = catId
+  dragOverFeedId.value = null
+}
+
+function onDragLeaveCategory(): void {
+  dragOverCategoryId.value = null
+}
+
 function onDragEnd(): void {
   dragFeedId.value = null
+  dragOverFeedId.value = null
+  dragOverCategoryId.value = null
 }
 
 async function onDropToCategory(catId: number | null, event: DragEvent): Promise<void> {
@@ -147,18 +178,13 @@ async function onDropReorder(
   // 同分类重新排序
   const reordered = [...catFeeds]
   const [moved] = reordered.splice(fromIndex, 1)
-  reordered.splice(toIndex, 0, moved)
+  const targetInNew = fromIndex < toIndex ? toIndex - 1 : toIndex
+  const insertAt = dropPosition.value === 'after' ? targetInNew + 1 : targetInNew
+  reordered.splice(insertAt, 0, moved)
 
   const orderPayload = reordered.map((f, i) => ({ id: f.id, sort_order: i }))
   await window.api.feeds.updateSortOrder(orderPayload)
   await loadFeeds()
-}
-
-function onDragOverCategory(event: DragEvent): void {
-  event.preventDefault()
-  if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = 'move'
-  }
 }
 </script>
 
@@ -221,7 +247,8 @@ function onDragOverCategory(event: DragEvent): void {
           <ContextMenuTrigger>
             <div
               class="min-h-full"
-              @dragover.prevent="onDragOverCategory"
+              @dragover="onDragOverCategory(null, $event)"
+              @dragleave="onDragLeaveCategory"
               @drop="onDropToCategory(null, $event)"
             >
               <!-- 分类区块 -->
@@ -229,7 +256,8 @@ function onDragOverCategory(event: DragEvent): void {
                 v-for="cat in categories"
                 :key="cat.id"
                 class="mt-2"
-                @dragover.prevent="onDragOverCategory"
+                @dragover="onDragOverCategory(cat.id, $event)"
+                @dragleave="onDragLeaveCategory"
                 @drop="onDropToCategory(cat.id, $event)"
               >
                 <Collapsible
@@ -244,7 +272,9 @@ function onDragOverCategory(event: DragEvent): void {
                         :class="
                           selectedCategoryId === cat.id
                             ? 'bg-accent/10 text-accent'
-                            : 'text-muted-foreground hover:bg-accent/5'
+                            : dragOverCategoryId === cat.id
+                              ? 'bg-accent/15 text-accent'
+                              : 'text-muted-foreground hover:bg-accent/5'
                         "
                         @click="handleSelectCategory(cat.id)"
                         @dblclick="toggleCategory(cat.id)"
@@ -299,7 +329,7 @@ function onDragOverCategory(event: DragEvent): void {
                         <ContextMenuTrigger>
                           <button
                             :draggable="true"
-                            class="w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center justify-between group"
+                            class="w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center justify-between group relative"
                             :class="{
                               'bg-accent/10 text-accent': selectedFeedId === feed.id,
                               'text-muted-foreground hover:bg-accent/5': selectedFeedId !== feed.id,
@@ -308,9 +338,18 @@ function onDragOverCategory(event: DragEvent): void {
                             @click="selectFeed(feed.id)"
                             @dragstart="onDragStart(feed.id, $event)"
                             @dragend="onDragEnd"
-                            @dragover.prevent="onDragOverCategory"
+                            @dragover="onDragOverFeed(feed.id, $event)"
+                            @dragleave="onDragLeaveFeed"
                             @drop="onDropReorder(cat.id, feed.id, $event)"
                           >
+                            <span
+                              v-if="dragOverFeedId === feed.id && dropPosition === 'before'"
+                              class="absolute top-0 left-2 right-2 h-0.5 -translate-y-1/2 rounded-full bg-accent z-10 pointer-events-none"
+                            />
+                            <span
+                              v-if="dragOverFeedId === feed.id && dropPosition === 'after'"
+                              class="absolute bottom-0 left-2 right-2 h-0.5 translate-y-1/2 rounded-full bg-accent z-10 pointer-events-none"
+                            />
                             <span class="flex items-center gap-2 truncate min-w-0">
                               <!-- Favicon 图片 -->
                               <span
@@ -388,10 +427,16 @@ function onDragOverCategory(event: DragEvent): void {
               <div
                 v-if="feeds.filter((f) => f.category_id === null).length > 0"
                 class="mt-2"
-                @dragover.prevent="onDragOverCategory"
+                @dragover="onDragOverCategory(null, $event)"
+                @dragleave="onDragLeaveCategory"
                 @drop="onDropToCategory(null, $event)"
               >
-                <div class="text-xs text-muted-foreground px-3 py-1">未分类</div>
+                <div
+                  class="text-xs text-muted-foreground px-3 py-1 rounded-lg transition-colors"
+                  :class="dragOverCategoryId === null ? 'bg-accent/10 text-accent' : ''"
+                >
+                  未分类
+                </div>
                 <div class="ml-2 mt-1 space-y-0.5">
                   <ContextMenu
                     v-for="feed in feeds.filter((f) => f.category_id === null)"
@@ -400,7 +445,7 @@ function onDragOverCategory(event: DragEvent): void {
                     <ContextMenuTrigger>
                       <button
                         :draggable="true"
-                        class="w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center justify-between group"
+                        class="w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center justify-between group relative"
                         :class="{
                           'bg-accent/10 text-accent': selectedFeedId === feed.id,
                           'text-muted-foreground hover:bg-accent/5': selectedFeedId !== feed.id,
@@ -409,9 +454,18 @@ function onDragOverCategory(event: DragEvent): void {
                         @click="selectFeed(feed.id)"
                         @dragstart="onDragStart(feed.id, $event)"
                         @dragend="onDragEnd"
-                        @dragover.prevent="onDragOverCategory"
+                        @dragover="onDragOverFeed(feed.id, $event)"
+                        @dragleave="onDragLeaveFeed"
                         @drop="onDropReorder(null, feed.id, $event)"
                       >
+                        <span
+                          v-if="dragOverFeedId === feed.id && dropPosition === 'before'"
+                          class="absolute top-0 left-2 right-2 h-0.5 -translate-y-1/2 rounded-full bg-accent z-10 pointer-events-none"
+                        />
+                        <span
+                          v-if="dragOverFeedId === feed.id && dropPosition === 'after'"
+                          class="absolute bottom-0 left-2 right-2 h-0.5 translate-y-1/2 rounded-full bg-accent z-10 pointer-events-none"
+                        />
                         <span class="flex items-center gap-2 truncate min-w-0">
                           <span
                             class="w-4 h-4 shrink-0 rounded bg-muted flex items-center justify-center text-[10px] overflow-hidden"
