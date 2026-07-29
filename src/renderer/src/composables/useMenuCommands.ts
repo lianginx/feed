@@ -30,6 +30,10 @@ export function useMenuCommands(): void {
       }
     })
 
+    window.electron.ipcRenderer.on('menu:refreshAllFeeds', async () => {
+      await refreshAllFeeds()
+    })
+
     window.electron.ipcRenderer.on('menu:markAllRead', async () => {
       await markAllRead(selectedFeedId.value ?? undefined)
       await loadFeeds()
@@ -45,6 +49,7 @@ export function useMenuCommands(): void {
   onUnmounted(() => {
     window.electron.ipcRenderer.removeAllListeners('menu:addFeed')
     window.electron.ipcRenderer.removeAllListeners('menu:refreshFeed')
+    window.electron.ipcRenderer.removeAllListeners('menu:refreshAllFeeds')
     window.electron.ipcRenderer.removeAllListeners('menu:markAllRead')
     window.electron.ipcRenderer.removeAllListeners('menu:toggleStar')
   })

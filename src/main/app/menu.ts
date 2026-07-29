@@ -44,6 +44,11 @@ export function buildAppMenu(): void {
           click: () => getMainWindow()?.webContents.send('menu:refreshFeed')
         },
         {
+          label: 'Refresh All',
+          accelerator: 'CmdOrCtrl+Shift+R',
+          click: () => getMainWindow()?.webContents.send('menu:refreshAllFeeds')
+        },
+        {
           label: 'Mark All Read',
           accelerator: 'CmdOrCtrl+Shift+A',
           click: () => getMainWindow()?.webContents.send('menu:markAllRead')
