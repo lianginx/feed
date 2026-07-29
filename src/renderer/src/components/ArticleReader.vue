@@ -81,7 +81,11 @@ function openInBrowser(url: string | null): void {
       <div class="flex-1 overflow-y-overlay">
         <article class="max-w-3xl mx-auto px-8 py-6" style="user-select: text">
           <header class="mb-6">
-            <h1 class="text-2xl font-bold text-foreground leading-snug mb-3">
+            <h1
+              class="text-2xl font-bold text-foreground leading-snug mb-3 cursor-default hover:text-accent hover:underline transition-colors"
+              :title="currentArticle.url ? '在浏览器中打开' : undefined"
+              @click="openInBrowser(currentArticle.url)"
+            >
               {{ currentArticle.title }}
             </h1>
             <div class="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
