@@ -17,6 +17,7 @@ import { useFeeds } from '../composables/useFeeds'
 
 const {
   articles,
+  currentArticle,
   loading,
   loadingMore,
   hasMore,
@@ -233,7 +234,8 @@ function openInBrowser(url: string | null): void {
               <button
                 class="w-full h-full text-left px-4 border-b border-border transition-colors hover:bg-accent/10"
                 :class="{
-                  'bg-accent/5': !articles[row.index].is_read
+                  'bg-accent/5': !articles[row.index].is_read,
+                  'bg-accent/15': articles[row.index].id === currentArticle?.id
                 }"
                 @click="openArticle(articles[row.index].id)"
                 @dblclick="openInBrowser(articles[row.index].url)"
