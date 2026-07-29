@@ -11,65 +11,99 @@ export function buildAppMenu(): void {
     {
       label: app.name,
       submenu: [
-        { role: 'about' },
+        {
+          label: '关于 Feed',
+          click: () => app.showAboutPanel()
+        },
         { type: 'separator' },
-        { role: 'hide' },
-        { role: 'unhide' },
+        {
+          label: '隐藏',
+          accelerator: 'CmdOrCtrl+H',
+          click: () => app.hide()
+        },
+        {
+          label: '显示全部',
+          role: 'unhide'
+        },
         { type: 'separator' },
-        { role: 'quit' }
+        {
+          label: '退出',
+          accelerator: 'CmdOrCtrl+Q',
+          click: () => app.quit()
+        }
       ]
     },
     {
-      label: 'Edit',
+      label: '编辑',
       submenu: [
         { type: 'separator' },
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' },
-        { role: 'selectAll' }
+        {
+          label: '剪切',
+          accelerator: 'CmdOrCtrl+X',
+          role: 'cut'
+        },
+        {
+          label: '拷贝',
+          accelerator: 'CmdOrCtrl+C',
+          role: 'copy'
+        },
+        {
+          label: '粘贴',
+          accelerator: 'CmdOrCtrl+V',
+          role: 'paste'
+        },
+        {
+          label: '全选',
+          accelerator: 'CmdOrCtrl+A',
+          role: 'selectAll'
+        }
       ]
     },
     {
-      label: 'Feed',
+      label: '订阅源',
       submenu: [
         {
-          label: 'Add Feed',
+          label: '添加订阅源',
           accelerator: 'CmdOrCtrl+N',
           click: () => getMainWindow()?.webContents.send('menu:addFeed')
         },
         { type: 'separator' },
         {
-          label: 'Refresh',
+          label: '刷新',
           accelerator: 'CmdOrCtrl+R',
           click: () => getMainWindow()?.webContents.send('menu:refreshFeed')
         },
         {
-          label: 'Refresh All',
+          label: '刷新全部',
           accelerator: 'CmdOrCtrl+Shift+R',
           click: () => getMainWindow()?.webContents.send('menu:refreshAllFeeds')
         },
         {
-          label: 'Mark All Read',
+          label: '全部标为已读',
           accelerator: 'CmdOrCtrl+Shift+A',
           click: () => getMainWindow()?.webContents.send('menu:markAllRead')
         },
         { type: 'separator' },
         {
-          label: 'Toggle Star',
+          label: '收藏/取消收藏',
           accelerator: 'CmdOrCtrl+B',
           click: () => getMainWindow()?.webContents.send('menu:toggleStar')
         },
         { type: 'separator' },
-        { role: 'close' }
+        {
+          label: '关闭窗口',
+          accelerator: 'CmdOrCtrl+W',
+          role: 'close'
+        }
       ]
     },
     ...(is.dev
       ? [
           {
-            label: 'View',
+            label: '视图',
             submenu: [
               {
-                label: 'Toggle Developer Tools',
+                label: '开发者工具',
                 accelerator: 'Alt+Cmd+I',
                 click: () => getMainWindow()?.webContents.toggleDevTools()
               }
