@@ -27,6 +27,12 @@ export function buildAppMenu(): void {
         },
         { type: 'separator' },
         {
+          label: '设置…',
+          accelerator: 'CmdOrCtrl+,',
+          click: () => getMainWindow()?.webContents.send('menu:openSettings')
+        },
+        { type: 'separator' },
+        {
           label: '退出',
           accelerator: 'CmdOrCtrl+Q',
           click: () => app.quit()

@@ -3,7 +3,6 @@ import { ref } from 'vue'
 import { Upload, Download, CheckCircle2 } from '@lucide/vue'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Slider } from '@/components/ui/slider'
 import {
   Select,
   SelectContent,
@@ -63,7 +62,7 @@ async function handleExportOpml(): Promise<void> {
   }
 }
 
-const { theme, fontSize, updateInterval, setTheme, setFontSize, setUpdateInterval } = useApp()
+const { theme, updateInterval, setTheme, setUpdateInterval } = useApp()
 
 const themes: { value: Theme; label: string }[] = [
   { value: 'light', label: '浅色' },
@@ -133,21 +132,6 @@ function close(): void {
               </SelectItem>
             </SelectContent>
           </Select>
-        </div>
-
-        <!-- 字体大小 -->
-        <div class="grid gap-2">
-          <label
-            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >字体大小：{{ fontSize }}px</label
-          >
-          <Slider
-            :model-value="[fontSize]"
-            :min="12"
-            :max="24"
-            :step="1"
-            @update:model-value="(v) => setFontSize((v ?? [fontSize])[0])"
-          />
         </div>
 
         <!-- OPML 导入导出 -->
