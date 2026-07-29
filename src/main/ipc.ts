@@ -4,7 +4,7 @@ import { getConnection } from './database/connection'
 import { getSettings, updateSettings, type AppSettings } from './config'
 import { startScheduler } from './services/scheduler'
 import { parseFeed, validateFeed } from './services/rss'
-import { resolveFavicon } from './services/favicon'
+import { resolveFavicon, refreshFeedFavicon, downloadAndCacheFavicon } from './services/favicon'
 import DOMPurify from 'dompurify'
 import { JSDOM } from 'jsdom'
 import opml from 'opml'
@@ -59,20 +59,26 @@ function registerFeedHandlers(): void {
         const db = getConnection()
         const title = params.title || validation.title || params.url
 
-        // 获取 favicon
-        let faviconUrl: string | null = null
+        // 先插入订阅源，获取 id
+        const result = db
+          .prepare('INSERT INTO feeds (url, title, category_id) VALUES (?, ?, ?)')
+          .run(params.url, title, params.categoryId || null)
+
+        const feedId = result.lastInsertRowid as number
+
+        // 再解析 favicon 并缓存到本地
         try {
           const feedData = await parseFeed(params.url)
-          faviconUrl = await resolveFavicon(feedData.link || null, feedData.image?.url)
+          const remoteUrl = await resolveFavicon(feedData.link || null, feedData.image?.url)
+          const localUrl = await downloadAndCacheFavicon(remoteUrl, feedId)
+          if (localUrl) {
+            db.prepare('UPDATE feeds SET favicon_url = ? WHERE id = ?').run(localUrl, feedId)
+          }
         } catch {
           /* favicon 获取失败不影响添加 */
         }
 
-        const result = db
-          .prepare('INSERT INTO feeds (url, title, category_id, favicon_url) VALUES (?, ?, ?, ?)')
-          .run(params.url, title, params.categoryId || null, faviconUrl)
-
-        return success({ id: result.lastInsertRowid })
+        return success({ id: feedId })
       } catch (e) {
         return error((e as Error).message)
       }
@@ -138,6 +144,15 @@ function registerFeedHandlers(): void {
       }
     }
   )
+
+  ipcMain.handle('feeds:refreshFavicon', async (_event, id: number) => {
+    try {
+      const faviconUrl = await refreshFeedFavicon(id)
+      return success({ id, favicon_url: faviconUrl })
+    } catch (e) {
+      return error((e as Error).message)
+    }
+  })
 }
 
 // ==================== Categories ====================
@@ -410,6 +425,18 @@ function registerSyncHandlers(): void {
       `
       ).run(parsed.title, parsed.description || null, parsed.link || null, feedId)
 
+      // 同步更新 favicon（解析远程 URL → 缓存到本地）
+      try {
+        const siteUrl = parsed.link || feed.url
+        const remoteUrl = await resolveFavicon(siteUrl, parsed.image?.url)
+        const localUrl = await downloadAndCacheFavicon(remoteUrl, feedId)
+        if (localUrl) {
+          db.prepare('UPDATE feeds SET favicon_url = ? WHERE id = ?').run(localUrl, feedId)
+        }
+      } catch {
+        // favicon 刷新失败不影响同步
+      }
+
       // 插入文章（去重）
       const insertStmt = db.prepare(`
         INSERT OR IGNORE INTO articles (feed_id, guid, title, url, author, content, summary, published_at, cover_image)
@@ -496,13 +523,30 @@ function registerSyncHandlers(): void {
             continue
           }
 
-          const parsed = await parseFeed(
-            (db.prepare('SELECT url FROM feeds WHERE id = ?').get(feed.id) as { url: string }).url
-          )
+          const feedRow = db.prepare('SELECT * FROM feeds WHERE id = ?').get(feed.id) as {
+            id: number
+            url: string
+            site_url: string | null
+            favicon_url: string | null
+          }
+
+          const parsed = await parseFeed(feedRow.url)
 
           db.prepare(
-            "UPDATE feeds SET last_updated = strftime('%s','now'), last_error = NULL, error_count = 0 WHERE id = ?"
-          ).run(feed.id)
+            "UPDATE feeds SET title = ?, description = ?, site_url = ?, last_updated = strftime('%s','now'), last_error = NULL, error_count = 0 WHERE id = ?"
+          ).run(parsed.title, parsed.description || null, parsed.link || null, feed.id)
+
+          // 同步更新 favicon（解析远程 URL → 缓存到本地）
+          try {
+            const siteUrl = parsed.link || feedRow.url
+            const remoteUrl = await resolveFavicon(siteUrl, parsed.image?.url)
+            const localUrl = await downloadAndCacheFavicon(remoteUrl, feed.id)
+            if (localUrl) {
+              db.prepare('UPDATE feeds SET favicon_url = ? WHERE id = ?').run(localUrl, feed.id)
+            }
+          } catch {
+            // favicon 刷新失败不影响同步
+          }
 
           const insertStmt = db.prepare(`
             INSERT OR IGNORE INTO articles (feed_id, guid, title, url, author, content, summary, published_at)

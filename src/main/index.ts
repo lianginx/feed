@@ -1,11 +1,23 @@
-import { app, ipcMain, shell, BrowserWindow, Tray, Menu, nativeImage, nativeTheme } from 'electron'
+import {
+  app,
+  protocol,
+  net,
+  ipcMain,
+  shell,
+  BrowserWindow,
+  Tray,
+  Menu,
+  nativeImage,
+  nativeTheme
+} from 'electron'
 import { join } from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { electronApp, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { initializeDatabase, closeConnection } from './database'
 import { registerAllHandlers } from './ipc'
 import { getSettings, updateSettings } from './config'
 import { startScheduler, stopScheduler } from './services/scheduler'
+import { getFaviconDir } from './services/favicon'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -138,6 +150,12 @@ function createTray(): void {
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.lianginx.feed')
 
+  // 注册 favicon:// 协议，用于从本地缓存加载 favicon
+  protocol.handle('favicon', (request) => {
+    const filePath = join(getFaviconDir(), request.url.slice('favicon://'.length))
+    return net.fetch(`file://${filePath}`)
+  })
+
   // 替换为极简菜单：只保留 macOS 必需的 App 菜单和编辑操作，
   // 去掉所有浏览器菜单项（文件、视图、窗口、帮助），
   // 这样 Cmd+W/N/T/U/S/P 等快捷键因没有绑定的菜单项而自动失效
@@ -191,13 +209,23 @@ app.whenReady().then(() => {
         { type: 'separator' },
         { role: 'close' }
       ]
-    }
+    },
+    ...(is.dev
+      ? [
+          {
+            label: 'View',
+            submenu: [
+              {
+                label: 'Toggle Developer Tools',
+                accelerator: 'Alt+Cmd+I',
+                click: () => mainWindow?.webContents.toggleDevTools()
+              }
+            ]
+          }
+        ]
+      : [])
   ])
   Menu.setApplicationMenu(minimalMenu)
-
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
 
   // 初始化数据库
   initializeDatabase()

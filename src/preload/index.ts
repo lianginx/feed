@@ -10,7 +10,8 @@ const api = {
       ipcRenderer.invoke('feeds:update', id, data),
     delete: (id: number) => ipcRenderer.invoke('feeds:delete', id),
     updateSortOrder: (feeds: { id: number; sort_order: number }[]) =>
-      ipcRenderer.invoke('feeds:updateSortOrder', feeds)
+      ipcRenderer.invoke('feeds:updateSortOrder', feeds),
+    refreshFavicon: (id: number) => ipcRenderer.invoke('feeds:refreshFavicon', id)
   },
   categories: {
     list: () => ipcRenderer.invoke('categories:list'),

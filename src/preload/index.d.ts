@@ -77,6 +77,7 @@ interface FeedApi {
   updateSortOrder: (
     feeds: { id: number; sort_order: number }[]
   ) => Promise<ApiResponse<{ updated: number }>>
+  refreshFavicon: (id: number) => Promise<ApiResponse<{ id: number; favicon_url: string | null }>>
 }
 
 interface CategoryApi {
