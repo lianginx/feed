@@ -1,9 +1,9 @@
-import { createApp } from 'vue'
-import App from './App.vue'
 import './assets/css/main.css'
 import './assets/css/highlight.css'
+import 'vue-sonner/style.css'
+
+import { createApp } from 'vue'
+import App from './App.vue'
 import { vHighlight } from './utils/highlight'
 
-const app = createApp(App)
-app.directive('highlight', vHighlight)
-app.mount('#app')
+createApp(App).directive('highlight', vHighlight).mount('#app')

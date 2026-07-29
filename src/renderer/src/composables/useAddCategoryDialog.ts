@@ -1,6 +1,5 @@
 import { ref, type Ref } from 'vue'
 import { useFeeds } from './useFeeds'
-import { useToast } from './useToast'
 
 const showAddCategory = ref(false)
 const editCategoryData = ref<{ id: number; name: string } | null>(null)
@@ -26,7 +25,6 @@ export function useAddCategoryDialog(): {
   handleAddCategory: (name: string) => Promise<void>
 } {
   const { categories, feeds, loadFeeds } = useFeeds()
-  const { showToast } = useToast()
 
   function handleEditCategory(cat: { id: number; name: string }): void {
     editCategoryData.value = { id: cat.id, name: cat.name }
@@ -60,11 +58,7 @@ export function useAddCategoryDialog(): {
   async function confirmDeleteCategory(): Promise<void> {
     const catId = confirmDialogCategoryId.value
     if (catId === null) return
-    const result = await window.api.categories.delete(catId)
-    if (result.success) {
-      const count = result.data?.feedCount ?? 0
-      showToast(count > 0 ? `已删除分类及 ${count} 个订阅源` : '已删除分类')
-    }
+    await window.api.categories.delete(catId)
     showConfirmDialog.value = false
     confirmDialogCategoryId.value = null
     await loadFeeds()

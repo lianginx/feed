@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/context-menu'
 import { useFeeds, type FeedItem } from '../composables/useFeeds'
 import { useArticles } from '../composables/useArticles'
-import { useToast } from '../composables/useToast'
 import { useAddFeedDialog } from '../composables/useAddFeedDialog'
 import { useAddCategoryDialog } from '../composables/useAddCategoryDialog'
 import { useSettingsDialog } from '../composables/useSettingsDialog'
@@ -34,8 +33,6 @@ const {
   refreshAllFeeds
 } = useFeeds()
 
-const { showToast } = useToast()
-
 const { showAddFeed } = useAddFeedDialog()
 const { showAddCategory, handleEditCategory, handleDeleteCategory } = useAddCategoryDialog()
 const { showSettings } = useSettingsDialog()
@@ -49,38 +46,26 @@ function isCategoryCollapsed(catId: number): boolean {
 async function handleMarkAllRead(feedId?: number): Promise<void> {
   const { markAllRead: markAllArticlesRead } = useArticles()
   await markAllArticlesRead(feedId)
-  showToast(feedId ? '已将此订阅源全部标为已读' : '已将所有文章标记为已读')
 }
 
 async function handleMarkAllReadByCategory(catId: number): Promise<void> {
   await window.api.categories.markAllRead(catId)
-  // 同步刷新侧边栏未读计数
   const { loadFeeds } = useFeeds()
   await loadFeeds()
-  const cat = categories.value.find((c) => c.id === catId)
-  showToast(cat ? `已将「${cat.name}」下所有文章标为已读` : '已将该分类下所有文章标为已读')
 }
 
 async function handleRefreshCategory(catId: number, event: Event): Promise<void> {
   event.stopPropagation()
   await refreshCategoryFeeds(catId)
-  // 刷新后重新加载文章列表
-  const { loadArticles } = useArticles()
-  await loadArticles(selectedFeedId.value ?? undefined)
-  showToast('已刷新该分类下所有订阅源')
 }
 
 async function handleEditFeed(feedId: number): Promise<void> {
   const feed = feeds.value.find((f) => f.id === feedId)
   if (!feed) return
-  showToast(`编辑订阅源：${feed.title}`)
 }
 
 async function handleDeleteFeed(feedId: number): Promise<void> {
-  const success = await deleteFeed(feedId)
-  if (success) {
-    showToast('已删除订阅源')
-  }
+  await deleteFeed(feedId)
 }
 
 function toggleCategory(catId: number): void {
@@ -100,17 +85,6 @@ function handleSelectCategory(id: number): void {
 async function handleRefreshFeed(feedId: number, event: Event): Promise<void> {
   event.stopPropagation()
   await refreshSingleFeed(feedId)
-  // 刷新后重新加载文章列表
-  const { loadArticles } = useArticles()
-  await loadArticles(feedId)
-}
-
-async function handleRefreshAll(): Promise<void> {
-  await refreshAllFeeds()
-  // 刷新后重新加载文章列表
-  const { loadArticles } = useArticles()
-  await loadArticles(selectedFeedId.value ?? undefined)
-  showToast('已刷新全部订阅源')
 }
 
 // 拖拽排序
@@ -211,7 +185,7 @@ function onDragOverCategory(event: DragEvent): void {
           size="icon-sm"
           title="刷新全部"
           :disabled="refreshingFeedIds.size > 0"
-          @click="handleRefreshAll"
+          @click="refreshAllFeeds"
         >
           <RefreshCw :class="{ 'animate-spin': refreshingFeedIds.size > 0 }" />
         </Button>

@@ -15,19 +15,8 @@ import {
 import { useArticles } from '../composables/useArticles'
 import { useFeeds } from '../composables/useFeeds'
 
-const {
-  articles,
-  currentArticle,
-  loading,
-  loadingMore,
-  hasMore,
-  filter,
-  loadArticles,
-  loadMore,
-  openArticle,
-  search,
-  toggleStar
-} = useArticles()
+const { articles, currentArticle, loading, filter, loadArticles, openArticle, search, toggleStar } =
+  useArticles()
 const { selectedFeedId, selectedCategoryId } = useFeeds()
 
 const parentRef = ref<HTMLElement | null>(null)
@@ -50,6 +39,8 @@ watch(
   () => {
     searchActive.value = false
     searchQuery.value = ''
+    currentArticle.value = null // 切换时关闭文章详情
+    parentRef.value?.scrollTo(0, 0) // 滚动到顶部
     loadArticles(selectedFeedId.value ?? undefined)
   },
   { immediate: true }
@@ -58,7 +49,7 @@ watch(
 // 虚拟滚动
 const virtualizer = useVirtualizer(
   computed(() => ({
-    count: articles.value.length + (hasMore.value ? 1 : 0),
+    count: articles.value.length,
     getScrollElement: () => parentRef.value,
     estimateSize: () => 96,
     overscan: 10
@@ -115,7 +106,6 @@ async function handleSearch(): Promise<void> {
   const results = await search(q)
   if (results) {
     articles.value = results
-    hasMore.value = false
   }
 }
 
@@ -127,15 +117,6 @@ function onSearchInput(): void {
 function clearSearch(): void {
   searchQuery.value = ''
   handleSearch()
-}
-
-function onScroll(): void {
-  const el = parentRef.value
-  if (!el || !hasMore.value || loadingMore.value) return
-  // 距底部 300px 以内时自动加载更多
-  if (el.scrollHeight - el.scrollTop - el.clientHeight < 300) {
-    loadMore()
-  }
 }
 
 function openInBrowser(url: string | null): void {
@@ -194,7 +175,7 @@ function openInBrowser(url: string | null): void {
     </div>
 
     <!-- 文章列表 -->
-    <div ref="parentRef" class="flex-1 overflow-y-overlay" @scroll="onScroll">
+    <div ref="parentRef" class="flex-1 overflow-y-overlay">
       <div v-if="loading && articles.length === 0" class="space-y-2 p-4">
         <Skeleton class="h-20 w-full" />
         <Skeleton class="h-20 w-full" />
@@ -219,17 +200,8 @@ function openInBrowser(url: string | null): void {
             transform: `translateY(${row.start}px)`
           }"
         >
-          <!-- "加载更多"按钮 -->
-          <div
-            v-if="hasMore && row.index === articles.length"
-            class="flex items-center justify-center h-full"
-          >
-            <Button variant="ghost" size="sm" :disabled="loadingMore" @click="loadMore">
-              {{ loadingMore ? '加载中...' : '加载更多' }}
-            </Button>
-          </div>
           <!-- 文章条目 -->
-          <ContextMenu v-else>
+          <ContextMenu v-if="row.index < articles.length">
             <ContextMenuTrigger>
               <button
                 class="w-full h-full text-left px-4 border-b border-border transition-colors hover:bg-accent/10"

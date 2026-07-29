@@ -28,76 +28,37 @@ type FilterType = 'all' | 'unread' | 'starred'
 const articles = ref<ArticleItem[]>([])
 const currentArticle = ref<ArticleDetail | null>(null)
 const loading = ref(false)
-const loadingMore = ref(false)
-const hasMore = ref(true)
 const filter = ref<FilterType>('all')
-
-// 游标分页
-let cursor: { publishedAt: number; id: number } | null = null
-let currentFeedId: number | null = null
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useArticles() {
-  async function loadArticles(feedId?: number, reset = true): Promise<void> {
-    if (reset) {
-      cursor = null
-      hasMore.value = true
-      currentFeedId = feedId ?? null
-      currentArticle.value = null // 切换时关闭文章详情栏
-      // 不立即清空 articles，避免快速切换时列表闪烁
-    }
-
-    // 延迟显示 loading，避免快速加载时的骨架屏闪烁
+  async function loadArticles(feedId?: number): Promise<void> {
+    // 延迟显示 loading，避免快速切换时的骨架屏闪烁
     const loadingTimer = setTimeout(() => {
-      if (reset) {
-        loading.value = true
-      } else {
-        loadingMore.value = true
-      }
+      loading.value = true
     }, 150)
 
     try {
       const result = await window.api.articles.list({
-        feedId: feedId ?? currentFeedId ?? undefined,
-        filter: filter.value,
-        cursor: cursor ?? undefined,
-        limit: 50
+        feedId,
+        filter: filter.value
       })
 
       clearTimeout(loadingTimer)
 
       if (result.success && result.data) {
-        if (reset) {
-          articles.value = result.data.articles
-        } else {
-          articles.value = [...articles.value, ...result.data.articles]
-        }
-        hasMore.value = result.data.hasMore
-
-        // 更新游标
-        const last = result.data.articles[result.data.articles.length - 1]
-        if (last) {
-          cursor = { publishedAt: last.published_at ?? Math.floor(Date.now() / 1000), id: last.id }
-        } else {
-          cursor = null
-        }
+        articles.value = result.data.articles
       }
     } finally {
       loading.value = false
-      loadingMore.value = false
       clearTimeout(loadingTimer)
     }
-  }
-
-  async function loadMore(): Promise<void> {
-    if (!hasMore.value || loadingMore.value) return
-    await loadArticles(undefined, false)
   }
 
   async function openArticle(id: number): Promise<void> {
     const result = await window.api.articles.get(id)
     if (result.success && result.data) {
-      currentArticle.value = result.data as ArticleDetail
+      currentArticle.value = result.data
       // 自动标记已读
       if (!result.data.is_read) {
         await window.api.articles.markRead(id)
@@ -152,11 +113,8 @@ export function useArticles() {
     articles,
     currentArticle,
     loading,
-    loadingMore,
-    hasMore,
     filter,
     loadArticles,
-    loadMore,
     openArticle,
     toggleStar,
     markAllRead,

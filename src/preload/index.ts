@@ -11,7 +11,9 @@ const api = {
     delete: (id: number) => ipcRenderer.invoke('feeds:delete', id),
     updateSortOrder: (feeds: { id: number; sort_order: number }[]) =>
       ipcRenderer.invoke('feeds:updateSortOrder', feeds),
-    refreshFavicon: (id: number) => ipcRenderer.invoke('feeds:refreshFavicon', id)
+    refreshFavicon: (id: number) => ipcRenderer.invoke('feeds:refreshFavicon', id),
+    refresh: (feedId: number) => ipcRenderer.invoke('feeds:refresh', feedId),
+    parseUrl: (url: string) => ipcRenderer.invoke('feeds:parseUrl', url)
   },
   categories: {
     list: () => ipcRenderer.invoke('categories:list'),
@@ -21,12 +23,8 @@ const api = {
     markAllRead: (categoryId: number) => ipcRenderer.invoke('categories:markAllRead', categoryId)
   },
   articles: {
-    list: (params: {
-      feedId?: number
-      filter?: 'all' | 'unread' | 'starred'
-      cursor?: { publishedAt: number; id: number }
-      limit?: number
-    }) => ipcRenderer.invoke('articles:list', params),
+    list: (params: { feedId?: number; filter?: 'all' | 'unread' | 'starred' }) =>
+      ipcRenderer.invoke('articles:list', params),
     get: (id: number) => ipcRenderer.invoke('articles:get', id),
     markRead: (id: number) => ipcRenderer.invoke('articles:markRead', id),
     markAllRead: (feedId?: number) => ipcRenderer.invoke('articles:markAllRead', feedId),
@@ -37,12 +35,6 @@ const api = {
   config: {
     get: () => ipcRenderer.invoke('config:get'),
     update: (settings: Record<string, unknown>) => ipcRenderer.invoke('config:update', settings)
-  },
-  sync: {
-    refreshFeed: (feedId: number) => ipcRenderer.invoke('sync:refreshFeed', feedId),
-    refreshCategory: (categoryId: number) => ipcRenderer.invoke('sync:refreshCategory', categoryId),
-    refreshAll: () => ipcRenderer.invoke('sync:refreshAll'),
-    parseFeed: (url: string) => ipcRenderer.invoke('sync:parseFeed', url)
   },
   opml: {
     import: (content: string) => ipcRenderer.invoke('opml:import', content),

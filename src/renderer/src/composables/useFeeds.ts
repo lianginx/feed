@@ -1,4 +1,6 @@
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useToast } from './useToast'
+import { useArticles } from './useArticles'
 
 export interface FeedItem {
   id: number
@@ -105,11 +107,11 @@ export function useFeeds() {
     await window.api.feeds.updateSortOrder(items)
   }
 
-  async function refreshSingleFeed(feedId: number): Promise<void> {
+  async function refreshSingleFeed(feedId: number): Promise<boolean> {
     refreshingFeedIds.value = new Set(refreshingFeedIds.value).add(feedId)
     try {
-      await window.api.sync.refreshFeed(feedId)
-      await loadFeeds()
+      const result = await window.api.feeds.refresh(feedId)
+      return result.success
     } finally {
       const next = new Set(refreshingFeedIds.value)
       next.delete(feedId)
@@ -119,27 +121,11 @@ export function useFeeds() {
 
   async function refreshCategoryFeeds(catId: number): Promise<void> {
     const targetFeeds = feeds.value.filter((f) => f.category_id === catId)
-    const next = new Set(refreshingFeedIds.value)
-    for (const f of targetFeeds) next.add(f.id)
-    refreshingFeedIds.value = next
-    try {
-      await window.api.sync.refreshCategory(catId)
-      await loadFeeds()
-    } finally {
-      const next2 = new Set(refreshingFeedIds.value)
-      for (const f of targetFeeds) next2.delete(f.id)
-      refreshingFeedIds.value = next2
-    }
+    await Promise.allSettled(targetFeeds.map((f) => refreshSingleFeed(f.id)))
   }
 
   async function refreshAllFeeds(): Promise<void> {
-    refreshingFeedIds.value = new Set(feeds.value.map((f) => f.id))
-    try {
-      await window.api.sync.refreshAll()
-      await loadFeeds()
-    } finally {
-      refreshingFeedIds.value = new Set()
-    }
+    await Promise.allSettled(feeds.value.map((f) => refreshSingleFeed(f.id)))
   }
 
   function selectFeed(id: number | null): void {
@@ -151,6 +137,49 @@ export function useFeeds() {
     selectedCategoryId.value = id
     if (id !== null) selectedFeedId.value = null
   }
+
+  // 监听单个订阅源刷新进度
+  const refreshHandler = (
+    _event: Electron.IpcRendererEvent,
+    data: {
+      feedId: number
+      status: string
+      inserted?: number
+      updated?: number
+      error?: string
+    }
+  ): void => {
+    if (data.status === 'fetching') {
+      refreshingFeedIds.value = new Set(refreshingFeedIds.value).add(data.feedId)
+    } else {
+      const next = new Set(refreshingFeedIds.value)
+      next.delete(data.feedId)
+      refreshingFeedIds.value = next
+
+      // 刷新完成后重载列表，更新未读数
+      if (data.status === 'complete') {
+        loadFeeds()
+        // 同步刷新文章列表（与当前视图相关的订阅源完成时）
+        const { loadArticles } = useArticles()
+        if (selectedFeedId.value === null || data.feedId === selectedFeedId.value) {
+          loadArticles(selectedFeedId.value ?? undefined)
+        }
+      } else if (data.status === 'error') {
+        const feed = feeds.value.find((f) => f.id === data.feedId)
+        const feedTitle = feed?.title || `订阅源 #${data.feedId}`
+        const { showToast } = useToast()
+        showToast(`${feedTitle} 刷新失败: ${data.error || '未知错误'}`, 'error')
+      }
+    }
+  }
+
+  onMounted(() => {
+    window.electron.ipcRenderer.on('feeds:refresh-progress', refreshHandler)
+  })
+
+  onUnmounted(() => {
+    window.electron.ipcRenderer.removeListener('feeds:refresh-progress', refreshHandler)
+  })
 
   return {
     categories,

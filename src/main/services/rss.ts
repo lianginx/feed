@@ -1,5 +1,5 @@
 import Parser from 'rss-parser'
-import { extractCoverImage } from './extractCoverImage'
+import { extractCoverImage } from './cover'
 
 type CustomItem = {
   creator?: string
