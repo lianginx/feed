@@ -3,7 +3,6 @@ import { ref } from 'vue'
 import { Upload, Download, CheckCircle2 } from '@lucide/vue'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
 import {
   Select,
@@ -64,16 +63,7 @@ async function handleExportOpml(): Promise<void> {
   }
 }
 
-const {
-  theme,
-  fontSize,
-  shortcutsEnabled,
-  updateInterval,
-  setTheme,
-  setFontSize,
-  setShortcutsEnabled,
-  setUpdateInterval
-} = useApp()
+const { theme, fontSize, updateInterval, setTheme, setFontSize, setUpdateInterval } = useApp()
 
 const themes: { value: Theme; label: string }[] = [
   { value: 'light', label: '浅色' },
@@ -143,49 +133,6 @@ function close(): void {
               </SelectItem>
             </SelectContent>
           </Select>
-        </div>
-
-        <!-- 快捷键开关 -->
-        <div class="flex items-center justify-between">
-          <label
-            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >启用快捷键</label
-          >
-          <Switch :checked="shortcutsEnabled" @update:checked="setShortcutsEnabled" />
-        </div>
-
-        <!-- 快捷键列表 -->
-        <div v-if="shortcutsEnabled">
-          <label
-            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block"
-            >快捷键</label
-          >
-          <div class="space-y-1.5 text-sm">
-            <div class="flex justify-between">
-              <span class="text-muted-foreground">下移 / 上移</span>
-              <span class="text-muted-foreground font-mono">↓ / ↑</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-muted-foreground">打开文章</span>
-              <span class="text-muted-foreground font-mono">Enter</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-muted-foreground">返回列表</span>
-              <span class="text-muted-foreground font-mono">Esc</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-muted-foreground">切换星标</span>
-              <span class="text-muted-foreground font-mono">⌘B</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-muted-foreground">刷新</span>
-              <span class="text-muted-foreground font-mono">⌘R</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-muted-foreground">全部标为已读</span>
-              <span class="text-muted-foreground font-mono">⌘⇧A</span>
-            </div>
-          </div>
         </div>
 
         <!-- 字体大小 -->

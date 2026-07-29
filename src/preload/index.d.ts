@@ -58,7 +58,6 @@ interface ArticleListResult {
 interface AppSettings {
   theme: 'light' | 'dark' | 'system'
   updateInterval: number
-  shortcutsEnabled: boolean
   fontSize: number
   windowBounds: { x?: number; y?: number; width: number; height: number }
 }

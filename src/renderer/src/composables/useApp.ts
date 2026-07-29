@@ -3,7 +3,6 @@ import { ref, computed, watch } from 'vue'
 export type Theme = 'light' | 'dark' | 'system'
 
 const theme = ref<Theme>('system')
-const shortcutsEnabled = ref(true)
 const fontSize = ref(16)
 const updateInterval = ref(30)
 
@@ -36,7 +35,6 @@ export function useApp() {
     const result = await window.api.config.get()
     if (result.success && result.data) {
       theme.value = result.data.theme
-      shortcutsEnabled.value = result.data.shortcutsEnabled
       fontSize.value = result.data.fontSize
       updateInterval.value = result.data.updateInterval
     }
@@ -45,11 +43,6 @@ export function useApp() {
   async function setTheme(t: Theme): Promise<void> {
     theme.value = t
     await window.api.config.update({ theme: t })
-  }
-
-  async function setShortcutsEnabled(enabled: boolean): Promise<void> {
-    shortcutsEnabled.value = enabled
-    await window.api.config.update({ shortcutsEnabled: enabled })
   }
 
   async function setFontSize(size: number): Promise<void> {
@@ -65,12 +58,10 @@ export function useApp() {
   return {
     theme,
     resolvedTheme,
-    shortcutsEnabled,
     fontSize,
     updateInterval,
     loadSettings,
     setTheme,
-    setShortcutsEnabled,
     setFontSize,
     setUpdateInterval
   }

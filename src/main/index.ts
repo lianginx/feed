@@ -75,33 +75,6 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  // 拦截 webContents 层内置快捷键（菜单移除后这些仍然有效）
-  mainWindow.webContents.on('before-input-event', (event, input) => {
-    const isCmdOrCtrl = input.control || input.meta
-
-    // 阻止页面刷新（Cmd/Ctrl+R — 我们用于刷新订阅源）
-    if (isCmdOrCtrl && input.key.toLowerCase() === 'r') {
-      event.preventDefault()
-    }
-
-    // 阻止 DevTools 快捷键
-    if (input.key === 'F12') {
-      event.preventDefault()
-    }
-    if (isCmdOrCtrl && input.shift && input.key.toLowerCase() === 'i') {
-      event.preventDefault()
-    }
-    if (isCmdOrCtrl && input.alt && input.key.toLowerCase() === 'i') {
-      event.preventDefault()
-    }
-    if (isCmdOrCtrl && input.shift && input.key.toLowerCase() === 'j') {
-      event.preventDefault()
-    }
-    if (isCmdOrCtrl && input.shift && input.key.toLowerCase() === 'c') {
-      event.preventDefault()
-    }
-  })
-
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
@@ -197,6 +170,23 @@ app.whenReady().then(() => {
           label: 'Add Feed',
           accelerator: 'CmdOrCtrl+N',
           click: () => mainWindow?.webContents.send('menu:addFeed')
+        },
+        { type: 'separator' },
+        {
+          label: 'Refresh',
+          accelerator: 'CmdOrCtrl+R',
+          click: () => mainWindow?.webContents.send('menu:refreshFeed')
+        },
+        {
+          label: 'Mark All Read',
+          accelerator: 'CmdOrCtrl+Shift+A',
+          click: () => mainWindow?.webContents.send('menu:markAllRead')
+        },
+        { type: 'separator' },
+        {
+          label: 'Toggle Star',
+          accelerator: 'CmdOrCtrl+B',
+          click: () => mainWindow?.webContents.send('menu:toggleStar')
         },
         { type: 'separator' },
         { role: 'close' }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive } from 'vue'
 import { RefreshCw, Plus, Settings, CheckCheck, LoaderCircle } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -15,10 +15,9 @@ import {
 import { useFeeds, type FeedItem } from '../composables/useFeeds'
 import { useArticles } from '../composables/useArticles'
 import { useToast } from '../composables/useToast'
-import AddFeedDialog from './AddFeedDialog.vue'
-import AddCategoryDialog from './AddCategoryDialog.vue'
-import ConfirmDialog from './ConfirmDialog.vue'
-import SettingsDialog from './SettingsDialog.vue'
+import { useAddFeedDialog } from '../composables/useAddFeedDialog'
+import { useAddCategoryDialog } from '../composables/useAddCategoryDialog'
+import { useSettingsDialog } from '../composables/useSettingsDialog'
 const {
   categories,
   feeds,
@@ -37,19 +36,11 @@ const {
 
 const { showToast } = useToast()
 
-const showAddFeed = ref(false)
-const showAddCategory = ref(false)
-const editCategoryData = ref<{ id: number; name: string } | null>(null)
-const showSettings = ref(false)
+const { showAddFeed } = useAddFeedDialog()
+const { showAddCategory, handleEditCategory, handleDeleteCategory } = useAddCategoryDialog()
+const { showSettings } = useSettingsDialog()
 const dragFeedId = ref<number | null>(null)
 const collapsedCategories = reactive<Record<number, boolean>>({})
-
-// 确认弹窗状态
-const showConfirmDialog = ref(false)
-const confirmDialogTitle = ref('')
-const confirmDialogMessage = ref('')
-const confirmDialogFeedCount = ref(0)
-const confirmDialogCategoryId = ref<number | null>(null)
 
 function isCategoryCollapsed(catId: number): boolean {
   return collapsedCategories[catId] === true
@@ -92,48 +83,6 @@ async function handleDeleteFeed(feedId: number): Promise<void> {
   }
 }
 
-async function handleEditCategory(cat: { id: number; name: string }): Promise<void> {
-  editCategoryData.value = { id: cat.id, name: cat.name }
-}
-
-async function handleUpdateCategory(id: number, name: string): Promise<void> {
-  await window.api.categories.update(id, name)
-  await loadFeeds()
-  closeCategoryDialog()
-}
-
-function closeCategoryDialog(): void {
-  showAddCategory.value = false
-  editCategoryData.value = null
-}
-
-async function handleDeleteCategory(catId: number): Promise<void> {
-  const cat = categories.value.find((c) => c.id === catId)
-  if (!cat) return
-  const feedCount = feeds.value.filter((f) => f.category_id === catId).length
-  confirmDialogCategoryId.value = catId
-  confirmDialogTitle.value = '删除分类'
-  confirmDialogMessage.value =
-    feedCount > 0
-      ? `「${cat.name}」下有 ${feedCount} 个订阅源，删除后将一并移除，确定？`
-      : `确定要删除分类「${cat.name}」吗？`
-  confirmDialogFeedCount.value = feedCount
-  showConfirmDialog.value = true
-}
-
-async function confirmDeleteCategory(): Promise<void> {
-  const catId = confirmDialogCategoryId.value
-  if (catId === null) return
-  const result = await window.api.categories.delete(catId)
-  if (result.success) {
-    const count = result.data?.feedCount ?? 0
-    showToast(count > 0 ? `已删除分类及 ${count} 个订阅源` : '已删除分类')
-  }
-  showConfirmDialog.value = false
-  confirmDialogCategoryId.value = null
-  await loadFeeds()
-}
-
 function toggleCategory(catId: number): void {
   collapsedCategories[catId] = !collapsedCategories[catId]
 }
@@ -143,25 +92,9 @@ function handleSelectAll(): void {
   selectCategory(null)
 }
 
-// 监听主菜单快捷键（Cmd+N 新增订阅）
-onMounted(() => {
-  window.electron.ipcRenderer.on('menu:addFeed', () => {
-    showAddFeed.value = true
-  })
-})
-
-onUnmounted(() => {
-  window.electron.ipcRenderer.removeAllListeners('menu:addFeed')
-})
-
 function handleSelectCategory(id: number): void {
   selectCategory(id)
   selectFeed(null)
-}
-
-async function handleAddCategory(name: string): Promise<void> {
-  await window.api.categories.add(name)
-  await loadFeeds()
 }
 
 async function handleRefreshFeed(feedId: number, event: Event): Promise<void> {
@@ -561,24 +494,4 @@ function onDragOverCategory(event: DragEvent): void {
       </Button>
     </div>
   </aside>
-
-  <!-- 对话框 -->
-  <AddFeedDialog v-model:open="showAddFeed" />
-  <AddCategoryDialog
-    :open="showAddCategory || editCategoryData !== null"
-    :edit-category-id="editCategoryData?.id"
-    :edit-category-name="editCategoryData?.name"
-    @update:open="closeCategoryDialog"
-    @add="handleAddCategory"
-    @update="handleUpdateCategory"
-  />
-  <SettingsDialog v-model:open="showSettings" />
-  <ConfirmDialog
-    v-model:open="showConfirmDialog"
-    :title="confirmDialogTitle"
-    :message="confirmDialogMessage"
-    confirm-text="删除"
-    variant="danger"
-    @confirm="confirmDeleteCategory"
-  />
 </template>

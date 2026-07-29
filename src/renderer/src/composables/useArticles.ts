@@ -31,7 +31,6 @@ const loading = ref(false)
 const loadingMore = ref(false)
 const hasMore = ref(true)
 const filter = ref<FilterType>('all')
-const focusedIndex = ref(0)
 
 // 游标分页
 let cursor: { publishedAt: number; id: number } | null = null
@@ -149,12 +148,6 @@ export function useArticles() {
     currentArticle.value = null
   }
 
-  function setFocusedIndex(index: number): void {
-    if (index >= 0 && index < articles.value.length) {
-      focusedIndex.value = index
-    }
-  }
-
   return {
     articles,
     currentArticle,
@@ -162,7 +155,6 @@ export function useArticles() {
     loadingMore,
     hasMore,
     filter,
-    focusedIndex,
     loadArticles,
     loadMore,
     openArticle,
@@ -170,7 +162,6 @@ export function useArticles() {
     markAllRead,
     search,
     setFilter,
-    closeArticle,
-    setFocusedIndex
+    closeArticle
   }
 }

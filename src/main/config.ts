@@ -3,7 +3,6 @@ import Store from 'electron-store'
 export interface AppSettings {
   theme: 'light' | 'dark' | 'system'
   updateInterval: number // 分钟，默认 30
-  shortcutsEnabled: boolean
   fontSize: number
   windowBounds: { x?: number; y?: number; width: number; height: number }
 }
@@ -11,7 +10,6 @@ export interface AppSettings {
 const defaults: AppSettings = {
   theme: 'system',
   updateInterval: 30,
-  shortcutsEnabled: true,
   fontSize: 16,
   windowBounds: { width: 1200, height: 800 }
 }
