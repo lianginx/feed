@@ -150,8 +150,14 @@ async function onDropToCategory(catId: number | null, event: DragEvent): Promise
     return
   }
 
-  // 跨分类移动：更新 feed 的 category_id
-  await window.api.feeds.update(draggedId, { categoryId: catId ?? undefined })
+  // 跨分类移动：更新 category_id 并放到目标分类末尾
+  const catFeeds = getFeedsByCategory(catId)
+  const orderPayload = [
+    ...catFeeds.map((f, i) => ({ id: f.id, sort_order: i })),
+    { id: draggedId, sort_order: catFeeds.length }
+  ]
+  await window.api.feeds.update(draggedId, { categoryId: catId })
+  await window.api.feeds.updateSortOrder(orderPayload)
   await loadFeeds()
 }
 
@@ -169,8 +175,13 @@ async function onDropReorder(
   const fromIndex = catFeeds.findIndex((f) => f.id === draggedId)
   const toIndex = catFeeds.findIndex((f) => f.id === targetFeedId)
   if (fromIndex === -1) {
-    // 跨分类拖动到特定位置
-    await window.api.feeds.update(draggedId, { categoryId: catId ?? undefined })
+    // 跨分类拖动到特定位置（按插入线位置插入）
+    const draggedFeed = feeds.value.find((f) => f.id === draggedId)!
+    const insertAt = dropPosition.value === 'after' ? toIndex + 1 : toIndex
+    const reordered = [...catFeeds]
+    reordered.splice(insertAt, 0, draggedFeed)
+    await window.api.feeds.update(draggedId, { categoryId: catId })
+    await window.api.feeds.updateSortOrder(reordered.map((f, i) => ({ id: f.id, sort_order: i })))
     await loadFeeds()
     return
   }
