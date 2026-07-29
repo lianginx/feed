@@ -21,7 +21,11 @@ function openInBrowser(url: string | null): void {
 <template>
   <div class="h-full flex flex-col overflow-hidden">
     <!-- 空状态 - 未选中文章 -->
-    <div v-if="!currentArticle" class="flex-1 flex items-center justify-center">
+    <div
+      v-if="!currentArticle"
+      class="flex-1 flex items-center justify-center"
+      style="-webkit-app-region: drag"
+    >
       <div class="text-center">
         <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
           <svg
