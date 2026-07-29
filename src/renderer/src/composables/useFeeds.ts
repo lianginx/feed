@@ -1,5 +1,4 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useToast } from './useToast'
 import { useArticles } from './useArticles'
 
 export interface FeedItem {
@@ -165,10 +164,7 @@ export function useFeeds() {
           loadArticles(selectedFeedId.value ?? undefined)
         }
       } else if (data.status === 'error') {
-        const feed = feeds.value.find((f) => f.id === data.feedId)
-        const feedTitle = feed?.title || `订阅源 #${data.feedId}`
-        const { showToast } = useToast()
-        showToast(`${feedTitle} 刷新失败: ${data.error || '未知错误'}`, 'error')
+        loadFeeds()
       }
     }
   }

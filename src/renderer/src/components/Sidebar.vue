@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { RefreshCw, Plus, Settings, CheckCheck, LoaderCircle } from '@lucide/vue'
+import { RefreshCw, Plus, Settings, CheckCheck, LoaderCircle, TriangleAlert } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -12,6 +12,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator
 } from '@/components/ui/context-menu'
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
 import { useFeeds, type FeedItem } from '../composables/useFeeds'
 import { useArticles } from '../composables/useArticles'
 import { useAddFeedDialog } from '../composables/useAddFeedDialog'
@@ -163,309 +164,335 @@ function onDragOverCategory(event: DragEvent): void {
 
 <template>
   <aside class="h-full bg-muted/50 border-r border-border flex flex-col">
-    <!-- 标题（可拖动区域） -->
-    <div
-      class="p-2 border-b border-border flex items-center justify-between min-h-9.5"
-      style="-webkit-app-region: drag"
-    >
-      <div />
-      <div class="flex items-center gap-1" style="-webkit-app-region: no-drag">
-        <Button
-          class="size-8"
-          variant="ghost"
-          size="icon-sm"
-          title="添加订阅源"
-          @click="showAddFeed = true"
-        >
-          <Plus />
-        </Button>
-        <Button
-          class="size-8"
-          variant="ghost"
-          size="icon-sm"
-          title="刷新全部"
-          :disabled="refreshingFeedIds.size > 0"
-          @click="refreshAllFeeds"
-        >
-          <RefreshCw :class="{ 'animate-spin': refreshingFeedIds.size > 0 }" />
-        </Button>
-      </div>
-    </div>
-
-    <!-- 全部文章（固定在顶部） -->
-    <div class="px-2 pt-2">
-      <button
-        class="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
-        :class="
-          selectedFeedId === null && selectedCategoryId === null
-            ? 'bg-accent/10 text-accent'
-            : 'text-muted-foreground hover:bg-accent/5'
-        "
-        @click="handleSelectAll"
+    <TooltipProvider>
+      <!-- 标题（可拖动区域） -->
+      <div
+        class="p-2 border-b border-border flex items-center justify-between min-h-9.5"
+        style="-webkit-app-region: drag"
       >
-        <span class="flex items-center justify-between">
-          <span>全部文章</span>
-          <Badge v-if="unreadCount > 0" variant="secondary" class="text-xs">{{
-            unreadCount
-          }}</Badge>
-        </span>
-      </button>
-    </div>
-    <Separator class="mx-2 my-3" />
-    <!-- 分类与订阅源列表 -->
-    <div class="flex-1 overflow-y-overlay px-2 pb-2">
-      <!-- 空白区域右键菜单：添加分类 -->
-      <ContextMenu>
-        <ContextMenuTrigger>
-          <div
-            class="min-h-full"
-            @dragover.prevent="onDragOverCategory"
-            @drop="onDropToCategory(null, $event)"
+        <div />
+        <div class="flex items-center gap-1" style="-webkit-app-region: no-drag">
+          <Button
+            class="size-8"
+            variant="ghost"
+            size="icon-sm"
+            title="添加订阅源"
+            @click="showAddFeed = true"
           >
-            <!-- 分类区块 -->
-            <div
-              v-for="cat in categories"
-              :key="cat.id"
-              class="mt-2"
-              @dragover.prevent="onDragOverCategory"
-              @drop="onDropToCategory(cat.id, $event)"
-            >
-              <Collapsible
-                :open="!isCategoryCollapsed(cat.id)"
-                class="w-full"
-                @update:open="(open: boolean) => (collapsedCategories[cat.id] = !open)"
-              >
-                <ContextMenu>
-                  <ContextMenuTrigger>
-                    <button
-                      class="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between"
-                      :class="
-                        selectedCategoryId === cat.id
-                          ? 'bg-accent/10 text-accent'
-                          : 'text-muted-foreground hover:bg-accent/5'
-                      "
-                      @click="handleSelectCategory(cat.id)"
-                      @dblclick="toggleCategory(cat.id)"
-                    >
-                      <span class="flex items-center gap-1.5">
-                        <CollapsibleTrigger>
-                          <span @click.stop>
-                            <svg
-                              class="w-3.5 h-3.5 transition-transform duration-200"
-                              :class="{ 'rotate-90': !isCategoryCollapsed(cat.id) }"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                            >
-                              <path d="m9 18 6-6-6-6" />
-                            </svg>
-                          </span>
-                        </CollapsibleTrigger>
-                        {{ cat.name }}
-                      </span>
-                    </button>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent>
-                    <ContextMenuItem @select="handleMarkAllReadByCategory(cat.id)">
-                      <CheckCheck class="w-3.5 h-3.5" />
-                      全部标为已读
-                    </ContextMenuItem>
-                    <ContextMenuItem @select="handleRefreshCategory(cat.id, $event)">
-                      <RefreshCw class="w-3.5 h-3.5" />
-                      刷新
-                    </ContextMenuItem>
-                    <ContextMenuSeparator />
-                    <ContextMenuItem @select="handleEditCategory(cat)"> 编辑分类 </ContextMenuItem>
-                    <ContextMenuItem
-                      class="text-destructive! focus:text-destructive"
-                      @select="handleDeleteCategory(cat.id)"
-                    >
-                      删除分类
-                    </ContextMenuItem>
-                  </ContextMenuContent>
-                </ContextMenu>
+            <Plus />
+          </Button>
+          <Button
+            class="size-8"
+            variant="ghost"
+            size="icon-sm"
+            title="刷新全部"
+            :disabled="refreshingFeedIds.size > 0"
+            @click="refreshAllFeeds"
+          >
+            <RefreshCw :class="{ 'animate-spin': refreshingFeedIds.size > 0 }" />
+          </Button>
+        </div>
+      </div>
 
-                <CollapsibleContent>
-                  <div class="ml-2 mt-1 space-y-0.5">
-                    <ContextMenu
-                      v-for="feed in feeds.filter((f) => f.category_id === cat.id)"
-                      :key="feed.id"
-                    >
-                      <ContextMenuTrigger>
-                        <button
-                          :draggable="true"
-                          class="w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center justify-between group"
-                          :class="{
-                            'bg-accent/10 text-accent': selectedFeedId === feed.id,
-                            'text-muted-foreground hover:bg-accent/5': selectedFeedId !== feed.id,
-                            'opacity-50': dragFeedId === feed.id
-                          }"
-                          @click="selectFeed(feed.id)"
-                          @dragstart="onDragStart(feed.id, $event)"
-                          @dragend="onDragEnd"
-                          @dragover.prevent="onDragOverCategory"
-                          @drop="onDropReorder(cat.id, feed.id, $event)"
-                        >
-                          <span class="flex items-center gap-2 truncate min-w-0">
-                            <!-- Favicon 图片 -->
-                            <span
-                              class="w-4 h-4 shrink-0 rounded bg-muted flex items-center justify-center text-[10px] overflow-hidden"
-                            >
-                              <img
-                                v-if="feed.favicon_url"
-                                :src="feed.favicon_url"
-                                alt=""
-                                class="w-full h-full object-contain"
-                                @error="
-                                  (e: Event) => {
-                                    ;(e.target as HTMLImageElement).style.display = 'none'
-                                  }
-                                "
-                              />
-                              <span v-else class="text-muted-foreground">{{
-                                feed.title.charAt(0)
-                              }}</span>
-                            </span>
-                            <span class="truncate">{{ feed.title }}</span>
-                          </span>
-                          <span class="flex items-center gap-1 shrink-0">
-                            <span
-                              v-if="refreshingFeedIds.has(feed.id)"
-                              class="text-accent animate-spin"
-                            >
-                              <LoaderCircle class="w-3 h-3" />
-                            </span>
-                            <Badge v-if="feed.unread_count > 0" variant="secondary" class="text-xs">
-                              {{ feed.unread_count }}
-                            </Badge>
-                          </span>
-                        </button>
-                      </ContextMenuTrigger>
-                      <ContextMenuContent>
-                        <ContextMenuItem @select="handleMarkAllRead(feed.id)">
-                          <CheckCheck class="w-3.5 h-3.5" />
-                          全部标为已读
-                        </ContextMenuItem>
-                        <ContextMenuItem @select="handleRefreshFeed(feed.id, $event)">
-                          <RefreshCw class="w-3.5 h-3.5" />
-                          刷新
-                        </ContextMenuItem>
-                        <ContextMenuSeparator />
-                        <ContextMenuItem @select="handleEditFeed(feed.id)"> 编辑 </ContextMenuItem>
-                        <ContextMenuItem
-                          class="text-destructive! focus:text-destructive"
-                          @select="handleDeleteFeed(feed.id)"
-                        >
-                          删除
-                        </ContextMenuItem>
-                      </ContextMenuContent>
-                    </ContextMenu>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
-
-            <!-- 无分类的订阅源 -->
+      <!-- 全部文章（固定在顶部） -->
+      <div class="px-2 pt-2">
+        <button
+          class="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
+          :class="
+            selectedFeedId === null && selectedCategoryId === null
+              ? 'bg-accent/10 text-accent'
+              : 'text-muted-foreground hover:bg-accent/5'
+          "
+          @click="handleSelectAll"
+        >
+          <span class="flex items-center justify-between">
+            <span>全部文章</span>
+            <Badge v-if="unreadCount > 0" variant="secondary" class="text-xs">{{
+              unreadCount
+            }}</Badge>
+          </span>
+        </button>
+      </div>
+      <Separator class="mx-2 my-3" />
+      <!-- 分类与订阅源列表 -->
+      <div class="flex-1 overflow-y-overlay px-2 pb-2">
+        <!-- 空白区域右键菜单：添加分类 -->
+        <ContextMenu>
+          <ContextMenuTrigger>
             <div
-              v-if="feeds.filter((f) => f.category_id === null).length > 0"
-              class="mt-2"
+              class="min-h-full"
               @dragover.prevent="onDragOverCategory"
               @drop="onDropToCategory(null, $event)"
             >
-              <div class="text-xs text-muted-foreground px-3 py-1">未分类</div>
-              <div class="ml-2 mt-1 space-y-0.5">
-                <ContextMenu
-                  v-for="feed in feeds.filter((f) => f.category_id === null)"
-                  :key="feed.id"
+              <!-- 分类区块 -->
+              <div
+                v-for="cat in categories"
+                :key="cat.id"
+                class="mt-2"
+                @dragover.prevent="onDragOverCategory"
+                @drop="onDropToCategory(cat.id, $event)"
+              >
+                <Collapsible
+                  :open="!isCategoryCollapsed(cat.id)"
+                  class="w-full"
+                  @update:open="(open: boolean) => (collapsedCategories[cat.id] = !open)"
                 >
-                  <ContextMenuTrigger>
-                    <button
-                      :draggable="true"
-                      class="w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center justify-between group"
-                      :class="{
-                        'bg-accent/10 text-accent': selectedFeedId === feed.id,
-                        'text-muted-foreground hover:bg-accent/5': selectedFeedId !== feed.id,
-                        'opacity-50': dragFeedId === feed.id
-                      }"
-                      @click="selectFeed(feed.id)"
-                      @dragstart="onDragStart(feed.id, $event)"
-                      @dragend="onDragEnd"
-                      @dragover.prevent="onDragOverCategory"
-                      @drop="onDropReorder(null, feed.id, $event)"
-                    >
-                      <span class="flex items-center gap-2 truncate min-w-0">
-                        <span
-                          class="w-4 h-4 shrink-0 rounded bg-muted flex items-center justify-center text-[10px] overflow-hidden"
-                        >
-                          <img
-                            v-if="feed.favicon_url"
-                            :src="feed.favicon_url"
-                            alt=""
-                            class="w-full h-full object-contain"
-                            @error="
-                              (e: Event) => {
-                                ;(e.target as HTMLImageElement).style.display = 'none'
-                              }
-                            "
-                          />
-                          <span v-else class="text-muted-foreground">{{
-                            feed.title.charAt(0)
-                          }}</span>
+                  <ContextMenu>
+                    <ContextMenuTrigger>
+                      <button
+                        class="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between"
+                        :class="
+                          selectedCategoryId === cat.id
+                            ? 'bg-accent/10 text-accent'
+                            : 'text-muted-foreground hover:bg-accent/5'
+                        "
+                        @click="handleSelectCategory(cat.id)"
+                        @dblclick="toggleCategory(cat.id)"
+                      >
+                        <span class="flex items-center gap-1.5">
+                          <CollapsibleTrigger>
+                            <span @click.stop>
+                              <svg
+                                class="w-3.5 h-3.5 transition-transform duration-200"
+                                :class="{ 'rotate-90': !isCategoryCollapsed(cat.id) }"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                              >
+                                <path d="m9 18 6-6-6-6" />
+                              </svg>
+                            </span>
+                          </CollapsibleTrigger>
+                          {{ cat.name }}
                         </span>
-                        <span class="truncate">{{ feed.title }}</span>
-                      </span>
-                      <span class="flex items-center gap-1 shrink-0">
-                        <span
-                          v-if="refreshingFeedIds.has(feed.id)"
-                          class="text-accent animate-spin"
-                        >
-                          <LoaderCircle class="w-3 h-3" />
+                      </button>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem @select="handleMarkAllReadByCategory(cat.id)">
+                        <CheckCheck class="w-3.5 h-3.5" />
+                        全部标为已读
+                      </ContextMenuItem>
+                      <ContextMenuItem @select="handleRefreshCategory(cat.id, $event)">
+                        <RefreshCw class="w-3.5 h-3.5" />
+                        刷新
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem @select="handleEditCategory(cat)">
+                        编辑分类
+                      </ContextMenuItem>
+                      <ContextMenuItem
+                        class="text-destructive! focus:text-destructive"
+                        @select="handleDeleteCategory(cat.id)"
+                      >
+                        删除分类
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
+
+                  <CollapsibleContent>
+                    <div class="ml-2 mt-1 space-y-0.5">
+                      <ContextMenu
+                        v-for="feed in feeds.filter((f) => f.category_id === cat.id)"
+                        :key="feed.id"
+                      >
+                        <ContextMenuTrigger>
+                          <button
+                            :draggable="true"
+                            class="w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center justify-between group"
+                            :class="{
+                              'bg-accent/10 text-accent': selectedFeedId === feed.id,
+                              'text-muted-foreground hover:bg-accent/5': selectedFeedId !== feed.id,
+                              'opacity-50': dragFeedId === feed.id
+                            }"
+                            @click="selectFeed(feed.id)"
+                            @dragstart="onDragStart(feed.id, $event)"
+                            @dragend="onDragEnd"
+                            @dragover.prevent="onDragOverCategory"
+                            @drop="onDropReorder(cat.id, feed.id, $event)"
+                          >
+                            <span class="flex items-center gap-2 truncate min-w-0">
+                              <!-- Favicon 图片 -->
+                              <span
+                                class="w-4 h-4 shrink-0 rounded bg-muted flex items-center justify-center text-[10px] overflow-hidden"
+                              >
+                                <img
+                                  v-if="feed.favicon_url"
+                                  :src="feed.favicon_url"
+                                  alt=""
+                                  class="w-full h-full object-contain"
+                                  @error="
+                                    (e: Event) => {
+                                      ;(e.target as HTMLImageElement).style.display = 'none'
+                                    }
+                                  "
+                                />
+                                <span v-else class="text-muted-foreground">{{
+                                  feed.title.charAt(0)
+                                }}</span>
+                              </span>
+                              <span class="truncate">{{ feed.title }}</span>
+                            </span>
+                            <span class="flex items-center gap-1 shrink-0">
+                              <span
+                                v-if="refreshingFeedIds.has(feed.id)"
+                                class="text-accent animate-spin"
+                              >
+                                <LoaderCircle class="w-3 h-3" />
+                              </span>
+                              <Tooltip v-else-if="feed.last_error">
+                                <TooltipTrigger class="cursor-help">
+                                  <TriangleAlert class="w-3 h-3 text-amber-500" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {{ feed.last_error }}
+                                </TooltipContent>
+                              </Tooltip>
+                              <Badge
+                                v-if="feed.unread_count > 0"
+                                variant="secondary"
+                                class="text-xs"
+                              >
+                                {{ feed.unread_count }}
+                              </Badge>
+                            </span>
+                          </button>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                          <ContextMenuItem @select="handleMarkAllRead(feed.id)">
+                            <CheckCheck class="w-3.5 h-3.5" />
+                            全部标为已读
+                          </ContextMenuItem>
+                          <ContextMenuItem @select="handleRefreshFeed(feed.id, $event)">
+                            <RefreshCw class="w-3.5 h-3.5" />
+                            刷新
+                          </ContextMenuItem>
+                          <ContextMenuSeparator />
+                          <ContextMenuItem @select="handleEditFeed(feed.id)">
+                            编辑
+                          </ContextMenuItem>
+                          <ContextMenuItem
+                            class="text-destructive! focus:text-destructive"
+                            @select="handleDeleteFeed(feed.id)"
+                          >
+                            删除
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </div>
+
+              <!-- 无分类的订阅源 -->
+              <div
+                v-if="feeds.filter((f) => f.category_id === null).length > 0"
+                class="mt-2"
+                @dragover.prevent="onDragOverCategory"
+                @drop="onDropToCategory(null, $event)"
+              >
+                <div class="text-xs text-muted-foreground px-3 py-1">未分类</div>
+                <div class="ml-2 mt-1 space-y-0.5">
+                  <ContextMenu
+                    v-for="feed in feeds.filter((f) => f.category_id === null)"
+                    :key="feed.id"
+                  >
+                    <ContextMenuTrigger>
+                      <button
+                        :draggable="true"
+                        class="w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center justify-between group"
+                        :class="{
+                          'bg-accent/10 text-accent': selectedFeedId === feed.id,
+                          'text-muted-foreground hover:bg-accent/5': selectedFeedId !== feed.id,
+                          'opacity-50': dragFeedId === feed.id
+                        }"
+                        @click="selectFeed(feed.id)"
+                        @dragstart="onDragStart(feed.id, $event)"
+                        @dragend="onDragEnd"
+                        @dragover.prevent="onDragOverCategory"
+                        @drop="onDropReorder(null, feed.id, $event)"
+                      >
+                        <span class="flex items-center gap-2 truncate min-w-0">
+                          <span
+                            class="w-4 h-4 shrink-0 rounded bg-muted flex items-center justify-center text-[10px] overflow-hidden"
+                          >
+                            <img
+                              v-if="feed.favicon_url"
+                              :src="feed.favicon_url"
+                              alt=""
+                              class="w-full h-full object-contain"
+                              @error="
+                                (e: Event) => {
+                                  ;(e.target as HTMLImageElement).style.display = 'none'
+                                }
+                              "
+                            />
+                            <span v-else class="text-muted-foreground">{{
+                              feed.title.charAt(0)
+                            }}</span>
+                          </span>
+                          <span class="truncate">{{ feed.title }}</span>
                         </span>
-                        <Badge v-if="feed.unread_count > 0" variant="secondary" class="text-xs">
-                          {{ feed.unread_count }}
-                        </Badge>
-                      </span>
-                    </button>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent>
-                    <ContextMenuItem @select="handleMarkAllRead(feed.id)">
-                      <CheckCheck class="w-3.5 h-3.5" />
-                      全部标为已读
-                    </ContextMenuItem>
-                    <ContextMenuItem @select="handleRefreshFeed(feed.id, $event)">
-                      <RefreshCw class="w-3.5 h-3.5" />
-                      刷新
-                    </ContextMenuItem>
-                    <ContextMenuSeparator />
-                    <ContextMenuItem @select="handleEditFeed(feed.id)"> 编辑 </ContextMenuItem>
-                    <ContextMenuItem
-                      class="text-destructive! focus:text-destructive"
-                      @select="handleDeleteFeed(feed.id)"
-                    >
-                      删除
-                    </ContextMenuItem>
-                  </ContextMenuContent>
-                </ContextMenu>
+                        <span class="flex items-center gap-1 shrink-0">
+                          <span
+                            v-if="refreshingFeedIds.has(feed.id)"
+                            class="text-accent animate-spin"
+                          >
+                            <LoaderCircle class="w-3 h-3" />
+                          </span>
+                          <Tooltip v-else-if="feed.last_error">
+                            <TooltipTrigger>
+                              <TriangleAlert class="w-3 h-3 text-amber-500" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {{ feed.last_error }}
+                            </TooltipContent>
+                          </Tooltip>
+                          <Badge v-if="feed.unread_count > 0" variant="secondary" class="text-xs">
+                            {{ feed.unread_count }}
+                          </Badge>
+                        </span>
+                      </button>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem @select="handleMarkAllRead(feed.id)">
+                        <CheckCheck class="w-3.5 h-3.5" />
+                        全部标为已读
+                      </ContextMenuItem>
+                      <ContextMenuItem @select="handleRefreshFeed(feed.id, $event)">
+                        <RefreshCw class="w-3.5 h-3.5" />
+                        刷新
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem @select="handleEditFeed(feed.id)"> 编辑 </ContextMenuItem>
+                      <ContextMenuItem
+                        class="text-destructive! focus:text-destructive"
+                        @select="handleDeleteFeed(feed.id)"
+                      >
+                        删除
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                </div>
               </div>
             </div>
-          </div>
-        </ContextMenuTrigger>
-        <ContextMenuContent>
-          <ContextMenuItem @select="showAddCategory = true">
-            <Plus class="w-3.5 h-3.5" />
-            添加分类
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
-    </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem @select="showAddCategory = true">
+              <Plus class="w-3.5 h-3.5" />
+              添加分类
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+      </div>
 
-    <!-- 底部操作栏 -->
-    <div class="p-2 border-t border-border">
-      <Button variant="ghost" class="w-full justify-start gap-2" @click="showSettings = true">
-        <Settings class="w-4 h-4" />
-        设置
-      </Button>
-    </div>
+      <!-- 底部操作栏 -->
+      <div class="p-2 border-t border-border">
+        <Button variant="ghost" class="w-full justify-start gap-2" @click="showSettings = true">
+          <Settings class="w-4 h-4" />
+          设置
+        </Button>
+      </div>
+    </TooltipProvider>
   </aside>
 </template>
