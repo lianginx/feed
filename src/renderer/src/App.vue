@@ -43,8 +43,14 @@ function onContextMenu(e: MouseEvent): void {
 
 function disableTabFocus(el: Element): void {
   if (
-    el.matches('button, [role="button"], [role="tab"], [role="switch"], [role="menuitem"], [role="option"]') &&
-    !(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement)
+    el.matches(
+      'button, [role="button"], [role="tab"], [role="switch"], [role="menuitem"], [role="option"]'
+    ) &&
+    !(
+      el instanceof HTMLInputElement ||
+      el instanceof HTMLTextAreaElement ||
+      el instanceof HTMLSelectElement
+    )
   ) {
     el.setAttribute('tabindex', '-1')
   }
@@ -52,13 +58,21 @@ function disableTabFocus(el: Element): void {
 
 onMounted(async () => {
   document.addEventListener('contextmenu', onContextMenu)
-  document.querySelectorAll('button, [role="button"], [role="tab"], [role="switch"], [role="menuitem"], [role="option"]').forEach(disableTabFocus)
+  document
+    .querySelectorAll(
+      'button, [role="button"], [role="tab"], [role="switch"], [role="menuitem"], [role="option"]'
+    )
+    .forEach(disableTabFocus)
   const observer = new MutationObserver((mutations) => {
     for (const m of mutations) {
       for (const node of m.addedNodes) {
         if (node.nodeType === 1) {
           disableTabFocus(node as Element)
-          ;(node as Element).querySelectorAll('button, [role="button"], [role="tab"], [role="switch"], [role="menuitem"], [role="option"]').forEach(disableTabFocus)
+          ;(node as Element)
+            .querySelectorAll(
+              'button, [role="button"], [role="tab"], [role="switch"], [role="menuitem"], [role="option"]'
+            )
+            .forEach(disableTabFocus)
         }
       }
     }
