@@ -180,84 +180,89 @@ function openInBrowser(url: string | null): void {
       >
         暂无文章
       </div>
-      <div v-else :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
-        <div
-          v-for="row in virtualizer.getVirtualItems()"
-          :key="`article-${row.index}`"
-          :style="{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: `${row.size}px`,
-            transform: `translateY(${row.start}px)`
-          }"
-        >
-          <!-- 文章条目 -->
-          <ContextMenu v-if="row.index < articles.length">
-            <ContextMenuTrigger>
-              <button
-                class="w-full h-full text-left px-4 border-b border-border transition-colors hover:bg-accent/10"
-                :class="{
-                  'bg-accent/5': !articles[row.index].is_read,
-                  'bg-accent/15': articles[row.index].id === currentArticle?.id
-                }"
-                @click="openArticle(articles[row.index].id)"
-                @dblclick="openInBrowser(articles[row.index].url)"
-              >
-                <div class="flex items-start gap-3 py-2.5 h-full">
-                  <div class="flex-1 min-w-0 h-full flex flex-col">
-                    <div>
-                      <div class="flex items-center gap-1.5">
-                        <span
-                          v-if="!articles[row.index].is_read"
-                          class="w-1.5 h-1.5 rounded-full bg-accent shrink-0"
-                        />
-                        <span v-if="articles[row.index].is_starred" class="text-yellow-500 text-xs"
-                          >★</span
+      <template v-else>
+        <div :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
+          <div
+            v-for="row in virtualizer.getVirtualItems()"
+            :key="`article-${row.index}`"
+            :style="{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: `${row.size}px`,
+              transform: `translateY(${row.start}px)`
+            }"
+          >
+            <!-- 文章条目 -->
+            <ContextMenu v-if="row.index < articles.length">
+              <ContextMenuTrigger>
+                <button
+                  class="w-full h-full text-left px-4 border-b border-border transition-colors hover:bg-accent/10"
+                  :class="{
+                    'bg-accent/5': !articles[row.index].is_read,
+                    'bg-accent/15': articles[row.index].id === currentArticle?.id
+                  }"
+                  @click="openArticle(articles[row.index].id)"
+                  @dblclick="openInBrowser(articles[row.index].url)"
+                >
+                  <div class="flex items-start gap-3 py-2.5 h-full">
+                    <div class="flex-1 min-w-0 h-full flex flex-col">
+                      <div>
+                        <div class="flex items-center gap-1.5">
+                          <span
+                            v-if="!articles[row.index].is_read"
+                            class="w-1.5 h-1.5 rounded-full bg-accent shrink-0"
+                          />
+                          <span
+                            v-if="articles[row.index].is_starred"
+                            class="text-yellow-500 text-xs"
+                            >★</span
+                          >
+                          <h3 class="text-sm font-medium text-foreground truncate">
+                            {{ articles[row.index].title }}
+                          </h3>
+                        </div>
+                        <p
+                          v-if="articles[row.index].summary"
+                          class="text-xs text-muted-foreground mt-1 line-clamp-2"
                         >
-                        <h3 class="text-sm font-medium text-foreground truncate">
-                          {{ articles[row.index].title }}
-                        </h3>
+                          {{ articles[row.index].summary }}
+                        </p>
                       </div>
-                      <p
-                        v-if="articles[row.index].summary"
-                        class="text-xs text-muted-foreground mt-1 line-clamp-2"
-                      >
-                        {{ articles[row.index].summary }}
-                      </p>
+                      <div class="flex items-center gap-2 mt-auto text-xs text-muted-foreground">
+                        <span>{{ articles[row.index].feed_title }}</span>
+                        <span>{{ formatDate(articles[row.index].published_at) }}</span>
+                      </div>
                     </div>
-                    <div class="flex items-center gap-2 mt-auto text-xs text-muted-foreground">
-                      <span>{{ articles[row.index].feed_title }}</span>
-                      <span>{{ formatDate(articles[row.index].published_at) }}</span>
-                    </div>
+                    <img
+                      v-if="articles[row.index].cover_image"
+                      :src="articles[row.index].cover_image ?? undefined"
+                      class="h-full aspect-4/3 rounded-md object-cover shrink-0 mt-0.5 bg-muted"
+                      loading="lazy"
+                      @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
+                    />
                   </div>
-                  <img
-                    v-if="articles[row.index].cover_image"
-                    :src="articles[row.index].cover_image ?? undefined"
-                    class="h-full aspect-4/3 rounded-md object-cover shrink-0 mt-0.5 bg-muted"
-                    loading="lazy"
-                    @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
-                  />
-                </div>
-              </button>
-            </ContextMenuTrigger>
-            <ContextMenuContent>
-              <ContextMenuItem
-                v-if="articles[row.index].url"
-                @select="openInBrowser(articles[row.index].url)"
-              >
-                <ExternalLink class="size-3.5" />
-                在浏览器中打开
-              </ContextMenuItem>
-              <ContextMenuItem @select="toggleStar(articles[row.index].id)">
-                <Star class="w-3.5 h-3.5" />
-                {{ articles[row.index].is_starred ? '取消星标' : '星标' }}
-              </ContextMenuItem>
-            </ContextMenuContent>
-          </ContextMenu>
+                </button>
+              </ContextMenuTrigger>
+              <ContextMenuContent>
+                <ContextMenuItem
+                  v-if="articles[row.index].url"
+                  @select="openInBrowser(articles[row.index].url)"
+                >
+                  <ExternalLink class="size-3.5" />
+                  在浏览器中打开
+                </ContextMenuItem>
+                <ContextMenuItem @select="toggleStar(articles[row.index].id)">
+                  <Star class="w-3.5 h-3.5" />
+                  {{ articles[row.index].is_starred ? '取消星标' : '星标' }}
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
+          </div>
         </div>
-      </div>
+        <div class="h-40" />
+      </template>
     </div>
   </div>
 </template>
