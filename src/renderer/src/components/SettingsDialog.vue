@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { Upload, Download, CheckCircle2 } from '@lucide/vue'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import {
   Select,
   SelectContent,
@@ -29,36 +30,49 @@ const { loadFeeds } = useFeeds()
 const { showToast } = useToast()
 
 const importResult = ref<string | null>(null)
+const importing = ref(false)
 
 async function handleImportOpml(): Promise<void> {
   importResult.value = null
-  const result = await window.api.opml.importFromFile()
-  if (result.success && result.data) {
-    if ('canceled' in result.data && result.data.canceled) {
-      return
+  importing.value = true
+  try {
+    const result = await window.api.opml.import()
+    if (result.success && result.data) {
+      if ('canceled' in result.data && result.data.canceled) {
+        return
+      }
+      if ('added' in result.data) {
+        importResult.value = `导入完成：新增 ${result.data.added} 个，跳过 ${result.data.skipped} 个`
+        showToast(`导入完成，新增 ${result.data.added} 个订阅源`)
+        await loadFeeds()
+      }
+    } else {
+      importResult.value = `导入失败：${result.error || '未知错误'}`
     }
-    if ('added' in result.data) {
-      importResult.value = `导入完成：新增 ${result.data.added} 个，跳过 ${result.data.skipped} 个`
-      showToast(`导入完成，新增 ${result.data.added} 个订阅源`)
-      await loadFeeds()
-    }
-  } else {
-    importResult.value = `导入失败：${result.error || '未知错误'}`
+  } finally {
+    importing.value = false
   }
 }
 
+const exporting = ref(false)
+
 async function handleExportOpml(): Promise<void> {
-  const result = await window.api.opml.exportToFile()
-  if (result.success && result.data) {
-    if ('canceled' in result.data && result.data.canceled) {
-      return
+  exporting.value = true
+  try {
+    const result = await window.api.opml.export()
+    if (result.success && result.data) {
+      if ('canceled' in result.data && result.data.canceled) {
+        return
+      }
+      if ('filePath' in result.data) {
+        importResult.value = `已导出到：${result.data.filePath}`
+        showToast(`已导出到 ${result.data.filePath}`)
+      }
+    } else {
+      importResult.value = `导出失败：${result.error || '未知错误'}`
     }
-    if ('filePath' in result.data) {
-      importResult.value = `已导出到：${result.data.filePath}`
-      showToast(`已导出到 ${result.data.filePath}`)
-    }
-  } else {
-    importResult.value = `导出失败：${result.error || '未知错误'}`
+  } finally {
+    exporting.value = false
   }
 }
 
@@ -141,13 +155,25 @@ function close(): void {
             >OPML</label
           >
           <div class="flex gap-2">
-            <Button variant="outline" class="flex-1" @click="handleImportOpml">
-              <Upload class="w-4 h-4 mr-2" />
-              导入
+            <Button
+              variant="outline"
+              class="flex-1"
+              :disabled="importing"
+              @click="handleImportOpml"
+            >
+              <Spinner v-if="importing" class="w-4 h-4 mr-2" />
+              <Upload v-else class="w-4 h-4 mr-2" />
+              {{ importing ? '导入中…' : '导入' }}
             </Button>
-            <Button variant="outline" class="flex-1" @click="handleExportOpml">
-              <Download class="w-4 h-4 mr-2" />
-              导出
+            <Button
+              variant="outline"
+              class="flex-1"
+              :disabled="exporting"
+              @click="handleExportOpml"
+            >
+              <Spinner v-if="exporting" class="w-4 h-4 mr-2" />
+              <Download v-else class="w-4 h-4 mr-2" />
+              {{ exporting ? '导出中…' : '导出' }}
             </Button>
           </div>
           <div

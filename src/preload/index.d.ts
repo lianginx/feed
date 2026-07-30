@@ -118,18 +118,12 @@ interface ConfigApi {
 }
 
 interface OpmlApi {
-  import: (
-    content: string
-  ) => Promise<ApiResponse<{ total: number; added: number; skipped: number }>>
-  export: () => Promise<ApiResponse<string>>
-  importFromFile: () => Promise<
+  import: () => Promise<
     ApiResponse<
       { canceled: true } | { canceled: false; total: number; added: number; skipped: number }
     >
   >
-  exportToFile: () => Promise<
-    ApiResponse<{ canceled: true } | { canceled: false; filePath: string }>
-  >
+  export: () => Promise<ApiResponse<{ canceled: true } | { canceled: false; filePath: string }>>
 }
 
 /** 订阅源刷新进度事件（由后端推送） */

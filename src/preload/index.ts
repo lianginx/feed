@@ -37,10 +37,8 @@ const api = {
     update: (settings: Record<string, unknown>) => ipcRenderer.invoke('config:update', settings)
   },
   opml: {
-    import: (content: string) => ipcRenderer.invoke('opml:import', content),
-    export: () => ipcRenderer.invoke('opml:export'),
-    importFromFile: () => ipcRenderer.invoke('opml:importFromFile'),
-    exportToFile: () => ipcRenderer.invoke('opml:exportToFile')
+    import: () => ipcRenderer.invoke('opml:import'),
+    export: () => ipcRenderer.invoke('opml:export')
   }
 }
 

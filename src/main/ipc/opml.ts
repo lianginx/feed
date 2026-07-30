@@ -1,105 +1,163 @@
 import { ipcMain, dialog } from 'electron'
 import { readFileSync, writeFileSync } from 'fs'
 import { getConnection } from '../database/connection'
-import { validateFeed } from '../services/rss'
+import { refreshSingleFeed } from '../services/refresher'
 import { success, error } from './util'
 import opml from 'opml'
 
-export function registerOpmlHandlers(): void {
-  ipcMain.handle('opml:import', async (_event, opmlContent: string) => {
-    try {
-      const feedUrls: { title?: string; url: string }[] = []
+interface FeedEntry {
+  title?: string
+  url: string
+  siteUrl?: string
+  category?: string
+}
 
-      // 解析 OPML
-      const parsedOpml = await opml.parse(opmlContent)
-      for (const outline of parsedOpml.children || []) {
-        if (outline.xmlUrl) {
-          feedUrls.push({ title: outline.title || outline.text, url: outline.xmlUrl })
-        }
-        if (outline.children) {
-          for (const child of outline.children) {
-            if (child.xmlUrl) {
-              feedUrls.push({ title: child.title || child.text, url: child.xmlUrl })
-            }
-          }
-        }
+interface OpmlSub {
+  text?: string
+  title?: string
+  xmlUrl?: string
+  htmlUrl?: string
+  subs?: OpmlSub[]
+}
+
+function parseOpml(content: string): Promise<{ subs?: OpmlSub[] }> {
+  return new Promise((resolve, reject) => {
+    opml.parse(
+      content,
+      (err: Error | undefined, result: { opml: { body: { subs?: OpmlSub[] } } }) => {
+        if (err) reject(err)
+        else resolve(result.opml.body)
       }
-
-      // 逐个添加
-      const db = getConnection()
-      let added = 0
-      let skipped = 0
-
-      for (const feedUrl of feedUrls) {
-        const existing = db.prepare('SELECT id FROM feeds WHERE url = ?').get(feedUrl.url)
-        if (existing) {
-          skipped++
-          continue
-        }
-
-        try {
-          const validation = await validateFeed(feedUrl.url)
-          if (!validation.valid) {
-            skipped++
-            continue
-          }
-
-          db.prepare('INSERT INTO feeds (url, title) VALUES (?, ?)').run(
-            feedUrl.url,
-            feedUrl.title || validation.title || feedUrl.url
-          )
-          added++
-        } catch {
-          skipped++
-        }
-      }
-
-      return success({ total: feedUrls.length, added, skipped })
-    } catch (e) {
-      return error((e as Error).message)
-    }
+    )
   })
+}
 
-  ipcMain.handle('opml:export', async () => {
-    try {
-      const db = getConnection()
-      const feeds = db
-        .prepare(
-          `
-        SELECT f.*, c.name as category_name
-        FROM feeds f
-        LEFT JOIN categories c ON f.category_id = c.id
-        ORDER BY f.id ASC
-      `
-        )
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .all() as any[]
+function collectFeeds(subs: OpmlSub[] | undefined, parentCategory?: string): FeedEntry[] {
+  const feeds: FeedEntry[] = []
+  if (!subs) return feeds
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const outlines: any[] = []
-
-      for (const feed of feeds) {
-        outlines.push({
-          title: feed.title,
-          text: feed.title,
-          xmlUrl: feed.url,
-          htmlUrl: feed.site_url || undefined
-        })
-      }
-
-      const opmlData = opml.stringify({
-        title: 'Feed 订阅源导出',
-        children: outlines
+  for (const outline of subs) {
+    if (outline.xmlUrl) {
+      feeds.push({
+        title: outline.title || outline.text,
+        url: outline.xmlUrl,
+        siteUrl: outline.htmlUrl,
+        category: parentCategory
       })
+    }
+    if (outline.subs?.length) {
+      const category =
+        parentCategory ?? (outline.xmlUrl ? undefined : outline.text || outline.title)
+      feeds.push(...collectFeeds(outline.subs, category))
+    }
+  }
+  return feeds
+}
 
-      return success(opmlData)
-    } catch (e) {
-      return error((e as Error).message)
+function getOrCreateCategory(db: ReturnType<typeof getConnection>, name: string): number {
+  const existing = db.prepare('SELECT id FROM categories WHERE name = ?').get(name) as
+    { id: number } | undefined
+  if (existing) return existing.id
+  const result = db.prepare('INSERT INTO categories (name) VALUES (?)').run(name)
+  return result.lastInsertRowid as number
+}
+
+function importFeeds(entries: FeedEntry[]): { total: number; added: number; skipped: number } {
+  const db = getConnection()
+
+  const newEntries = entries.filter((entry) => {
+    const existing = db.prepare('SELECT id FROM feeds WHERE url = ?').get(entry.url)
+    return !existing
+  })
+
+  const skippedDuplicates = entries.length - newEntries.length
+
+  const doImport = db.transaction(() => {
+    for (const entry of newEntries) {
+      let categoryId: number | null = null
+      if (entry.category) {
+        categoryId = getOrCreateCategory(db, entry.category)
+      }
+
+      const result = db
+        .prepare('INSERT INTO feeds (url, title, site_url, category_id) VALUES (?, ?, ?, ?)')
+        .run(entry.url, entry.title || entry.url, entry.siteUrl || null, categoryId)
+      refreshSingleFeed(result.lastInsertRowid as number).catch(() => {})
     }
   })
 
-  // 打开 OPML 文件并导入
-  ipcMain.handle('opml:importFromFile', async () => {
+  doImport()
+
+  return { total: entries.length, added: newEntries.length, skipped: skippedDuplicates }
+}
+
+function exportOpml(): string {
+  const db = getConnection()
+  const feeds = db
+    .prepare(
+      `SELECT f.*, c.name as category_name
+    FROM feeds f
+    LEFT JOIN categories c ON f.category_id = c.id
+    ORDER BY c.sort_order ASC, c.name ASC, f.sort_order ASC, f.id ASC`
+    )
+    .all() as {
+    title: string
+    url: string
+    site_url: string | null
+    category_name: string | null
+  }[]
+
+  const categorized: Record<
+    string,
+    { title: string; url: string; site_url: string | null; category_name: string | null }[]
+  > = {}
+  const uncategorized: {
+    title: string
+    url: string
+    site_url: string | null
+    category_name: string | null
+  }[] = []
+  for (const feed of feeds) {
+    if (feed.category_name) {
+      if (!categorized[feed.category_name]) categorized[feed.category_name] = []
+      categorized[feed.category_name].push(feed)
+    } else {
+      uncategorized.push(feed)
+    }
+  }
+
+  const subs: OpmlSub[] = []
+  for (const [catName, catFeeds] of Object.entries(categorized)) {
+    subs.push({
+      text: catName,
+      title: catName,
+      subs: catFeeds.map((f) => ({
+        text: f.title,
+        title: f.title,
+        xmlUrl: f.url,
+        htmlUrl: f.site_url || undefined
+      }))
+    })
+  }
+  for (const feed of uncategorized) {
+    subs.push({
+      text: feed.title,
+      title: feed.title,
+      xmlUrl: feed.url,
+      htmlUrl: feed.site_url || undefined
+    })
+  }
+
+  return opml.stringify({
+    opml: {
+      head: { title: 'Feed 订阅源导出' },
+      body: { subs }
+    }
+  })
+}
+
+export function registerOpmlHandlers(): void {
+  ipcMain.handle('opml:import', async () => {
     try {
       const result = await dialog.showOpenDialog({
         title: '导入 OPML',
@@ -112,88 +170,19 @@ export function registerOpmlHandlers(): void {
       }
 
       const content = readFileSync(result.filePaths[0], 'utf-8')
+      const body = await parseOpml(content)
+      const entries = collectFeeds(body.subs)
+      const importResult = importFeeds(entries)
 
-      const feedUrls: { title?: string; url: string }[] = []
-      const parsedOpml = await opml.parse(content)
-      for (const outline of parsedOpml.children || []) {
-        if (outline.xmlUrl) {
-          feedUrls.push({ title: outline.title || outline.text, url: outline.xmlUrl })
-        }
-        if (outline.children) {
-          for (const child of outline.children) {
-            if (child.xmlUrl) {
-              feedUrls.push({ title: child.title || child.text, url: child.xmlUrl })
-            }
-          }
-        }
-      }
-
-      const db = getConnection()
-      let added = 0
-      let skipped = 0
-
-      for (const feedUrl of feedUrls) {
-        const existing = db.prepare('SELECT id FROM feeds WHERE url = ?').get(feedUrl.url)
-        if (existing) {
-          skipped++
-          continue
-        }
-
-        try {
-          const validation = await validateFeed(feedUrl.url)
-          if (!validation.valid) {
-            skipped++
-            continue
-          }
-
-          db.prepare('INSERT INTO feeds (url, title) VALUES (?, ?)').run(
-            feedUrl.url,
-            feedUrl.title || validation.title || feedUrl.url
-          )
-          added++
-        } catch {
-          skipped++
-        }
-      }
-
-      return success({ canceled: false, total: feedUrls.length, added, skipped })
+      return success({ canceled: false, ...importResult })
     } catch (e) {
       return error((e as Error).message)
     }
   })
 
-  // 导出 OPML 到文件
-  ipcMain.handle('opml:exportToFile', async () => {
+  ipcMain.handle('opml:export', async () => {
     try {
-      const db = getConnection()
-      const feeds = db
-        .prepare(
-          `
-        SELECT f.*, c.name as category_name
-        FROM feeds f
-        LEFT JOIN categories c ON f.category_id = c.id
-        ORDER BY f.id ASC
-      `
-        )
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .all() as any[]
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const outlines: any[] = []
-
-      for (const feed of feeds) {
-        outlines.push({
-          title: feed.title,
-          text: feed.title,
-          xmlUrl: feed.url,
-          htmlUrl: feed.site_url || undefined
-        })
-      }
-
-      const opmlData = opml.stringify({
-        title: 'Feed 订阅源导出',
-        children: outlines
-      })
+      const opmlData = exportOpml()
 
       const saveResult = await dialog.showSaveDialog({
         title: '导出 OPML',
