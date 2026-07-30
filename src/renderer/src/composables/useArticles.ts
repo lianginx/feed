@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { useFeeds } from './useFeeds'
+import { useFeeds, type FilterType } from './useFeeds'
 
 interface ArticleItem {
   id: number
@@ -23,17 +23,17 @@ interface ArticleDetail extends ArticleItem {
   created_at: number
 }
 
-type FilterType = 'all' | 'unread' | 'starred'
-
 const articles = ref<ArticleItem[]>([])
 const currentArticle = ref<ArticleDetail | null>(null)
 const loading = ref(false)
-const filter = ref<FilterType>('all')
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useArticles() {
-  async function loadArticles(feedId?: number): Promise<void> {
-    // 延迟显示 loading，避免快速切换时的骨架屏闪烁
+  async function loadArticles(
+    feedId?: number,
+    categoryId?: number,
+    filter?: FilterType
+  ): Promise<void> {
     const loadingTimer = setTimeout(() => {
       loading.value = true
     }, 150)
@@ -41,7 +41,8 @@ export function useArticles() {
     try {
       const result = await window.api.articles.list({
         feedId,
-        filter: filter.value
+        categoryId,
+        filter
       })
 
       clearTimeout(loadingTimer)
@@ -59,13 +60,10 @@ export function useArticles() {
     const result = await window.api.articles.get(id)
     if (result.success && result.data) {
       currentArticle.value = result.data
-      // 自动标记已读
       if (!result.data.is_read) {
         await window.api.articles.markRead(id)
-        // 更新列表中该文章的已读状态
         const item = articles.value.find((a) => a.id === id)
         if (item) item.is_read = 1
-        // 同步刷新侧边栏未读计数
         const { loadFeeds } = useFeeds()
         await loadFeeds()
       }
@@ -88,7 +86,6 @@ export function useArticles() {
     articles.value.forEach((a) => {
       a.is_read = 1
     })
-    // 同步刷新侧边栏未读计数
     const { loadFeeds } = useFeeds()
     await loadFeeds()
   }
@@ -101,10 +98,6 @@ export function useArticles() {
     return []
   }
 
-  function setFilter(f: FilterType): void {
-    filter.value = f
-  }
-
   function closeArticle(): void {
     currentArticle.value = null
   }
@@ -113,13 +106,11 @@ export function useArticles() {
     articles,
     currentArticle,
     loading,
-    filter,
     loadArticles,
     openArticle,
     toggleStar,
     markAllRead,
     search,
-    setFilter,
     closeArticle
   }
 }

@@ -1,5 +1,8 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+
 import { useArticles } from './useArticles'
+
+export type FilterType = 'all' | 'unread' | 'starred'
 
 export interface FeedItem {
   id: number
@@ -29,6 +32,7 @@ const categories = ref<CategoryItem[]>([])
 const feeds = ref<FeedItem[]>([])
 const selectedFeedId = ref<number | null>(null)
 const selectedCategoryId = ref<number | null>(null)
+const filter = ref<FilterType | undefined>('all')
 const loading = ref(false)
 const refreshingFeedIds = ref<Set<number>>(new Set())
 
@@ -160,8 +164,12 @@ export function useFeeds() {
         loadFeeds()
         // 同步刷新文章列表（与当前视图相关的订阅源完成时）
         const { loadArticles } = useArticles()
-        if (selectedFeedId.value === null || data.feedId === selectedFeedId.value) {
-          loadArticles(selectedFeedId.value ?? undefined)
+        if (selectedFeedId.value !== null) {
+          if (data.feedId === selectedFeedId.value) {
+            loadArticles(selectedFeedId.value, undefined, filter.value)
+          }
+        } else {
+          loadArticles(undefined, selectedCategoryId.value ?? undefined, filter.value)
         }
       } else if (data.status === 'error') {
         loadFeeds()
@@ -183,6 +191,7 @@ export function useFeeds() {
     filteredFeeds,
     selectedFeedId,
     selectedCategoryId,
+    filter,
     unreadCount,
     loading,
     refreshingFeedIds,

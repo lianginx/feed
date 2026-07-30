@@ -2,11 +2,11 @@
 @plugin "@tailwindcss/typography";
 @import './theme.css';
 @import './prose.css';
+@import "tw-animate-css";
 
 html {
-  font-family: var(--font-sans);
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+  background-color: var(--background);
+  color: var(--foreground);
 
   /* 禁用选中文本，模拟原生体验 */
   user-select: none;
@@ -46,3 +46,4 @@ body {
 .overflow-x-overlay {
   overflow-x: auto;
 }
+

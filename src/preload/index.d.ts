@@ -102,6 +102,7 @@ interface CategoryApi {
 interface ArticleApi {
   list: (params: {
     feedId?: number
+    categoryId?: number
     filter?: 'all' | 'unread' | 'starred'
   }) => Promise<ApiResponse<ArticleListResult>>
   get: (id: number) => Promise<ApiResponse<ArticleDetail>>

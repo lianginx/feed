@@ -5,7 +5,6 @@ import { ExternalLink, Star, Search } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   ContextMenu,
   ContextMenuTrigger,
@@ -15,9 +14,9 @@ import {
 import { useArticles } from '../composables/useArticles'
 import { useFeeds } from '../composables/useFeeds'
 
-const { articles, currentArticle, loading, filter, loadArticles, openArticle, search, toggleStar } =
+const { articles, currentArticle, loading, loadArticles, openArticle, search, toggleStar } =
   useArticles()
-const { selectedFeedId, selectedCategoryId } = useFeeds()
+const { selectedFeedId, selectedCategoryId, filter } = useFeeds()
 
 const parentRef = ref<HTMLElement | null>(null)
 const searchQuery = ref('')
@@ -41,7 +40,7 @@ watch(
     searchQuery.value = ''
     currentArticle.value = null // 切换时关闭文章详情
     parentRef.value?.scrollTo(0, 0) // 滚动到顶部
-    loadArticles(selectedFeedId.value ?? undefined)
+    reloadArticles()
   },
   { immediate: true }
 )
@@ -69,13 +68,23 @@ function formatDate(timestamp: number | null): string {
   return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
 }
 
+function reloadArticles(): void {
+  if (selectedFeedId.value !== null) {
+    loadArticles(selectedFeedId.value, undefined, filter.value)
+  } else if (selectedCategoryId.value !== null) {
+    loadArticles(undefined, selectedCategoryId.value, filter.value)
+  } else {
+    loadArticles(undefined, undefined, filter.value)
+  }
+}
+
 function toggleSearch(): void {
   showSearch.value = !showSearch.value
   if (!showSearch.value) {
     searchQuery.value = ''
     if (searchActive.value) {
       searchActive.value = false
-      loadArticles(selectedFeedId.value ?? undefined)
+      reloadArticles()
     }
   }
 }
@@ -99,7 +108,7 @@ async function handleSearch(): Promise<void> {
   const q = searchQuery.value.trim()
   if (!q) {
     searchActive.value = false
-    await loadArticles(selectedFeedId.value ?? undefined)
+    await reloadArticles()
     return
   }
   searchActive.value = true
@@ -133,22 +142,6 @@ function openInBrowser(url: string | null): void {
       class="p-2 border-b border-border flex items-center gap-2 min-h-9.5"
       style="-webkit-app-region: drag"
     >
-      <Tabs v-model="filter" style="-webkit-app-region: no-drag">
-        <TabsList class="h-8">
-          <TabsTrigger
-            v-for="f in [
-              { key: 'all', label: '全部' },
-              { key: 'unread', label: '未读' },
-              { key: 'starred', label: '星标' }
-            ] as const"
-            :key="f.key"
-            :value="f.key"
-            class="h-6.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
-            {{ f.label }}
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
       <div class="flex-1" />
       <Button
         class="size-8"

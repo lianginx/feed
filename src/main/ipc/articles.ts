@@ -6,7 +6,10 @@ import { scheduleBadgeUpdate } from '../services/badge'
 export function registerArticleHandlers(): void {
   ipcMain.handle(
     'articles:list',
-    async (_event, params: { feedId?: number; filter?: 'all' | 'unread' | 'starred' }) => {
+    async (
+      _event,
+      params: { feedId?: number; categoryId?: number; filter?: 'all' | 'unread' | 'starred' }
+    ) => {
       try {
         const db = getConnection()
         const conditions: string[] = []
@@ -15,6 +18,9 @@ export function registerArticleHandlers(): void {
         if (params.feedId !== undefined) {
           conditions.push('a.feed_id = @feedId')
           queryParams.feedId = params.feedId
+        } else if (params.categoryId !== undefined) {
+          conditions.push('f.category_id = @categoryId')
+          queryParams.categoryId = params.categoryId
         }
 
         if (params.filter === 'unread') {

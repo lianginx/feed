@@ -6,7 +6,8 @@ import { useMenuCommands } from './composables/useMenuCommands'
 import { useAddFeedDialog } from './composables/useAddFeedDialog'
 import { useAddCategoryDialog } from './composables/useAddCategoryDialog'
 import { useSettingsDialog } from './composables/useSettingsDialog'
-import Sidebar from './components/Sidebar.vue'
+import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar'
+import SidebarNav from './components/Sidebar.vue'
 import ArticleList from './components/ArticleList.vue'
 import ArticleReader from './components/ArticleReader.vue'
 import ToastNotification from './components/ToastNotification.vue'
@@ -88,23 +89,24 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="h-screen overflow-hidden bg-bg-primary flex">
-    <!-- 侧边栏（固定宽度） -->
-    <div class="w-80 shrink-0 overflow-hidden">
-      <Sidebar />
-    </div>
-    <!-- 文章列表 -->
-    <div class="flex-4 min-w-0 overflow-hidden">
-      <ArticleList />
-    </div>
-    <!-- 阅读区域 -->
-    <div class="flex-8 min-w-0 overflow-hidden">
-      <ArticleReader />
-    </div>
-  </div>
+  <SidebarProvider :style="{ '--sidebar-width': '20rem' }" class="h-screen">
+    <Sidebar collapsible="none" class="border-r border-sidebar-border">
+      <SidebarNav />
+    </Sidebar>
+    <SidebarInset class="overflow-hidden flex-row p-0">
+      <div class="flex-4 min-w-0 overflow-hidden">
+        <ArticleList />
+      </div>
+      <div class="flex-8 min-w-0 overflow-hidden">
+        <ArticleReader />
+      </div>
+    </SidebarInset>
+  </SidebarProvider>
+
   <ToastNotification />
-  <!-- 对话框 -->
+
   <AddFeedDialog v-model:open="showAddFeed" />
+
   <AddCategoryDialog
     :open="showAddCategory || editCategoryData !== null"
     :edit-category-id="editCategoryData?.id"
@@ -113,7 +115,9 @@ onUnmounted(() => {
     @add="handleAddCategory"
     @update="handleUpdateCategory"
   />
+
   <SettingsDialog v-model:open="showSettings" />
+
   <ConfirmDialog
     v-model:open="showConfirmDialog"
     :title="confirmDialogTitle"
