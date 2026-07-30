@@ -29,9 +29,9 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem
+  SidebarMenuItem,
+  SidebarMenuSub
 } from '@/components/ui/sidebar'
 import { useFeeds, type FeedItem } from '../composables/useFeeds'
 import { useArticles } from '../composables/useArticles'
@@ -446,7 +446,7 @@ async function onDropReorder(
                         </div>
                         <CollapsibleContent>
                           <SidebarGroupContent>
-                            <SidebarMenu>
+                            <SidebarMenuSub class="mr-0 pr-0">
                               <SidebarMenuItem
                                 v-for="feed in feeds.filter((f) => f.category_id === cat.id)"
                                 :key="feed.id"
@@ -456,7 +456,7 @@ async function onDropReorder(
                                     <SidebarMenuButton
                                       :is-active="selectedFeedId === feed.id"
                                       draggable="true"
-                                      class="relative pl-8"
+                                      class="relative"
                                       @click="handleSelectFeed(feed.id)"
                                       @dblclick="openFeedInBrowser(feed)"
                                       @dragstart="onDragStart(feed.id, $event)"
@@ -518,8 +518,8 @@ async function onDropReorder(
                                           <LoaderCircle class="w-3 h-3" />
                                         </span>
                                         <Tooltip v-else-if="feed.last_error">
-                                          <TooltipTrigger class="cursor-help">
-                                            <TriangleAlert class="w-3 h-3 text-amber-500" />
+                                          <TooltipTrigger>
+                                            <TriangleAlert class="text-amber-500" :size="14" />
                                           </TooltipTrigger>
                                           <TooltipContent>
                                             {{ feed.last_error }}
@@ -561,7 +561,7 @@ async function onDropReorder(
                                   </ContextMenuContent>
                                 </ContextMenu>
                               </SidebarMenuItem>
-                            </SidebarMenu>
+                            </SidebarMenuSub>
                           </SidebarGroupContent>
                         </CollapsibleContent>
                       </SidebarGroup>
@@ -603,7 +603,7 @@ async function onDropReorder(
                     未分类
                   </SidebarGroupLabel>
                   <SidebarGroupContent>
-                    <SidebarMenu>
+                    <SidebarMenuSub>
                       <SidebarMenuItem
                         v-for="feed in feeds.filter((f) => f.category_id === null)"
                         :key="feed.id"
@@ -713,7 +713,7 @@ async function onDropReorder(
                           </ContextMenuContent>
                         </ContextMenu>
                       </SidebarMenuItem>
-                    </SidebarMenu>
+                    </SidebarMenuSub>
                   </SidebarGroupContent>
                 </SidebarGroup>
               </div>
