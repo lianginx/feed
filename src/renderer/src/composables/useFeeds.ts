@@ -19,6 +19,7 @@ export interface FeedItem {
   last_updated: number | null
   created_at: number
   unread_count: number
+  custom_title: number
 }
 
 interface CategoryItem {
@@ -96,7 +97,7 @@ export function useFeeds() {
 
   async function updateFeed(
     id: number,
-    data: { title?: string; categoryId?: number | null }
+    data: { title?: string; url?: string; categoryId?: number | null; customTitle?: number }
   ): Promise<boolean> {
     const result = await window.api.feeds.update(id, data)
     if (result.success) {

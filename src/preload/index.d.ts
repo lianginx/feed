@@ -21,6 +21,7 @@ interface Feed {
   last_updated: number | null
   created_at: number
   unread_count: number
+  custom_title: number
 }
 
 interface Category {
@@ -80,7 +81,7 @@ interface FeedApi {
   }) => Promise<ApiResponse<{ id: number }>>
   update: (
     id: number,
-    data: { title?: string; categoryId?: number | null }
+    data: { title?: string; url?: string; categoryId?: number | null; customTitle?: number }
   ) => Promise<ApiResponse<{ id: number }>>
   delete: (id: number) => Promise<ApiResponse<{ id: number }>>
   updateSortOrder: (

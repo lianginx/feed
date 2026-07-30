@@ -6,8 +6,10 @@ const api = {
     list: () => ipcRenderer.invoke('feeds:list'),
     add: (params: { url: string; title?: string; categoryId?: number }) =>
       ipcRenderer.invoke('feeds:add', params),
-    update: (id: number, data: { title?: string; categoryId?: number | null }) =>
-      ipcRenderer.invoke('feeds:update', id, data),
+    update: (
+      id: number,
+      data: { title?: string; url?: string; categoryId?: number | null; customTitle?: number }
+    ) => ipcRenderer.invoke('feeds:update', id, data),
     delete: (id: number) => ipcRenderer.invoke('feeds:delete', id),
     updateSortOrder: (feeds: { id: number; sort_order: number }[]) =>
       ipcRenderer.invoke('feeds:updateSortOrder', feeds),

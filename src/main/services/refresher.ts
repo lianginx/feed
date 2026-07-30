@@ -23,7 +23,8 @@ export interface RefreshResult {
 export async function refreshSingleFeed(feedId: number): Promise<RefreshResult> {
   const db = getConnection()
   const feed = db.prepare('SELECT * FROM feeds WHERE id = ?').get(feedId) as
-    { id: number; url: string; title: string; error_count: number } | undefined
+    | { id: number; url: string; title: string; custom_title: number; error_count: number }
+    | undefined
 
   if (!feed) {
     return { feedId, success: false, error: '订阅源不存在', inserted: 0, updated: 0 }
@@ -36,11 +37,18 @@ export async function refreshSingleFeed(feedId: number): Promise<RefreshResult> 
   try {
     const parsed = await parseFeed(feed.url)
 
-    // 更新 feed 信息
-    db.prepare(
-      `UPDATE feeds SET title = ?, description = ?, site_url = ?, last_updated = strftime('%s','now'), last_error = NULL, error_count = 0
-       WHERE id = ?`
-    ).run(parsed.title, parsed.description || null, parsed.link || null, feedId)
+    // 更新 feed 信息（自定义标题时不覆盖 title）
+    if (feed.custom_title) {
+      db.prepare(
+        `UPDATE feeds SET description = ?, site_url = ?, last_updated = strftime('%s','now'), last_error = NULL, error_count = 0
+         WHERE id = ?`
+      ).run(parsed.description || null, parsed.link || null, feedId)
+    } else {
+      db.prepare(
+        `UPDATE feeds SET title = ?, description = ?, site_url = ?, last_updated = strftime('%s','now'), last_error = NULL, error_count = 0
+         WHERE id = ?`
+      ).run(parsed.title, parsed.description || null, parsed.link || null, feedId)
+    }
 
     // 缓存 favicon
     try {

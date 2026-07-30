@@ -12,6 +12,7 @@ import {
   Rss
 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 import {
@@ -37,6 +38,7 @@ import { useArticles } from '../composables/useArticles'
 import { useToast } from '../composables/useToast'
 import { useAddFeedDialog } from '../composables/useAddFeedDialog'
 import { useAddCategoryDialog } from '../composables/useAddCategoryDialog'
+import EditFeedDialog from './EditFeedDialog.vue'
 const {
   categories,
   feeds,
@@ -48,6 +50,7 @@ const {
   selectedCategoryId,
   loadFeeds,
   deleteFeed,
+  updateFeed,
   refreshingFeedIds,
   refreshSingleFeed,
   refreshCategoryFeeds,
@@ -62,6 +65,10 @@ const dragOverFeedId = ref<number | null>(null)
 const dragOverCategoryId = ref<number | null>(null)
 const dropPosition = ref<'before' | 'after'>('after')
 const collapsedCategories = reactive<Record<number, boolean>>({})
+const editingFeed = ref<FeedItem | null>(null)
+const showEditFeed = ref(false)
+const renamingFeedId = ref<number | null>(null)
+const renameFocused = ref(false)
 
 function isCategoryCollapsed(catId: number): boolean {
   return collapsedCategories[catId] === true
@@ -90,6 +97,58 @@ async function handleRefreshCategory(catId: number, event: Event): Promise<void>
 async function handleEditFeed(feedId: number): Promise<void> {
   const feed = feeds.value.find((f) => f.id === feedId)
   if (!feed) return
+  editingFeed.value = feed
+  showEditFeed.value = true
+}
+
+function handleFeedSaved(): void {
+  showEditFeed.value = false
+  editingFeed.value = null
+}
+
+function openFeedInBrowser(feed: FeedItem): void {
+  window.open(feed.site_url || feed.url, '_blank')
+}
+
+function handleRenameFeed(feedId: number): void {
+  renamingFeedId.value = feedId
+  setTimeout(() => {
+    const input = document.querySelector(
+      `[data-rename-input="${feedId}"]`
+    ) as HTMLInputElement | null
+    if (!input) return
+    input.focus()
+    input.select()
+  }, 200)
+}
+
+async function saveRename(): Promise<void> {
+  if (!renameFocused.value) return
+  if (renamingFeedId.value === null) return
+  const feed = feeds.value.find((f) => f.id === renamingFeedId.value)
+  if (!feed) return
+  const inputEl = document.querySelector(
+    `[data-rename-input="${renamingFeedId.value}"]`
+  ) as HTMLInputElement | null
+  const newTitle = (inputEl?.value || feed.title).trim()
+  renameFocused.value = false
+  renamingFeedId.value = null
+  if (!newTitle || newTitle === feed.title) return
+  await updateFeed(feed.id, { title: newTitle, customTitle: 1 })
+}
+
+function handleRenameKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    saveRename()
+  } else if (e.key === 'Escape') {
+    renameFocused.value = false
+    renamingFeedId.value = null
+  }
+}
+
+function onRenameFocus(): void {
+  renameFocused.value = true
 }
 
 async function handleDeleteFeed(feedId: number): Promise<void> {
@@ -338,7 +397,6 @@ async function onDropReorder(
               <div
                 v-for="cat in categories"
                 :key="cat.id"
-                class="mt-1"
                 @dragover="onDragOverCategory(cat.id, $event)"
                 @dragleave="onDragLeaveCategory"
                 @drop="onDropToCategory(cat.id, $event)"
@@ -353,7 +411,7 @@ async function onDropReorder(
                       <SidebarGroup>
                         <div
                           data-sidebar="group-label"
-                          class="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors"
+                          class="flex w-full items-center gap-1.5 rounded-md my-1 px-2 py-1.5 text-sm transition-colors"
                           :class="
                             selectedCategoryId === cat.id
                               ? 'bg-sidebar-accent text-sidebar-accent-foreground'
@@ -400,6 +458,7 @@ async function onDropReorder(
                                       draggable="true"
                                       class="relative pl-8"
                                       @click="handleSelectFeed(feed.id)"
+                                      @dblclick="openFeedInBrowser(feed)"
                                       @dragstart="onDragStart(feed.id, $event)"
                                       @dragend="onDragEnd"
                                       @dragover="onDragOverFeed(feed.id, $event)"
@@ -438,7 +497,16 @@ async function onDropReorder(
                                             feed.title.charAt(0)
                                           }}</span>
                                         </span>
-                                        <span class="truncate">{{ feed.title }}</span>
+                                        <Input
+                                          v-if="renamingFeedId === feed.id"
+                                          :data-rename-input="feed.id"
+                                          :default-value="feed.title"
+                                          class="h-6 py-0 px-1 text-sm"
+                                          @focus="onRenameFocus"
+                                          @keydown="handleRenameKeydown"
+                                          @blur="saveRename"
+                                        />
+                                        <span v-else class="truncate">{{ feed.title }}</span>
                                       </span>
                                       <span
                                         class="flex items-center gap-1 shrink-0 ml-auto overflow-visible"
@@ -473,10 +541,17 @@ async function onDropReorder(
                                     <ContextMenuItem @select="handleRefreshFeed(feed.id, $event)">
                                       刷新
                                     </ContextMenuItem>
+                                    <ContextMenuItem @select="openFeedInBrowser(feed)">
+                                      打开主页
+                                    </ContextMenuItem>
                                     <ContextMenuSeparator />
+                                    <ContextMenuItem @select="handleRenameFeed(feed.id)">
+                                      重命名
+                                    </ContextMenuItem>
                                     <ContextMenuItem @select="handleEditFeed(feed.id)">
                                       编辑
                                     </ContextMenuItem>
+                                    <ContextMenuSeparator />
                                     <ContextMenuItem
                                       class="text-destructive! focus:text-destructive"
                                       @select="handleDeleteFeed(feed.id)"
@@ -540,6 +615,7 @@ async function onDropReorder(
                               draggable="true"
                               class="relative"
                               @click="handleSelectFeed(feed.id)"
+                              @dblclick="openFeedInBrowser(feed)"
                               @dragstart="onDragStart(feed.id, $event)"
                               @dragend="onDragEnd"
                               @dragover="onDragOverFeed(feed.id, $event)"
@@ -573,7 +649,16 @@ async function onDropReorder(
                                     feed.title.charAt(0)
                                   }}</span>
                                 </span>
-                                <span class="truncate">{{ feed.title }}</span>
+                                <Input
+                                  v-if="renamingFeedId === feed.id"
+                                  :data-rename-input="feed.id"
+                                  :default-value="feed.title"
+                                  class="h-6 py-0 px-1 text-sm"
+                                  @focus="onRenameFocus"
+                                  @keydown="handleRenameKeydown"
+                                  @blur="saveRename"
+                                />
+                                <span v-else class="truncate">{{ feed.title }}</span>
                               </span>
                               <span
                                 class="flex items-center gap-1 shrink-0 ml-auto overflow-visible"
@@ -608,10 +693,17 @@ async function onDropReorder(
                             <ContextMenuItem @select="handleRefreshFeed(feed.id, $event)">
                               刷新
                             </ContextMenuItem>
+                            <ContextMenuItem @select="openFeedInBrowser(feed)">
+                              打开主页
+                            </ContextMenuItem>
                             <ContextMenuSeparator />
+                            <ContextMenuItem @select="handleRenameFeed(feed.id)">
+                              重命名
+                            </ContextMenuItem>
                             <ContextMenuItem @select="handleEditFeed(feed.id)"
                               >编辑</ContextMenuItem
                             >
+                            <ContextMenuSeparator />
                             <ContextMenuItem
                               class="text-destructive! focus:text-destructive"
                               @select="handleDeleteFeed(feed.id)"
@@ -635,4 +727,6 @@ async function onDropReorder(
       </ContextMenu>
     </div>
   </SidebarContent>
+
+  <EditFeedDialog v-model:open="showEditFeed" :feed="editingFeed" @saved="handleFeedSaved" />
 </template>

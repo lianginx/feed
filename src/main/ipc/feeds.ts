@@ -67,7 +67,11 @@ export function registerFeedHandlers(): void {
 
   ipcMain.handle(
     'feeds:update',
-    async (_event, id: number, data: { title?: string; categoryId?: number | null }) => {
+    async (
+      _event,
+      id: number,
+      data: { title?: string; url?: string; categoryId?: number | null; customTitle?: number }
+    ) => {
       try {
         const db = getConnection()
         const fields: string[] = []
@@ -77,9 +81,17 @@ export function registerFeedHandlers(): void {
           fields.push('title = ?')
           values.push(data.title)
         }
+        if (data.url !== undefined) {
+          fields.push('url = ?')
+          values.push(data.url)
+        }
         if (data.categoryId !== undefined) {
           fields.push('category_id = ?')
           values.push(data.categoryId)
+        }
+        if (data.customTitle !== undefined) {
+          fields.push('custom_title = ?')
+          values.push(data.customTitle)
         }
 
         if (fields.length === 0) return success({ id })

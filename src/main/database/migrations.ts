@@ -85,5 +85,12 @@ CREATE INDEX IF NOT EXISTS idx_articles_read_pub ON articles(is_read, published_
     up: `
 ALTER TABLE articles ADD COLUMN cover_image TEXT;
 `
+  },
+  {
+    version: 3,
+    name: 'add-feed-custom-title',
+    up: `
+ALTER TABLE feeds ADD COLUMN custom_title INTEGER NOT NULL DEFAULT 0;
+`
   }
 ]
