@@ -33,7 +33,10 @@ export function createTray(): void {
     { type: 'separator' },
     {
       label: '设置',
-      click: () => getMainWindow()?.webContents.send('menu:openSettings')
+      click: () => {
+        getMainWindow()?.show()
+        getMainWindow()?.webContents.send('menu:openSettings')
+      }
     },
     { type: 'separator' },
     {
