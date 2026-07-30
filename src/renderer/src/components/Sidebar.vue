@@ -11,7 +11,7 @@ import {
   Star
 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 import {
   ContextMenu,
@@ -29,8 +29,7 @@ import {
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarSeparator
+  SidebarMenuItem
 } from '@/components/ui/sidebar'
 import { useFeeds, type FeedItem } from '../composables/useFeeds'
 import { useArticles } from '../composables/useArticles'
@@ -275,13 +274,17 @@ async function onDropReorder(
           <Newspaper class="size-4" />
           <span>全部文章</span>
         </span>
-        <Badge v-if="unreadCount > 0" variant="secondary" class="text-xs">{{ unreadCount }}</Badge>
       </span>
     </SidebarMenuButton>
     <SidebarMenuButton :is-active="filter === 'unread'" @click="handleSelectUnread">
-      <span class="flex items-center gap-2">
-        <BookOpen class="size-4" />
-        <span>未读文章</span>
+      <span class="flex w-full items-center justify-between">
+        <span class="flex items-center gap-2">
+          <BookOpen class="size-4" />
+          <span>未读文章</span>
+        </span>
+        <span v-if="unreadCount > 0" class="text-xs tabular-nums text-sidebar-foreground/50">{{
+          unreadCount
+        }}</span>
       </span>
     </SidebarMenuButton>
     <SidebarMenuButton :is-active="filter === 'starred'" @click="handleSelectStarred">
@@ -397,11 +400,11 @@ async function onDropReorder(
                                           feed.title.charAt(0)
                                         }}</span>
                                       </span>
-                                      <span :class="!feed.unread_count ? 'truncate' : ''">{{
-                                        feed.title
-                                      }}</span>
+                                      <span class="truncate">{{ feed.title }}</span>
                                     </span>
-                                    <span class="flex items-center gap-1 shrink-0 ml-auto">
+                                    <span
+                                      class="flex items-center gap-1 shrink-0 ml-auto overflow-visible"
+                                    >
                                       <span
                                         v-if="refreshingFeedIds.has(feed.id)"
                                         class="text-sidebar-foreground/70 animate-spin"
@@ -533,11 +536,9 @@ async function onDropReorder(
                                   feed.title.charAt(0)
                                 }}</span>
                               </span>
-                              <span :class="!feed.unread_count ? 'truncate' : ''">{{
-                                feed.title
-                              }}</span>
+                              <span class="truncate">{{ feed.title }}</span>
                             </span>
-                            <span class="flex items-center gap-1 shrink-0 ml-auto">
+                            <span class="flex items-center gap-1 shrink-0 ml-auto overflow-visible">
                               <span
                                 v-if="refreshingFeedIds.has(feed.id)"
                                 class="text-sidebar-foreground/70 animate-spin"
