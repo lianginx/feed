@@ -310,10 +310,11 @@ async function onDropReorder(
   </SidebarHeader>
 
   <SidebarContent>
-    <div class="p-2">
+    <div class="p-2 h-full">
       <ContextMenu>
-        <ContextMenuTrigger>
+        <ContextMenuTrigger class="block h-full">
           <div
+            class="h-full"
             @dragover="onDragOverCategory(null, $event)"
             @dragleave="onDragLeaveCategory"
             @drop="onDropToCategory(null, $event)"
