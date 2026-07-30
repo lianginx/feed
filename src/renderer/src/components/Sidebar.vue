@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { RefreshCw, Plus, Settings, CheckCheck, LoaderCircle, TriangleAlert } from '@lucide/vue'
+import { RefreshCw, Plus, CheckCheck, LoaderCircle, TriangleAlert } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -17,7 +17,6 @@ import { useFeeds, type FeedItem } from '../composables/useFeeds'
 import { useArticles } from '../composables/useArticles'
 import { useAddFeedDialog } from '../composables/useAddFeedDialog'
 import { useAddCategoryDialog } from '../composables/useAddCategoryDialog'
-import { useSettingsDialog } from '../composables/useSettingsDialog'
 const {
   categories,
   feeds,
@@ -36,7 +35,6 @@ const {
 
 const { showAddFeed } = useAddFeedDialog()
 const { showAddCategory, handleEditCategory, handleDeleteCategory } = useAddCategoryDialog()
-const { showSettings } = useSettingsDialog()
 const dragFeedId = ref<number | null>(null)
 const dragOverFeedId = ref<number | null>(null)
 const dragOverCategoryId = ref<number | null>(null)
@@ -549,14 +547,6 @@ async function onDropReorder(
             </ContextMenuItem>
           </ContextMenuContent>
         </ContextMenu>
-      </div>
-
-      <!-- 底部操作栏 -->
-      <div class="p-2 border-t border-border">
-        <Button variant="ghost" class="w-full justify-start gap-2" @click="showSettings = true">
-          <Settings class="w-4 h-4" />
-          设置
-        </Button>
       </div>
     </TooltipProvider>
   </aside>

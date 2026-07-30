@@ -1,5 +1,5 @@
 import { app, Tray, Menu, nativeImage } from 'electron'
-import { getMainWindow, setIsQuitting } from './window'
+import { getMainWindow } from './window'
 import icon from '../../../resources/icon.png?asset'
 
 let tray: Tray | null = null
@@ -23,43 +23,27 @@ export function createTray(): void {
   const contextMenu = Menu.buildFromTemplate([
     {
       label: '显示主窗口',
-      click: () => {
-        const win = getMainWindow()
-        if (win) {
-          win.show()
-          win.focus()
-        }
-      }
+      click: () => getMainWindow()?.show()
     },
     { type: 'separator' },
     {
       label: '刷新所有订阅',
-      click: () => {
-        getMainWindow()?.webContents.send('sync:refreshAll')
-      }
+      click: () => getMainWindow()?.webContents.send('sync:refreshAll')
+    },
+    { type: 'separator' },
+    {
+      label: '设置',
+      click: () => getMainWindow()?.webContents.send('menu:openSettings')
     },
     { type: 'separator' },
     {
       label: '退出',
-      click: () => {
-        setIsQuitting(true)
-        app.quit()
-      }
+      click: () => app.quit()
     }
   ])
 
   tray.setToolTip('Feed')
   tray.setContextMenu(contextMenu)
 
-  // 点击托盘图标恢复窗口
-  tray.on('click', () => {
-    const win = getMainWindow()
-    if (win) {
-      if (win.isVisible()) {
-        win.focus()
-      } else {
-        win.show()
-      }
-    }
-  })
+  tray.on('double-click', () => getMainWindow()?.show())
 }

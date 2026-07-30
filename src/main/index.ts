@@ -1,4 +1,4 @@
-import { app, nativeTheme, BrowserWindow } from 'electron'
+import { app, nativeTheme } from 'electron'
 import { electronApp } from '@electron-toolkit/utils'
 import { initializeDatabase, closeConnection } from './database'
 import { registerAllHandlers } from './ipc/index'
@@ -53,11 +53,16 @@ app.whenReady().then(() => {
   startScheduler()
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    const existing = getMainWindow()
+    if (existing) {
+      existing.show()
+      existing.focus()
+    } else {
+      createWindow()
+    }
   })
 })
 
-// 关闭窗口时最小化到托盘（不退出）
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
