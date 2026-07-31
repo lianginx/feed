@@ -82,7 +82,7 @@ function openInBrowser(url: string | null): void {
       </div>
 
       <!-- 文章内容 -->
-      <div ref="contentRef" class="flex-1 overflow-y-overlay">
+      <div ref="contentRef" class="flex-1 overflow-y-auto">
         <article class="max-w-3xl mx-auto px-8 py-6" style="user-select: text">
           <header class="mb-6">
             <h1

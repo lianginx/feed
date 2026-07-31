@@ -89,7 +89,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <SidebarProvider :style="{ '--sidebar-width': '20rem' }" class="h-screen">
+  <SidebarProvider :style="{ '--sidebar-width': '20rem' }" class="h-screen overflow-hidden">
     <Sidebar collapsible="none" class="border-r border-sidebar-border">
       <SidebarNav />
     </Sidebar>

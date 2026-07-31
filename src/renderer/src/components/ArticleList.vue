@@ -165,7 +165,7 @@ function openInBrowser(url: string | null): void {
     </div>
 
     <!-- 文章列表 -->
-    <div ref="parentRef" class="flex-1 overflow-y-overlay">
+    <div ref="parentRef" class="flex-1 overflow-y-auto">
       <div v-if="loading && articles.length === 0" class="space-y-2 p-4">
         <Skeleton class="h-20 w-full" />
         <Skeleton class="h-20 w-full" />
