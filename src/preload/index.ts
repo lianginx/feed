@@ -28,7 +28,7 @@ const api = {
     list: (params: { feedId?: number; filter?: 'all' | 'unread' | 'starred' }) =>
       ipcRenderer.invoke('articles:list', params),
     get: (id: number) => ipcRenderer.invoke('articles:get', id),
-    markRead: (id: number) => ipcRenderer.invoke('articles:markRead', id),
+    toggleRead: (id: number) => ipcRenderer.invoke('articles:toggleRead', id),
     markAllRead: (feedId?: number) => ipcRenderer.invoke('articles:markAllRead', feedId),
     toggleStar: (id: number) => ipcRenderer.invoke('articles:toggleStar', id),
     search: (query: string) => ipcRenderer.invoke('articles:search', query),

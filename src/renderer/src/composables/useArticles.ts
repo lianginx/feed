@@ -61,11 +61,13 @@ export function useArticles() {
     if (result.success && result.data) {
       currentArticle.value = result.data
       if (!result.data.is_read) {
-        await window.api.articles.markRead(id)
-        const item = articles.value.find((a) => a.id === id)
-        if (item) item.is_read = 1
-        const { loadFeeds } = useFeeds()
-        await loadFeeds()
+        const readResult = await window.api.articles.toggleRead(id)
+        if (readResult.success && readResult.data) {
+          const item = articles.value.find((a) => a.id === id)
+          if (item) item.is_read = readResult.data.is_read
+          const { loadFeeds } = useFeeds()
+          await loadFeeds()
+        }
       }
     }
   }
@@ -78,6 +80,19 @@ export function useArticles() {
       if (currentArticle.value?.id === id) {
         currentArticle.value.is_starred = result.data.is_starred
       }
+    }
+  }
+
+  async function toggleRead(id: number): Promise<void> {
+    const result = await window.api.articles.toggleRead(id)
+    if (result.success && result.data) {
+      const item = articles.value.find((a) => a.id === id)
+      if (item) item.is_read = result.data.is_read
+      if (currentArticle.value?.id === id) {
+        currentArticle.value.is_read = result.data.is_read
+      }
+      const { loadFeeds } = useFeeds()
+      await loadFeeds()
     }
   }
 
@@ -109,6 +124,7 @@ export function useArticles() {
     loadArticles,
     openArticle,
     toggleStar,
+    toggleRead,
     markAllRead,
     search,
     closeArticle

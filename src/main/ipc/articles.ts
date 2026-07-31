@@ -72,12 +72,17 @@ export function registerArticleHandlers(): void {
     }
   })
 
-  ipcMain.handle('articles:markRead', async (_event, id: number) => {
+  ipcMain.handle('articles:toggleRead', async (_event, id: number) => {
     try {
       const db = getConnection()
-      db.prepare('UPDATE articles SET is_read = 1 WHERE id = ?').run(id)
+      db.prepare(
+        'UPDATE articles SET is_read = CASE WHEN is_read = 1 THEN 0 ELSE 1 END WHERE id = ?'
+      ).run(id)
+      const article = db.prepare('SELECT is_read FROM articles WHERE id = ?').get(id) as {
+        is_read: number
+      }
       scheduleBadgeUpdate()
-      return success({ id })
+      return success({ id, is_read: article.is_read })
     } catch (e) {
       return error((e as Error).message)
     }

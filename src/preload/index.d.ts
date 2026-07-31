@@ -107,7 +107,7 @@ interface ArticleApi {
     filter?: 'all' | 'unread' | 'starred'
   }) => Promise<ApiResponse<ArticleListResult>>
   get: (id: number) => Promise<ApiResponse<ArticleDetail>>
-  markRead: (id: number) => Promise<ApiResponse<{ id: number }>>
+  toggleRead: (id: number) => Promise<ApiResponse<{ id: number; is_read: number }>>
   markAllRead: (feedId?: number) => Promise<ApiResponse<{ ok: boolean }>>
   toggleStar: (id: number) => Promise<ApiResponse<{ id: number; is_starred: number }>>
   search: (query: string) => Promise<ApiResponse<Article[]>>
