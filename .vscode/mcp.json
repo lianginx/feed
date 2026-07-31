@@ -1,11 +1,11 @@
 {
   "servers": {
-    "shadcn-vue": {
-      "command": "pnpm",
+    "dbx": {
+      "type": "stdio",
+      "command": "npx",
       "args": [
-        "dlx",
-        "shadcn-vue@latest",
-        "mcp"
+        "-y",
+        "@dbx-app/mcp-server"
       ]
     }
   }
