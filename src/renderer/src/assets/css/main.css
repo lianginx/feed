@@ -1,8 +1,9 @@
 @import 'tailwindcss';
 @plugin "@tailwindcss/typography";
-@import './theme.css';
+@import './shadcn.css';
 @import './prose.css';
 @import "tw-animate-css";
+@import './theme.css';
 
 html {
   background-color: var(--background);
@@ -46,4 +47,3 @@ body {
 .overflow-x-overlay {
   overflow-x: auto;
 }
-
