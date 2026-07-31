@@ -27,6 +27,7 @@ export function createWindow(): void {
     settings.theme === 'dark' || (settings.theme === 'system' && nativeTheme.shouldUseDarkColors)
 
   mainWindow = new BrowserWindow({
+    acceptFirstMouse: true,
     width: bounds.width || 1200,
     height: bounds.height || 800,
     x: bounds.x,
