@@ -19,6 +19,8 @@ export function initializeDatabase(): void {
     .prepare('SELECT COALESCE(MAX(version), 0) AS version FROM _migrations')
     .get() as { version: number }
 
+  migrations.sort((a, b) => a.version - b.version)
+
   for (const m of migrations) {
     if (m.version <= current.version) continue
 
