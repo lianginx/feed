@@ -108,12 +108,12 @@ interface ArticleApi {
     feedId?: number
     categoryId?: number | null
     filter?: 'all' | 'unread' | 'starred'
+    query?: string
   }) => Promise<ApiResponse<ArticleListResult>>
   get: (id: number) => Promise<ApiResponse<ArticleDetail>>
   toggleRead: (id: number) => Promise<ApiResponse<{ id: number; is_read: number }>>
   markAllRead: (feedId?: number) => Promise<ApiResponse<{ ok: boolean }>>
   toggleStar: (id: number) => Promise<ApiResponse<{ id: number; is_starred: number }>>
-  search: (query: string) => Promise<ApiResponse<Article[]>>
   getUnreadCounts: () => Promise<ApiResponse<{ feed_id: number; count: number }[]>>
 }
 

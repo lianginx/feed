@@ -92,5 +92,43 @@ ALTER TABLE articles ADD COLUMN cover_image TEXT;
     up: `
 ALTER TABLE feeds ADD COLUMN custom_title INTEGER NOT NULL DEFAULT 0;
 `
+  },
+  {
+    version: 4,
+    name: 'rebuild-fts-with-trigram',
+    up: `
+DROP TRIGGER IF EXISTS articles_ai;
+DROP TRIGGER IF EXISTS articles_ad;
+DROP TRIGGER IF EXISTS articles_au;
+DROP TABLE IF EXISTS articles_fts;
+
+CREATE VIRTUAL TABLE IF NOT EXISTS articles_fts USING fts5(
+  title, content, author,
+  tokenize='trigram',
+  detail='none',
+  content='articles',
+  content_rowid='id'
+);
+
+INSERT INTO articles_fts(rowid, title, content, author)
+  SELECT id, title, content, author FROM articles;
+
+CREATE TRIGGER IF NOT EXISTS articles_ai AFTER INSERT ON articles BEGIN
+  INSERT INTO articles_fts(rowid, title, content, author)
+  VALUES (new.id, new.title, new.content, new.author);
+END;
+
+CREATE TRIGGER IF NOT EXISTS articles_ad AFTER DELETE ON articles BEGIN
+  INSERT INTO articles_fts(articles_fts, rowid, title, content, author)
+  VALUES ('delete', old.id, old.title, old.content, old.author);
+END;
+
+CREATE TRIGGER IF NOT EXISTS articles_au AFTER UPDATE ON articles BEGIN
+  INSERT INTO articles_fts(articles_fts, rowid, title, content, author)
+  VALUES ('delete', old.id, old.title, old.content, old.author);
+  INSERT INTO articles_fts(rowid, title, content, author)
+  VALUES (new.id, new.title, new.content, new.author);
+END;
+`
   }
 ]

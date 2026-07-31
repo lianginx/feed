@@ -106,9 +106,15 @@ export function useArticles() {
   }
 
   async function search(query: string): Promise<ArticleItem[]> {
-    const result = await window.api.articles.search(query)
+    const { selectedFeedId, selectedCategoryId, filter } = useFeeds()
+    const result = await window.api.articles.list({
+      query,
+      feedId: selectedFeedId.value ?? undefined,
+      categoryId: selectedCategoryId.value,
+      filter: filter.value
+    })
     if (result.success && result.data) {
-      return result.data
+      return result.data.articles
     }
     return []
   }

@@ -61,15 +61,16 @@ const api = {
   articles: {
     list: (params: {
       feedId?: number
+      categoryId?: number | null
       filter?: 'all' | 'unread' | 'starred'
+      query?: string
       cursor?: { publishedAt: number; id: number }
       limit?: number
     }) => ipcRenderer.invoke('articles:list', params),
     get: (id: number) => ipcRenderer.invoke('articles:get', id),
     markRead: (id: number) => ipcRenderer.invoke('articles:markRead', id),
     markAllRead: (feedId?: number) => ipcRenderer.invoke('articles:markAllRead', feedId),
-    toggleStar: (id: number) => ipcRenderer.invoke('articles:toggleStar', id),
-    search: (query: string) => ipcRenderer.invoke('articles:search', query)
+    toggleStar: (id: number) => ipcRenderer.invoke('articles:toggleStar', id)
   },
   // 配置相关
   config: {
