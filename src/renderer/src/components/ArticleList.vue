@@ -60,7 +60,7 @@ const virtualizer = useVirtualizer(
   computed(() => ({
     count: articles.value.length,
     getScrollElement: () => parentRef.value,
-    estimateSize: () => 100,
+    estimateSize: () => 110,
     overscan: 10
   }))
 )
