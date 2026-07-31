@@ -32,13 +32,14 @@ interface CategoryItem {
 const categories = ref<CategoryItem[]>([])
 const feeds = ref<FeedItem[]>([])
 const selectedFeedId = ref<number | null>(null)
-const selectedCategoryId = ref<number | null>(null)
+const selectedCategoryId = ref<number | null | undefined>(undefined)
 const filter = ref<FilterType | undefined>('all')
 const loading = ref(false)
 const refreshingFeedIds = ref<Set<number>>(new Set())
 
 const filteredFeeds = computed(() => {
-  if (selectedCategoryId.value === null) return feeds.value
+  if (selectedCategoryId.value === undefined) return feeds.value
+  if (selectedCategoryId.value === null) return feeds.value.filter((f) => f.category_id === null)
   return feeds.value.filter((f) => f.category_id === selectedCategoryId.value)
 })
 
@@ -123,7 +124,7 @@ export function useFeeds() {
     }
   }
 
-  async function refreshCategoryFeeds(catId: number): Promise<void> {
+  async function refreshCategoryFeeds(catId: number | null): Promise<void> {
     const targetFeeds = feeds.value.filter((f) => f.category_id === catId)
     await Promise.allSettled(targetFeeds.map((f) => refreshSingleFeed(f.id)))
   }
@@ -134,12 +135,12 @@ export function useFeeds() {
 
   function selectFeed(id: number | null): void {
     selectedFeedId.value = id
-    if (id !== null) selectedCategoryId.value = null
+    if (id !== null) selectedCategoryId.value = undefined
   }
 
-  function selectCategory(id: number | null): void {
+  function selectCategory(id: number | null | undefined): void {
     selectedCategoryId.value = id
-    if (id !== null) selectedFeedId.value = null
+    if (id !== undefined) selectedFeedId.value = null
   }
 
   // 监听单个订阅源刷新进度
@@ -170,7 +171,7 @@ export function useFeeds() {
             loadArticles(selectedFeedId.value, undefined, filter.value)
           }
         } else {
-          loadArticles(undefined, selectedCategoryId.value ?? undefined, filter.value)
+          loadArticles(undefined, selectedCategoryId.value, filter.value)
         }
       } else if (data.status === 'error') {
         loadFeeds()

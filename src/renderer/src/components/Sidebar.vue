@@ -28,7 +28,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub
@@ -64,7 +63,12 @@ const dragFeedId = ref<number | null>(null)
 const dragOverFeedId = ref<number | null>(null)
 const dragOverCategoryId = ref<number | null>(null)
 const dropPosition = ref<'before' | 'after'>('after')
+const dragCategoryId = ref<number | null>(null)
+const dragOverCategorySortId = ref<number | null>(null)
+const categoryDropPosition = ref<'before' | 'after'>('after')
+const savedCollapsedCategories = reactive<Record<number, boolean>>({})
 const collapsedCategories = reactive<Record<number, boolean>>({})
+const uncategorizedCollapsed = ref(false)
 const editingFeed = ref<FeedItem | null>(null)
 const showEditFeed = ref(false)
 const renamingFeedId = ref<number | null>(null)
@@ -78,18 +82,22 @@ function toggleCategory(catId: number): void {
   collapsedCategories[catId] = !collapsedCategories[catId]
 }
 
+function toggleUncategorized(): void {
+  uncategorizedCollapsed.value = !uncategorizedCollapsed.value
+}
+
 async function handleMarkAllRead(feedId?: number): Promise<void> {
   const { markAllRead: markAllArticlesRead } = useArticles()
   await markAllArticlesRead(feedId)
 }
 
-async function handleMarkAllReadByCategory(catId: number): Promise<void> {
+async function handleMarkAllReadByCategory(catId: number | null): Promise<void> {
   await window.api.categories.markAllRead(catId)
   const { loadFeeds } = useFeeds()
   await loadFeeds()
 }
 
-async function handleRefreshCategory(catId: number, event: Event): Promise<void> {
+async function handleRefreshCategory(catId: number | null, event: Event): Promise<void> {
   event.stopPropagation()
   await refreshCategoryFeeds(catId)
 }
@@ -157,19 +165,19 @@ async function handleDeleteFeed(feedId: number): Promise<void> {
 
 function handleSelectAll(): void {
   selectFeed(null)
-  selectCategory(null)
+  selectCategory(undefined)
   filter.value = 'all'
 }
 
 function handleSelectUnread(): void {
   selectFeed(null)
-  selectCategory(null)
+  selectCategory(undefined)
   filter.value = 'unread'
 }
 
 function handleSelectStarred(): void {
   selectFeed(null)
-  selectCategory(null)
+  selectCategory(undefined)
   filter.value = 'starred'
 }
 
@@ -178,7 +186,7 @@ function handleSelectFeed(id: number): void {
   selectFeed(id)
 }
 
-function handleSelectCategory(id: number): void {
+function handleSelectCategory(id: number | null): void {
   selectCategory(id)
   selectFeed(null)
   filter.value = undefined
@@ -214,6 +222,10 @@ const categoryUnreadCount = computed(() => {
   return map
 })
 
+const uncategorizedUnreadCount = computed(() =>
+  feeds.value.reduce((sum, f) => (f.category_id === null ? sum + f.unread_count : sum), 0)
+)
+
 function onDragStart(feedId: number, event: DragEvent): void {
   dragFeedId.value = feedId
   if (event.dataTransfer) {
@@ -238,8 +250,10 @@ function onDragLeaveFeed(): void {
 
 function onDragOverCategory(catId: number | null, event: DragEvent): void {
   event.preventDefault()
+  event.stopPropagation()
   if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
-  if ((event.target as HTMLElement).closest('[draggable="true"]')) return
+  if (dragCategoryId.value !== null) return
+  if ((event.target as HTMLElement).closest('[data-sidebar="menu-button"]')) return
   dragOverCategoryId.value = catId
   dragOverFeedId.value = null
 }
@@ -252,6 +266,7 @@ function onDragEnd(): void {
   dragFeedId.value = null
   dragOverFeedId.value = null
   dragOverCategoryId.value = null
+  dragOverCategorySortId.value = null
 }
 
 async function onDropToCategory(catId: number | null, event: DragEvent): Promise<void> {
@@ -309,6 +324,72 @@ async function onDropReorder(
   const orderPayload = reordered.map((f, i) => ({ id: f.id, sort_order: i }))
   await window.api.feeds.updateSortOrder(orderPayload)
   await loadFeeds()
+}
+
+function onCategoryDragStart(catId: number, event: DragEvent): void {
+  dragCategoryId.value = catId
+  dragOverCategoryId.value = null
+  dragOverFeedId.value = null
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(catId))
+  }
+  // 记录所有分组折叠状态并全部收起
+  for (const c of categories.value) {
+    savedCollapsedCategories[c.id] = collapsedCategories[c.id] ?? false
+    collapsedCategories[c.id] = true
+  }
+}
+
+function onCategoryDragOver(catId: number, event: DragEvent): void {
+  if (dragCategoryId.value === null) return
+  event.preventDefault()
+  event.stopPropagation()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+  if (dragCategoryId.value === catId) return
+  dragOverCategorySortId.value = catId
+  dragOverCategoryId.value = null
+  dragOverFeedId.value = null
+  const el = event.currentTarget as HTMLElement
+  const rect = el.getBoundingClientRect()
+  categoryDropPosition.value = event.clientY - rect.top < rect.height / 2 ? 'before' : 'after'
+}
+
+function onCategoryDragLeave(): void {
+  dragOverCategorySortId.value = null
+}
+
+async function onCategoryDrop(catId: number, event: DragEvent): Promise<void> {
+  const draggedId = dragCategoryId.value
+  if (draggedId === null) return
+  event.preventDefault()
+  event.stopPropagation()
+  if (draggedId === catId) return
+
+  const reordered = [...categories.value]
+  const fromIndex = reordered.findIndex((c) => c.id === draggedId)
+  const toIndex = reordered.findIndex((c) => c.id === catId)
+  if (fromIndex === -1) return
+
+  const [moved] = reordered.splice(fromIndex, 1)
+  const targetInNew = fromIndex < toIndex ? toIndex - 1 : toIndex
+  const insertAt = categoryDropPosition.value === 'after' ? targetInNew + 1 : targetInNew
+  reordered.splice(insertAt, 0, moved)
+
+  await window.api.categories.updateSortOrder(
+    reordered.map((c, i) => ({ id: c.id, sort_order: i }))
+  )
+  await loadFeeds()
+  onCategoryDragEnd()
+}
+
+function onCategoryDragEnd(): void {
+  dragCategoryId.value = null
+  dragOverCategorySortId.value = null
+  // 恢复折叠状态
+  for (const c of categories.value) {
+    collapsedCategories[c.id] = savedCollapsedCategories[c.id]
+  }
 }
 </script>
 
@@ -411,7 +492,8 @@ async function onDropReorder(
                       <SidebarGroup>
                         <div
                           data-sidebar="group-label"
-                          class="flex w-full items-center gap-1.5 rounded-md my-1 px-2 py-1.5 text-sm transition-colors"
+                          draggable="true"
+                          class="relative flex w-full items-center gap-1.5 rounded-md my-1 px-2 py-1.5 text-sm transition-colors"
                           :class="
                             selectedCategoryId === cat.id
                               ? 'bg-sidebar-accent text-sidebar-accent-foreground'
@@ -419,7 +501,24 @@ async function onDropReorder(
                                 ? 'bg-sidebar-accent/80 text-sidebar-accent-foreground'
                                 : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                           "
+                          @dragstart="onCategoryDragStart(cat.id, $event)"
+                          @dragend="onCategoryDragEnd"
+                          @dragover="onCategoryDragOver(cat.id, $event)"
+                          @dragleave="onCategoryDragLeave"
+                          @drop="onCategoryDrop(cat.id, $event)"
                         >
+                          <span
+                            v-if="
+                              dragOverCategorySortId === cat.id && categoryDropPosition === 'before'
+                            "
+                            class="absolute top-0 left-2 right-2 h-0.5 -translate-y-1/2 rounded-full bg-sidebar-primary z-10 pointer-events-none"
+                          />
+                          <span
+                            v-if="
+                              dragOverCategorySortId === cat.id && categoryDropPosition === 'after'
+                            "
+                            class="absolute bottom-0 left-2 right-2 h-0.5 translate-y-1/2 rounded-full bg-sidebar-primary z-10 pointer-events-none"
+                          />
                           <CollapsibleTrigger as-child>
                             <button
                               class="flex items-center justify-center size-5 shrink-0 -ml-0.5"
@@ -587,135 +686,187 @@ async function onDropReorder(
               </div>
               <div
                 v-if="feeds.filter((f) => f.category_id === null).length > 0"
+                v-show="dragCategoryId === null"
                 class="mt-1"
                 @dragover="onDragOverCategory(null, $event)"
                 @dragleave="onDragLeaveCategory"
                 @drop="onDropToCategory(null, $event)"
               >
-                <SidebarGroup>
-                  <SidebarGroupLabel
-                    :class="
-                      dragOverCategoryId === null
-                        ? 'bg-sidebar-accent/80 text-sidebar-accent-foreground'
-                        : ''
-                    "
-                  >
-                    未分类
-                  </SidebarGroupLabel>
-                  <SidebarGroupContent>
-                    <SidebarMenuSub>
-                      <SidebarMenuItem
-                        v-for="feed in feeds.filter((f) => f.category_id === null)"
-                        :key="feed.id"
-                      >
-                        <ContextMenu>
-                          <ContextMenuTrigger>
-                            <SidebarMenuButton
-                              :is-active="selectedFeedId === feed.id"
-                              draggable="true"
-                              class="relative"
-                              @click="handleSelectFeed(feed.id)"
-                              @dblclick="openFeedInBrowser(feed)"
-                              @dragstart="onDragStart(feed.id, $event)"
-                              @dragend="onDragEnd"
-                              @dragover="onDragOverFeed(feed.id, $event)"
-                              @dragleave="onDragLeaveFeed"
-                              @drop="onDropReorder(null, feed.id, $event)"
+                <Collapsible
+                  :open="!uncategorizedCollapsed"
+                  class="w-full"
+                  @update:open="(open: boolean) => (uncategorizedCollapsed = !open)"
+                >
+                  <ContextMenu>
+                    <ContextMenuTrigger>
+                      <SidebarGroup>
+                        <div
+                          data-sidebar="group-label"
+                          class="flex w-full items-center gap-1.5 rounded-md my-1 px-2 py-1.5 text-sm transition-colors"
+                          :class="
+                            selectedCategoryId === null
+                              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                              : dragOverCategoryId === null
+                                ? 'bg-sidebar-accent/80 text-sidebar-accent-foreground'
+                                : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                          "
+                        >
+                          <CollapsibleTrigger as-child>
+                            <button
+                              class="flex items-center justify-center size-5 shrink-0 -ml-0.5"
                             >
-                              <span
-                                v-if="dragOverFeedId === feed.id && dropPosition === 'before'"
-                                class="absolute top-0 left-2 right-2 h-0.5 -translate-y-1/2 rounded-full bg-sidebar-primary z-10 pointer-events-none"
+                              <ChevronRight
+                                class="w-3.5 h-3.5 transition-transform duration-200"
+                                :class="{ 'rotate-90': !uncategorizedCollapsed }"
                               />
-                              <span
-                                v-if="dragOverFeedId === feed.id && dropPosition === 'after'"
-                                class="absolute bottom-0 left-2 right-2 h-0.5 translate-y-1/2 rounded-full bg-sidebar-primary z-10 pointer-events-none"
-                              />
-                              <span class="flex items-center gap-2 truncate min-w-0 flex-1">
-                                <span
-                                  class="w-4 h-4 shrink-0 rounded bg-sidebar-accent flex items-center justify-center text-[10px] overflow-hidden"
-                                >
-                                  <img
-                                    v-if="feed.favicon_url"
-                                    :src="feed.favicon_url"
-                                    alt=""
-                                    class="w-full h-full object-contain"
-                                    @error="
-                                      (e: Event) => {
-                                        ;(e.target as HTMLImageElement).style.display = 'none'
-                                      }
-                                    "
-                                  />
-                                  <span v-else class="text-sidebar-foreground/70">{{
-                                    feed.title.charAt(0)
-                                  }}</span>
-                                </span>
-                                <Input
-                                  v-if="renamingFeedId === feed.id"
-                                  :data-rename-input="feed.id"
-                                  :default-value="feed.title"
-                                  class="h-6 py-0 px-1 text-sm"
-                                  @focus="onRenameFocus"
-                                  @keydown="handleRenameKeydown"
-                                  @blur="saveRename"
-                                />
-                                <span v-else class="truncate">{{ feed.title }}</span>
-                              </span>
-                              <span
-                                class="flex items-center gap-1 shrink-0 ml-auto overflow-visible"
+                            </button>
+                          </CollapsibleTrigger>
+                          <button
+                            class="flex-1 text-left truncate"
+                            @click="handleSelectCategory(null)"
+                            @dblclick="toggleUncategorized"
+                          >
+                            未分类
+                          </button>
+                          <span
+                            v-if="uncategorizedUnreadCount > 0"
+                            class="text-xs tabular-nums ml-auto text-sidebar-foreground/50"
+                          >
+                            {{ uncategorizedUnreadCount }}
+                          </span>
+                        </div>
+                        <CollapsibleContent>
+                          <SidebarGroupContent>
+                            <SidebarMenuSub class="mr-0 pr-0">
+                              <SidebarMenuItem
+                                v-for="feed in feeds.filter((f) => f.category_id === null)"
+                                :key="feed.id"
                               >
-                                <span
-                                  v-if="refreshingFeedIds.has(feed.id)"
-                                  class="text-sidebar-foreground/70 animate-spin"
-                                >
-                                  <LoaderCircle class="w-3 h-3" />
-                                </span>
-                                <Tooltip v-else-if="feed.last_error">
-                                  <TooltipTrigger>
-                                    <TriangleAlert class="w-3 h-3 text-amber-500" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    {{ feed.last_error }}
-                                  </TooltipContent>
-                                </Tooltip>
-                                <span
-                                  v-if="feed.unread_count > 0"
-                                  class="text-xs tabular-nums text-sidebar-foreground/50"
-                                >
-                                  {{ feed.unread_count }}
-                                </span>
-                              </span>
-                            </SidebarMenuButton>
-                          </ContextMenuTrigger>
-                          <ContextMenuContent>
-                            <ContextMenuItem @select="handleMarkAllRead(feed.id)">
-                              全部标为已读
-                            </ContextMenuItem>
-                            <ContextMenuItem @select="handleRefreshFeed(feed.id, $event)">
-                              刷新
-                            </ContextMenuItem>
-                            <ContextMenuItem @select="openFeedInBrowser(feed)">
-                              打开主页
-                            </ContextMenuItem>
-                            <ContextMenuSeparator />
-                            <ContextMenuItem @select="handleRenameFeed(feed.id)">
-                              重命名
-                            </ContextMenuItem>
-                            <ContextMenuItem @select="handleEditFeed(feed.id)"
-                              >编辑</ContextMenuItem
-                            >
-                            <ContextMenuSeparator />
-                            <ContextMenuItem
-                              class="text-destructive! focus:text-destructive"
-                              @select="handleDeleteFeed(feed.id)"
-                            >
-                              删除
-                            </ContextMenuItem>
-                          </ContextMenuContent>
-                        </ContextMenu>
-                      </SidebarMenuItem>
-                    </SidebarMenuSub>
-                  </SidebarGroupContent>
-                </SidebarGroup>
+                                <ContextMenu>
+                                  <ContextMenuTrigger>
+                                    <SidebarMenuButton
+                                      :is-active="selectedFeedId === feed.id"
+                                      draggable="true"
+                                      class="relative"
+                                      @click="handleSelectFeed(feed.id)"
+                                      @dblclick="openFeedInBrowser(feed)"
+                                      @dragstart="onDragStart(feed.id, $event)"
+                                      @dragend="onDragEnd"
+                                      @dragover="onDragOverFeed(feed.id, $event)"
+                                      @dragleave="onDragLeaveFeed"
+                                      @drop="onDropReorder(null, feed.id, $event)"
+                                    >
+                                      <span
+                                        v-if="
+                                          dragOverFeedId === feed.id && dropPosition === 'before'
+                                        "
+                                        class="absolute top-0 left-2 right-2 h-0.5 -translate-y-1/2 rounded-full bg-sidebar-primary z-10 pointer-events-none"
+                                      />
+                                      <span
+                                        v-if="
+                                          dragOverFeedId === feed.id && dropPosition === 'after'
+                                        "
+                                        class="absolute bottom-0 left-2 right-2 h-0.5 translate-y-1/2 rounded-full bg-sidebar-primary z-10 pointer-events-none"
+                                      />
+                                      <span class="flex items-center gap-2 truncate min-w-0 flex-1">
+                                        <span
+                                          class="w-4 h-4 shrink-0 rounded bg-sidebar-accent flex items-center justify-center text-[10px] overflow-hidden"
+                                        >
+                                          <img
+                                            v-if="feed.favicon_url"
+                                            :src="feed.favicon_url"
+                                            alt=""
+                                            class="w-full h-full object-contain"
+                                            @error="
+                                              (e: Event) => {
+                                                ;(e.target as HTMLImageElement).style.display =
+                                                  'none'
+                                              }
+                                            "
+                                          />
+                                          <span v-else class="text-sidebar-foreground/70">{{
+                                            feed.title.charAt(0)
+                                          }}</span>
+                                        </span>
+                                        <Input
+                                          v-if="renamingFeedId === feed.id"
+                                          :data-rename-input="feed.id"
+                                          :default-value="feed.title"
+                                          class="h-6 py-0 px-1 text-sm"
+                                          @focus="onRenameFocus"
+                                          @keydown="handleRenameKeydown"
+                                          @blur="saveRename"
+                                        />
+                                        <span v-else class="truncate">{{ feed.title }}</span>
+                                      </span>
+                                      <span
+                                        class="flex items-center gap-1 shrink-0 ml-auto overflow-visible"
+                                      >
+                                        <span
+                                          v-if="refreshingFeedIds.has(feed.id)"
+                                          class="text-sidebar-foreground/70 animate-spin"
+                                        >
+                                          <LoaderCircle class="w-3 h-3" />
+                                        </span>
+                                        <Tooltip v-else-if="feed.last_error">
+                                          <TooltipTrigger>
+                                            <TriangleAlert class="w-3 h-3 text-amber-500" />
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            {{ feed.last_error }}
+                                          </TooltipContent>
+                                        </Tooltip>
+                                        <span
+                                          v-if="feed.unread_count > 0"
+                                          class="text-xs tabular-nums text-sidebar-foreground/50"
+                                        >
+                                          {{ feed.unread_count }}
+                                        </span>
+                                      </span>
+                                    </SidebarMenuButton>
+                                  </ContextMenuTrigger>
+                                  <ContextMenuContent>
+                                    <ContextMenuItem @select="handleMarkAllRead(feed.id)">
+                                      全部标为已读
+                                    </ContextMenuItem>
+                                    <ContextMenuItem @select="handleRefreshFeed(feed.id, $event)">
+                                      刷新
+                                    </ContextMenuItem>
+                                    <ContextMenuItem @select="openFeedInBrowser(feed)">
+                                      打开主页
+                                    </ContextMenuItem>
+                                    <ContextMenuSeparator />
+                                    <ContextMenuItem @select="handleRenameFeed(feed.id)">
+                                      重命名
+                                    </ContextMenuItem>
+                                    <ContextMenuItem @select="handleEditFeed(feed.id)"
+                                      >编辑</ContextMenuItem
+                                    >
+                                    <ContextMenuSeparator />
+                                    <ContextMenuItem
+                                      class="text-destructive! focus:text-destructive"
+                                      @select="handleDeleteFeed(feed.id)"
+                                    >
+                                      删除
+                                    </ContextMenuItem>
+                                  </ContextMenuContent>
+                                </ContextMenu>
+                              </SidebarMenuItem>
+                            </SidebarMenuSub>
+                          </SidebarGroupContent>
+                        </CollapsibleContent>
+                      </SidebarGroup>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem @select="handleMarkAllReadByCategory(null)">
+                        全部标为已读
+                      </ContextMenuItem>
+                      <ContextMenuItem @select="handleRefreshCategory(null, $event)">
+                        刷新
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                </Collapsible>
               </div>
               <div class="h-40" />
             </template>

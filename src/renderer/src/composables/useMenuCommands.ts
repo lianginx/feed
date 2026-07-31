@@ -25,7 +25,7 @@ export function useMenuCommands(): void {
     window.electron.ipcRenderer.on('menu:refreshFeed', async () => {
       if (selectedFeedId.value) {
         await refreshSingleFeed(selectedFeedId.value)
-      } else if (selectedCategoryId.value) {
+      } else if (selectedCategoryId.value !== undefined) {
         await refreshCategoryFeeds(selectedCategoryId.value)
       } else {
         await refreshAllFeeds()

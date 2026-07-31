@@ -68,7 +68,7 @@ const virtualizer = useVirtualizer(
 function reloadArticles(): void {
   if (selectedFeedId.value !== null) {
     loadArticles(selectedFeedId.value, undefined, filter.value)
-  } else if (selectedCategoryId.value !== null) {
+  } else if (selectedCategoryId.value !== undefined) {
     loadArticles(undefined, selectedCategoryId.value, filter.value)
   } else {
     loadArticles(undefined, undefined, filter.value)

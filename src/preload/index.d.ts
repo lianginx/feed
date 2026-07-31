@@ -97,13 +97,16 @@ interface CategoryApi {
   add: (name: string) => Promise<ApiResponse<{ id: number }>>
   update: (id: number, name: string) => Promise<ApiResponse<{ id: number }>>
   delete: (id: number) => Promise<ApiResponse<{ id: number; feedCount: number }>>
-  markAllRead: (categoryId: number) => Promise<ApiResponse<{ ok: boolean }>>
+  markAllRead: (categoryId: number | null) => Promise<ApiResponse<{ ok: boolean }>>
+  updateSortOrder: (
+    items: { id: number; sort_order: number }[]
+  ) => Promise<ApiResponse<{ updated: number }>>
 }
 
 interface ArticleApi {
   list: (params: {
     feedId?: number
-    categoryId?: number
+    categoryId?: number | null
     filter?: 'all' | 'unread' | 'starred'
   }) => Promise<ApiResponse<ArticleListResult>>
   get: (id: number) => Promise<ApiResponse<ArticleDetail>>

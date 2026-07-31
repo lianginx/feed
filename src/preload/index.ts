@@ -22,7 +22,9 @@ const api = {
     add: (name: string) => ipcRenderer.invoke('categories:add', name),
     update: (id: number, name: string) => ipcRenderer.invoke('categories:update', id, name),
     delete: (id: number) => ipcRenderer.invoke('categories:delete', id),
-    markAllRead: (categoryId: number) => ipcRenderer.invoke('categories:markAllRead', categoryId)
+    markAllRead: (categoryId: number) => ipcRenderer.invoke('categories:markAllRead', categoryId),
+    updateSortOrder: (items: { id: number; sort_order: number }[]) =>
+      ipcRenderer.invoke('categories:updateSortOrder', items)
   },
   articles: {
     list: (params: { feedId?: number; filter?: 'all' | 'unread' | 'starred' }) =>

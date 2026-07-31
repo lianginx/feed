@@ -31,7 +31,7 @@ const loading = ref(false)
 export function useArticles() {
   async function loadArticles(
     feedId?: number,
-    categoryId?: number,
+    categoryId?: number | null,
     filter?: FilterType
   ): Promise<void> {
     const loadingTimer = setTimeout(() => {

@@ -18,6 +18,8 @@ export function registerArticleHandlers(): void {
         if (params.feedId !== undefined) {
           conditions.push('a.feed_id = @feedId')
           queryParams.feedId = params.feedId
+        } else if (params.categoryId === null) {
+          conditions.push('f.category_id IS NULL')
         } else if (params.categoryId !== undefined) {
           conditions.push('f.category_id = @categoryId')
           queryParams.categoryId = params.categoryId

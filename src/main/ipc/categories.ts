@@ -75,16 +75,40 @@ export function registerCategoryHandlers(): void {
     }
   })
 
-  ipcMain.handle('categories:markAllRead', async (_event, categoryId: number) => {
+  ipcMain.handle('categories:markAllRead', async (_event, categoryId: number | null) => {
     try {
       const db = getConnection()
-      db.prepare(
-        'UPDATE articles SET is_read = 1 WHERE is_read = 0 AND feed_id IN (SELECT id FROM feeds WHERE category_id = ?)'
-      ).run(categoryId)
+      if (categoryId === null) {
+        db.prepare(
+          'UPDATE articles SET is_read = 1 WHERE is_read = 0 AND feed_id IN (SELECT id FROM feeds WHERE category_id IS NULL)'
+        ).run()
+      } else {
+        db.prepare(
+          'UPDATE articles SET is_read = 1 WHERE is_read = 0 AND feed_id IN (SELECT id FROM feeds WHERE category_id = ?)'
+        ).run(categoryId)
+      }
       scheduleBadgeUpdate()
       return success({ ok: true })
     } catch (e) {
       return error((e as Error).message)
     }
   })
+
+  ipcMain.handle(
+    'categories:updateSortOrder',
+    async (_event, items: { id: number; sort_order: number }[]) => {
+      try {
+        const db = getConnection()
+        const stmt = db.prepare('UPDATE categories SET sort_order = ? WHERE id = ?')
+        db.transaction(() => {
+          for (const item of items) {
+            stmt.run(item.sort_order, item.id)
+          }
+        })()
+        return success({ updated: items.length })
+      } catch (e) {
+        return error((e as Error).message)
+      }
+    }
+  )
 }
