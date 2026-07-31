@@ -78,6 +78,27 @@ export function createWindow(): void {
     return { action: 'deny' }
   })
 
+  // 拦截应用内导航到外部 URL 的链接，改为在系统浏览器中打开
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    // 开发模式下放行 Vite 开发服务器自身的导航（如 HMR 全量刷新）
+    if (
+      is.dev &&
+      process.env['ELECTRON_RENDERER_URL'] &&
+      url.startsWith(process.env['ELECTRON_RENDERER_URL'])
+    ) {
+      return
+    }
+    try {
+      const protocol = new URL(url).protocol
+      if (protocol === 'http:' || protocol === 'https:') {
+        event.preventDefault()
+        shell.openExternal(url).catch(() => {})
+      }
+    } catch {
+      // 忽略无法解析的 URL
+    }
+  })
+
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
