@@ -112,7 +112,7 @@ interface ArticleApi {
   }) => Promise<ApiResponse<ArticleListResult>>
   get: (id: number) => Promise<ApiResponse<ArticleDetail>>
   toggleRead: (id: number) => Promise<ApiResponse<{ id: number; is_read: number }>>
-  markAllRead: (feedId?: number) => Promise<ApiResponse<{ ok: boolean }>>
+  markAllRead: (feedId?: number, scope?: 'starred') => Promise<ApiResponse<{ ok: boolean }>>
   toggleStar: (id: number) => Promise<ApiResponse<{ id: number; is_starred: number }>>
   getUnreadCounts: () => Promise<ApiResponse<{ feed_id: number; count: number }[]>>
 }

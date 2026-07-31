@@ -35,7 +35,8 @@ const api = {
     }) => ipcRenderer.invoke('articles:list', params),
     get: (id: number) => ipcRenderer.invoke('articles:get', id),
     toggleRead: (id: number) => ipcRenderer.invoke('articles:toggleRead', id),
-    markAllRead: (feedId?: number) => ipcRenderer.invoke('articles:markAllRead', feedId),
+    markAllRead: (feedId?: number, scope?: 'starred') =>
+      ipcRenderer.invoke('articles:markAllRead', feedId, scope),
     toggleStar: (id: number) => ipcRenderer.invoke('articles:toggleStar', id),
     getUnreadCounts: () => ipcRenderer.invoke('articles:getUnreadCounts')
   },

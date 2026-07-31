@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
+import { watch, ref, computed, nextTick } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { Search, Star, X } from '@lucide/vue'
 import { dayjs } from '../utils/dayjs'
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/context-menu'
 import { useArticles } from '../composables/useArticles'
 import { useFeeds } from '../composables/useFeeds'
+import { useSearchFocus } from '../composables/useSearchFocus'
 
 const {
   articles,
@@ -30,8 +31,21 @@ const { selectedFeedId, selectedCategoryId, filter } = useFeeds()
 const parentRef = ref<HTMLElement | null>(null)
 const searchQuery = ref('')
 const searchActive = ref(false)
-const searchInput = ref<HTMLInputElement | null>(null)
+const searchInput = ref<{ $el: Element } | null>(null)
 let searchTimer: ReturnType<typeof setTimeout> | null = null
+
+const { focusSignal } = useSearchFocus()
+
+// 菜单触发的搜索聚焦（⌘F）
+watch(focusSignal, () => {
+  nextTick(() => {
+    const el = searchInput.value?.$el
+    if (el instanceof HTMLInputElement) {
+      el.focus()
+      el.select()
+    }
+  })
+})
 
 // 当选择的订阅源或筛选条件变化时重新加载
 watch(
@@ -65,22 +79,6 @@ function reloadArticles(): void {
     loadArticles(undefined, undefined, filter.value)
   }
 }
-
-function onKeydown(event: KeyboardEvent): void {
-  if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
-    event.preventDefault()
-    searchInput.value?.focus()
-    searchInput.value?.select()
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('keydown', onKeydown)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('keydown', onKeydown)
-})
 
 async function handleSearch(): Promise<void> {
   const q = searchQuery.value.trim()

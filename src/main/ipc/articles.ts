@@ -113,10 +113,12 @@ export function registerArticleHandlers(): void {
     }
   })
 
-  ipcMain.handle('articles:markAllRead', async (_event, feedId?: number) => {
+  ipcMain.handle('articles:markAllRead', async (_event, feedId?: number, scope?: 'starred') => {
     try {
       const db = getConnection()
-      if (feedId) {
+      if (scope === 'starred') {
+        db.prepare('UPDATE articles SET is_read = 1 WHERE is_read = 0 AND is_starred = 1').run()
+      } else if (feedId) {
         db.prepare('UPDATE articles SET is_read = 1 WHERE feed_id = ? AND is_read = 0').run(feedId)
       } else {
         db.prepare('UPDATE articles SET is_read = 1 WHERE is_read = 0').run()

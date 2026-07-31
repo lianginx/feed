@@ -6,6 +6,7 @@ import { useMenuCommands } from './composables/useMenuCommands'
 import { useAddFeedDialog } from './composables/useAddFeedDialog'
 import { useAddCategoryDialog } from './composables/useAddCategoryDialog'
 import { useSettingsDialog } from './composables/useSettingsDialog'
+import { useConfirmDialog } from './composables/useConfirmDialog'
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar'
 import SidebarNav from './components/Sidebar.vue'
 import ArticleList from './components/ArticleList.vue'
@@ -25,15 +26,19 @@ const { showAddFeed } = useAddFeedDialog()
 const {
   showAddCategory,
   editCategoryData,
-  showConfirmDialog,
-  confirmDialogTitle,
-  confirmDialogMessage,
   closeCategoryDialog,
-  confirmDeleteCategory,
   handleAddCategory,
   handleUpdateCategory
 } = useAddCategoryDialog()
 const { showSettings } = useSettingsDialog()
+const {
+  show: showConfirmDialog,
+  title: confirmDialogTitle,
+  message: confirmDialogMessage,
+  confirmText,
+  variant: confirmVariant,
+  resolveConfirm
+} = useConfirmDialog()
 
 // 全局禁用浏览器默认右键菜单（自定义 ContextMenu 已自行处理 preventDefault）
 function onContextMenu(e: MouseEvent): void {
@@ -119,11 +124,17 @@ onUnmounted(() => {
   <SettingsDialog v-model:open="showSettings" />
 
   <ConfirmDialog
-    v-model:open="showConfirmDialog"
+    :open="showConfirmDialog"
     :title="confirmDialogTitle"
     :message="confirmDialogMessage"
-    confirm-text="删除"
-    variant="danger"
-    @confirm="confirmDeleteCategory"
+    :confirm-text="confirmText"
+    :variant="confirmVariant"
+    @confirm="resolveConfirm(true)"
+    @cancel="resolveConfirm(false)"
+    @update:open="
+      (open) => {
+        if (!open) showConfirmDialog = false
+      }
+    "
   />
 </template>

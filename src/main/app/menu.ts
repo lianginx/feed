@@ -1,4 +1,4 @@
-import { app, Menu } from 'electron'
+import { app, ipcMain, Menu } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import { getMainWindow } from './window'
 
@@ -75,8 +75,10 @@ export function buildAppMenu(): void {
         },
         { type: 'separator' },
         {
+          id: 'menu-refresh-feed',
           label: '刷新',
           accelerator: 'CmdOrCtrl+R',
+          enabled: false,
           click: () => getMainWindow()?.webContents.send('menu:refreshFeed')
         },
         {
@@ -84,6 +86,7 @@ export function buildAppMenu(): void {
           accelerator: 'CmdOrCtrl+Shift+R',
           click: () => getMainWindow()?.webContents.send('menu:refreshAllFeeds')
         },
+        { type: 'separator' },
         {
           label: '全部标为已读',
           accelerator: 'CmdOrCtrl+Shift+A',
@@ -91,15 +94,40 @@ export function buildAppMenu(): void {
         },
         { type: 'separator' },
         {
-          label: '收藏/取消收藏',
-          accelerator: 'CmdOrCtrl+B',
-          click: () => getMainWindow()?.webContents.send('menu:toggleStar')
-        },
-        { type: 'separator' },
-        {
           label: '关闭窗口',
           accelerator: 'CmdOrCtrl+W',
           role: 'close'
+        }
+      ]
+    },
+    {
+      label: '文章',
+      submenu: [
+        {
+          label: '搜索文章',
+          accelerator: 'CmdOrCtrl+F',
+          click: () => getMainWindow()?.webContents.send('menu:focusSearch')
+        },
+        { type: 'separator' },
+        {
+          id: 'menu-toggle-read',
+          label: '标为已读/标记未读',
+          accelerator: 'CmdOrCtrl+E',
+          enabled: false,
+          click: () => getMainWindow()?.webContents.send('menu:toggleRead')
+        },
+        {
+          label: '全部文章标为已读',
+          accelerator: 'CmdOrCtrl+Shift+E',
+          click: () => getMainWindow()?.webContents.send('menu:markListRead')
+        },
+        { type: 'separator' },
+        {
+          id: 'menu-toggle-star',
+          label: '收藏/取消收藏',
+          accelerator: 'CmdOrCtrl+D',
+          enabled: false,
+          click: () => getMainWindow()?.webContents.send('menu:toggleStar')
         }
       ]
     },
@@ -120,4 +148,18 @@ export function buildAppMenu(): void {
   ]
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+
+  // 渲染进程同步菜单状态（如是否选中文章/订阅源）
+  ipcMain.on(
+    'menu:updateState',
+    (_event, state: { hasArticle: boolean; hasFeedContext: boolean }) => {
+      const menu = Menu.getApplicationMenu()
+      const read = menu?.getMenuItemById('menu-toggle-read')
+      const star = menu?.getMenuItemById('menu-toggle-star')
+      const refresh = menu?.getMenuItemById('menu-refresh-feed')
+      if (read) read.enabled = state.hasArticle
+      if (star) star.enabled = state.hasArticle
+      if (refresh) refresh.enabled = state.hasFeedContext
+    }
+  )
 }

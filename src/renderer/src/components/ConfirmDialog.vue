@@ -1,18 +1,19 @@
 <script setup lang="ts">
+import { watch } from 'vue'
 import {
   AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction
+  AlertDialogHeader,
+  AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     open?: boolean
     title?: string
@@ -31,8 +32,17 @@ withDefaults(
 
 const emit = defineEmits<{
   confirm: []
+  cancel: []
   'update:open': [value: boolean]
 }>()
+
+// 取消 / 遮罩 / Esc 关闭时发出 cancel，供父级以 false 解决确认
+watch(
+  () => props.open,
+  (val) => {
+    if (!val) emit('cancel')
+  }
+)
 
 function close(): void {
   emit('update:open', false)

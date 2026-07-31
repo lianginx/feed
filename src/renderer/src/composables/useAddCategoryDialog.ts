@@ -1,30 +1,21 @@
 import { ref, type Ref } from 'vue'
+import { useConfirmDialog } from './useConfirmDialog'
 import { useFeeds } from './useFeeds'
 
 const showAddCategory = ref(false)
 const editCategoryData = ref<{ id: number; name: string } | null>(null)
-const showConfirmDialog = ref(false)
-const confirmDialogTitle = ref('')
-const confirmDialogMessage = ref('')
-const confirmDialogFeedCount = ref(0)
-const confirmDialogCategoryId = ref<number | null>(null)
 
 export function useAddCategoryDialog(): {
   showAddCategory: Ref<boolean>
   editCategoryData: Ref<{ id: number; name: string } | null>
-  showConfirmDialog: Ref<boolean>
-  confirmDialogTitle: Ref<string>
-  confirmDialogMessage: Ref<string>
-  confirmDialogFeedCount: Ref<number>
-  confirmDialogCategoryId: Ref<number | null>
   handleEditCategory: (cat: { id: number; name: string }) => void
   handleUpdateCategory: (id: number, name: string) => Promise<void>
   closeCategoryDialog: () => void
-  handleDeleteCategory: (catId: number) => void
-  confirmDeleteCategory: () => Promise<void>
+  handleDeleteCategory: (catId: number) => Promise<void>
   handleAddCategory: (name: string) => Promise<void>
 } {
   const { categories, feeds, loadFeeds } = useFeeds()
+  const { confirm } = useConfirmDialog()
 
   function handleEditCategory(cat: { id: number; name: string }): void {
     editCategoryData.value = { id: cat.id, name: cat.name }
@@ -41,26 +32,21 @@ export function useAddCategoryDialog(): {
     editCategoryData.value = null
   }
 
-  function handleDeleteCategory(catId: number): void {
+  async function handleDeleteCategory(catId: number): Promise<void> {
     const cat = categories.value.find((c) => c.id === catId)
     const name = cat?.name ?? ''
     const feedCount = feeds.value.filter((f) => f.category_id === catId).length
-    confirmDialogCategoryId.value = catId
-    confirmDialogTitle.value = '删除分类'
-    confirmDialogMessage.value =
-      feedCount > 0
-        ? `「${name}」下有 ${feedCount} 个订阅源，删除后将一并移除，确定？`
-        : `确定要删除分类「${name}」吗？`
-    confirmDialogFeedCount.value = feedCount
-    showConfirmDialog.value = true
-  }
-
-  async function confirmDeleteCategory(): Promise<void> {
-    const catId = confirmDialogCategoryId.value
-    if (catId === null) return
+    const ok = await confirm({
+      title: '删除分类',
+      message:
+        feedCount > 0
+          ? `「${name}」下有 ${feedCount} 个订阅源，删除后将一并移除，确定？`
+          : `确定要删除分类「${name}」吗？`,
+      confirmText: '删除',
+      variant: 'danger'
+    })
+    if (!ok) return
     await window.api.categories.delete(catId)
-    showConfirmDialog.value = false
-    confirmDialogCategoryId.value = null
     await loadFeeds()
   }
 
@@ -72,16 +58,10 @@ export function useAddCategoryDialog(): {
   return {
     showAddCategory,
     editCategoryData,
-    showConfirmDialog,
-    confirmDialogTitle,
-    confirmDialogMessage,
-    confirmDialogFeedCount,
-    confirmDialogCategoryId,
     handleEditCategory,
     handleUpdateCategory,
     closeCategoryDialog,
     handleDeleteCategory,
-    confirmDeleteCategory,
     handleAddCategory
   }
 }

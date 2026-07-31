@@ -37,6 +37,7 @@ import { useArticles } from '../composables/useArticles'
 import { useToast } from '../composables/useToast'
 import { useAddFeedDialog } from '../composables/useAddFeedDialog'
 import { useAddCategoryDialog } from '../composables/useAddCategoryDialog'
+import { useConfirmDialog } from '../composables/useConfirmDialog'
 import EditFeedDialog from './EditFeedDialog.vue'
 const {
   categories,
@@ -59,6 +60,7 @@ const {
 const { showToast } = useToast()
 const { showAddFeed } = useAddFeedDialog()
 const { showAddCategory, handleEditCategory, handleDeleteCategory } = useAddCategoryDialog()
+const { confirm } = useConfirmDialog()
 const dragFeedId = ref<number | null>(null)
 const dragOverFeedId = ref<number | null>(null)
 const dragOverCategoryId = ref<number | null>(null)
@@ -160,6 +162,14 @@ function onRenameFocus(): void {
 }
 
 async function handleDeleteFeed(feedId: number): Promise<void> {
+  const feed = feeds.value.find((f) => f.id === feedId)
+  const ok = await confirm({
+    title: '删除订阅源',
+    message: `将删除「${feed?.title ?? ''}」及其全部文章，确定？`,
+    confirmText: '删除',
+    variant: 'danger'
+  })
+  if (!ok) return
   await deleteFeed(feedId)
 }
 

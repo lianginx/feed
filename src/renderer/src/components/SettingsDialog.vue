@@ -161,8 +161,8 @@ function close(): void {
               :disabled="importing"
               @click="handleImportOpml"
             >
-              <Spinner v-if="importing" class="w-4 h-4 mr-2" />
-              <Upload v-else class="w-4 h-4 mr-2" />
+              <Spinner v-if="importing" />
+              <Upload v-else />
               {{ importing ? '导入中…' : '导入' }}
             </Button>
             <Button
@@ -171,8 +171,8 @@ function close(): void {
               :disabled="exporting"
               @click="handleExportOpml"
             >
-              <Spinner v-if="exporting" class="w-4 h-4 mr-2" />
-              <Download v-else class="w-4 h-4 mr-2" />
+              <Spinner v-if="exporting" />
+              <Download v-else />
               {{ exporting ? '导出中…' : '导出' }}
             </Button>
           </div>

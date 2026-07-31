@@ -84,7 +84,7 @@ async function handleSubmit(): Promise<void> {
       <DialogFooter>
         <Button variant="outline" @click="close">取消</Button>
         <Button :disabled="submitting" @click="handleSubmit">
-          <Spinner v-if="submitting" class="mr-2" />
+          <Spinner v-if="submitting" />
           {{ submitting ? '保存中…' : '保存' }}
         </Button>
       </DialogFooter>

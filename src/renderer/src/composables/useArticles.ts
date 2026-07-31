@@ -105,6 +105,30 @@ export function useArticles() {
     await loadFeeds()
   }
 
+  // 把当前选中的订阅源/分类范围的文章全部标为已读
+  async function markScopeRead(): Promise<void> {
+    const { selectedFeedId, selectedCategoryId, filter } = useFeeds()
+    if (selectedFeedId.value !== null) {
+      await markAllRead(selectedFeedId.value)
+    } else if (selectedCategoryId.value !== undefined) {
+      await window.api.categories.markAllRead(selectedCategoryId.value)
+      articles.value.forEach((a) => {
+        a.is_read = 1
+      })
+      const { loadFeeds } = useFeeds()
+      await loadFeeds()
+    } else if (filter.value === 'starred') {
+      await window.api.articles.markAllRead(undefined, 'starred')
+      articles.value.forEach((a) => {
+        a.is_read = 1
+      })
+      const { loadFeeds } = useFeeds()
+      await loadFeeds()
+    } else {
+      await markAllRead()
+    }
+  }
+
   async function search(query: string): Promise<ArticleItem[]> {
     const { selectedFeedId, selectedCategoryId, filter } = useFeeds()
     const result = await window.api.articles.list({
@@ -132,6 +156,7 @@ export function useArticles() {
     toggleStar,
     toggleRead,
     markAllRead,
+    markScopeRead,
     search,
     closeArticle
   }
