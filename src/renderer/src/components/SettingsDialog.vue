@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/select'
 import { useApp, type Theme } from '../composables/useApp'
 import { useFeeds } from '../composables/useFeeds'
-import { useToast } from '../composables/useToast'
 
 withDefaults(
   defineProps<{
@@ -27,7 +26,6 @@ const emit = defineEmits<{
 }>()
 
 const { loadFeeds } = useFeeds()
-const { showToast } = useToast()
 
 const importResult = ref<string | null>(null)
 const importing = ref(false)
@@ -43,7 +41,6 @@ async function handleImportOpml(): Promise<void> {
       }
       if ('added' in result.data) {
         importResult.value = `导入完成：新增 ${result.data.added} 个，跳过 ${result.data.skipped} 个`
-        showToast(`导入完成，新增 ${result.data.added} 个订阅源`)
         await loadFeeds()
       }
     } else {
@@ -66,7 +63,6 @@ async function handleExportOpml(): Promise<void> {
       }
       if ('filePath' in result.data) {
         importResult.value = `已导出到：${result.data.filePath}`
-        showToast(`已导出到 ${result.data.filePath}`)
       }
     } else {
       importResult.value = `导出失败：${result.error || '未知错误'}`
