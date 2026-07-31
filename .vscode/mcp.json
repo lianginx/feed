@@ -1,12 +1,3 @@
 {
-  "servers": {
-    "dbx": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "@dbx-app/mcp-server"
-      ]
-    }
-  }
+	"servers": {}
 }
