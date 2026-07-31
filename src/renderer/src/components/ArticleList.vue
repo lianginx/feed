@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { watch, ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
-import { Search, Star } from '@lucide/vue'
+import { Search, Star, X } from '@lucide/vue'
 import { dayjs } from '../utils/dayjs'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -31,15 +30,7 @@ const { selectedFeedId, selectedCategoryId, filter } = useFeeds()
 const parentRef = ref<HTMLElement | null>(null)
 const searchQuery = ref('')
 const searchActive = ref(false)
-const showSearch = ref(false)
 const searchInput = ref<HTMLInputElement | null>(null)
-
-// 展开搜索栏时自动聚焦输入框
-watch(showSearch, (val) => {
-  if (val) {
-    nextTick(() => searchInput.value?.focus())
-  }
-})
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 // 当选择的订阅源或筛选条件变化时重新加载
@@ -75,21 +66,11 @@ function reloadArticles(): void {
   }
 }
 
-function toggleSearch(): void {
-  showSearch.value = !showSearch.value
-  if (!showSearch.value) {
-    searchQuery.value = ''
-    if (searchActive.value) {
-      searchActive.value = false
-      reloadArticles()
-    }
-  }
-}
-
 function onKeydown(event: KeyboardEvent): void {
   if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
     event.preventDefault()
-    showSearch.value = true
+    searchInput.value?.focus()
+    searchInput.value?.select()
   }
 }
 
@@ -134,34 +115,30 @@ function openInBrowser(url: string | null): void {
 
 <template>
   <div class="h-full border-r border-border flex flex-col">
-    <!-- 筛选栏（可拖动区域） -->
-    <div
-      class="p-2 border-b border-border flex items-center gap-2 min-h-9.5"
-      style="-webkit-app-region: drag"
-    >
-      <div class="flex-1" />
-      <Button
-        class="size-8"
-        style="-webkit-app-region: no-drag"
-        variant="ghost"
-        size="icon-sm"
-        title="搜索"
-        @click="toggleSearch"
-      >
-        <Search />
-      </Button>
-    </div>
-
-    <!-- 搜索框 -->
-    <div v-if="showSearch" class="px-4 py-2 border-b border-border">
-      <Input
-        ref="searchInput"
-        v-model="searchQuery"
-        type="text"
-        placeholder="搜索文章..."
-        @input="onSearchInput"
-        @keyup.escape="clearSearch"
-      />
+    <!-- 顶栏：常驻搜索框 -->
+    <div class="p-2 border-b border-border flex items-center min-h-9.5">
+      <div class="relative flex-1 h-8">
+        <Search
+          class="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none"
+        />
+        <Input
+          ref="searchInput"
+          v-model="searchQuery"
+          type="text"
+          placeholder="搜索文章..."
+          class="h-full w-full pl-8 pr-8 rounded-md bg-muted/60 border-transparent shadow-none transition-colors hover:bg-muted/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
+          @input="onSearchInput"
+          @keyup.escape="clearSearch"
+        />
+        <button
+          v-if="searchQuery"
+          class="absolute right-1 top-1/2 -translate-y-1/2 size-6 flex items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
+          title="清除"
+          @click="clearSearch"
+        >
+          <X class="size-3.5" />
+        </button>
+      </div>
     </div>
 
     <!-- 文章列表 -->
