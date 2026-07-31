@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { watch, ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
-import { ExternalLink, Star, Search } from '@lucide/vue'
+import { Search, Star } from '@lucide/vue'
+import { dayjs } from '../utils/dayjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -9,13 +10,22 @@ import {
   ContextMenu,
   ContextMenuTrigger,
   ContextMenuContent,
-  ContextMenuItem
+  ContextMenuItem,
+  ContextMenuSeparator
 } from '@/components/ui/context-menu'
 import { useArticles } from '../composables/useArticles'
 import { useFeeds } from '../composables/useFeeds'
 
-const { articles, currentArticle, loading, loadArticles, openArticle, search, toggleStar } =
-  useArticles()
+const {
+  articles,
+  currentArticle,
+  loading,
+  loadArticles,
+  openArticle,
+  search,
+  toggleStar,
+  toggleRead
+} = useArticles()
 const { selectedFeedId, selectedCategoryId, filter } = useFeeds()
 
 const parentRef = ref<HTMLElement | null>(null)
@@ -50,23 +60,10 @@ const virtualizer = useVirtualizer(
   computed(() => ({
     count: articles.value.length,
     getScrollElement: () => parentRef.value,
-    estimateSize: () => 96,
+    estimateSize: () => 100,
     overscan: 10
   }))
 )
-
-function formatDate(timestamp: number | null): string {
-  if (!timestamp) return ''
-  const date = new Date(timestamp * 1000)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-
-  if (days === 0) return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-  if (days === 1) return '昨天'
-  if (days < 7) return `${days}天前`
-  return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
-}
 
 function reloadArticles(): void {
   if (selectedFeedId.value !== null) {
@@ -198,10 +195,9 @@ function openInBrowser(url: string | null): void {
             <ContextMenu v-if="row.index < articles.length">
               <ContextMenuTrigger>
                 <button
-                  class="w-full h-full text-left px-4 border-b border-border transition-colors hover:bg-accent/10"
+                  class="w-full h-full text-left px-4 border-b border-border transition-colors hover:bg-accent"
                   :class="{
-                    'bg-accent/5': !articles[row.index].is_read,
-                    'bg-accent/15': articles[row.index].id === currentArticle?.id
+                    'bg-accent': articles[row.index].id === currentArticle?.id
                   }"
                   @click="openArticle(articles[row.index].id)"
                   @dblclick="openInBrowser(articles[row.index].url)"
@@ -212,27 +208,47 @@ function openInBrowser(url: string | null): void {
                         <div class="flex items-center gap-1.5">
                           <span
                             v-if="!articles[row.index].is_read"
-                            class="w-1.5 h-1.5 rounded-full bg-accent shrink-0"
+                            class="w-2 h-2 rounded-full bg-unread-dot shrink-0"
                           />
-                          <span
+                          <Star
                             v-if="articles[row.index].is_starred"
-                            class="text-yellow-500 text-xs"
-                            >★</span
+                            class="w-3 h-3 text-starred shrink-0 fill-starred"
+                          />
+                          <h3
+                            class="text-sm font-medium truncate"
+                            :class="
+                              articles[row.index].is_read ? 'text-foreground/60' : 'text-foreground'
+                            "
                           >
-                          <h3 class="text-sm font-medium text-foreground truncate">
                             {{ articles[row.index].title }}
                           </h3>
                         </div>
                         <p
                           v-if="articles[row.index].summary"
-                          class="text-xs text-muted-foreground mt-1 line-clamp-2"
+                          class="text-xs mt-1 line-clamp-2"
+                          :class="
+                            articles[row.index].is_read
+                              ? 'text-muted-foreground/60'
+                              : 'text-muted-foreground'
+                          "
                         >
                           {{ articles[row.index].summary }}
                         </p>
                       </div>
-                      <div class="flex items-center gap-2 mt-auto text-xs text-muted-foreground">
-                        <span>{{ articles[row.index].feed_title }}</span>
-                        <span>{{ formatDate(articles[row.index].published_at) }}</span>
+                      <div
+                        class="flex items-center gap-2 mt-auto text-xs overflow-hidden"
+                        :class="
+                          articles[row.index].is_read
+                            ? 'text-muted-foreground/40'
+                            : 'text-muted-foreground/60'
+                        "
+                      >
+                        <span class="truncate min-w-0">
+                          {{ articles[row.index].feed_title }}
+                        </span>
+                        <span class="shrink-0">
+                          {{ dayjs(articles[row.index].published_at! * 1000).fromNow() }}
+                        </span>
                       </div>
                     </div>
                     <img
@@ -246,16 +262,18 @@ function openInBrowser(url: string | null): void {
                 </button>
               </ContextMenuTrigger>
               <ContextMenuContent>
+                <ContextMenuItem @select="toggleRead(articles[row.index].id)">
+                  {{ articles[row.index].is_read ? '标记未读' : '标为已读' }}
+                </ContextMenuItem>
+                <ContextMenuItem @select="toggleStar(articles[row.index].id)">
+                  {{ articles[row.index].is_starred ? '取消星标' : '星标' }}
+                </ContextMenuItem>
+                <ContextMenuSeparator />
                 <ContextMenuItem
                   v-if="articles[row.index].url"
                   @select="openInBrowser(articles[row.index].url)"
                 >
-                  <ExternalLink class="size-3.5" />
                   在浏览器中打开
-                </ContextMenuItem>
-                <ContextMenuItem @select="toggleStar(articles[row.index].id)">
-                  <Star class="w-3.5 h-3.5" />
-                  {{ articles[row.index].is_starred ? '取消星标' : '星标' }}
                 </ContextMenuItem>
               </ContextMenuContent>
             </ContextMenu>

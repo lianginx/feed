@@ -38,6 +38,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      dayjs:
+        specifier: ^1.11.21
+        version: 1.11.21
       dompurify:
         specifier: ^3.4.12
         version: 3.4.12
@@ -1590,6 +1593,9 @@ packages:
 
   daveutils@0.4.75:
     resolution: {integrity: sha512-XDk1XIxXjRr+qJiEdZm/PsVQLMJWmyzXTCP1o9y5MKZYteNjntmyA5xRvty8di9F8DxGgqW/kb+eijEfhy4zGg==}
+
+  dayjs@1.11.21:
+    resolution: {integrity: sha512-98IT+HOahAisibz/yjKbzuOBwYcjJ7BCLPzARyHiyEBmRz4fatF+KPJszEHXsGYjUG234aH/cOjW1wwTbKUZlA==}
 
   debounce-fn@6.0.0:
     resolution: {integrity: sha512-rBMW+F2TXryBwB54Q0d8drNEI+TfoS9JpNTAoVpukbWEhjXQq4rySFYLaqXMFXwdv61Zb2OHtj5bviSoimqxRQ==}
@@ -4742,6 +4748,8 @@ snapshots:
   daveutils@0.4.75:
     dependencies:
       request: 2.88.2
+
+  dayjs@1.11.21: {}
 
   debounce-fn@6.0.0:
     dependencies:
