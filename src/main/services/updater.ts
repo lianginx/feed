@@ -4,7 +4,8 @@ import { ipcMain, app, shell, net } from 'electron'
 // 只能用默认导入拿到整个 module.exports（含 getter）后再解构。
 import electronUpdater from 'electron-updater'
 import { is } from '@electron-toolkit/utils'
-import { createWriteStream, existsSync, statSync } from 'fs'
+import { createWriteStream, createReadStream, existsSync } from 'fs'
+import { createHash } from 'crypto'
 import { join } from 'path'
 import { getMainWindow } from '../app/window'
 
@@ -42,11 +43,26 @@ function sendStatus(status: UpdaterStatus): void {
 }
 
 /**
- * 流式下载 dmg 到临时目录，并回报进度。
+ * 计算文件的 SHA-512（base64 编码），用于与 latest-mac.yml 里的校验和比对。
+ */
+function sha512File(filePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const hash = createHash('sha512')
+    const stream = createReadStream(filePath)
+    stream.on('data', (chunk) => hash.update(chunk))
+    stream.on('end', () => resolve(hash.digest('base64')))
+    stream.on('error', (err) => reject(err))
+  })
+}
+
+/**
+ * 流式下载 dmg 到目标目录，并回报进度。
+ * 下载完成后校验实际大小与 SHA-512，任一不匹配即视为失败。
  */
 function downloadDmg(
   url: string,
   destPath: string,
+  expectedSha512: string,
   onProgress: (percent: number) => void
 ): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -67,13 +83,22 @@ function downloadDmg(
         }
       })
       response.on('end', () => {
-        file.end(() => {
+        file.end(async () => {
           // 校验文件完整性：实际大小应等于 Content-Length
           if (total > 0 && received !== total) {
             reject(new Error(`下载不完整：期望 ${total} 字节，实际 ${received} 字节`))
             return
           }
-          resolve()
+          try {
+            const actual = await sha512File(destPath)
+            if (actual !== expectedSha512) {
+              reject(new Error('下载校验失败：SHA-512 不匹配，安装包可能已损坏'))
+              return
+            }
+            resolve()
+          } catch (err) {
+            reject(err)
+          }
         })
       })
       response.on('error', (err) => {
@@ -99,9 +124,11 @@ async function checkMacManualUpdate(): Promise<{ success: boolean; error?: strin
       return { success: true }
     }
     const { updateInfo } = result
-    const dmgName = updateInfo.files?.find((f) => f.url.endsWith('.dmg'))?.url
-    if (!dmgName) {
-      return { success: false, error: '未找到 dmg 安装包' }
+    const dmgFile = updateInfo.files?.find((f) => f.url.endsWith('.dmg'))
+    const dmgName = dmgFile?.url
+    const expectedSha512 = dmgFile?.sha512
+    if (!dmgName || !expectedSha512) {
+      return { success: false, error: '未找到 dmg 安装包或缺少校验信息' }
     }
 
     sendStatus({ state: 'available', version: updateInfo.version })
@@ -112,10 +139,10 @@ async function checkMacManualUpdate(): Promise<{ success: boolean; error?: strin
     // 下载到用户的「下载」目录（~/Downloads），方便用户找到并安装，
     // 不要藏在临时目录里
     const destPath = join(app.getPath('downloads'), `Feed-${updateInfo.version}.dmg`)
-    // 已存在但文件过小（<1MB）说明上次下载失败留下残缺文件，需重新下载
-    const existsValid = existsSync(destPath) && statSync(destPath).size > 1024 * 1024
+    // 已存在时先校验 SHA-512 是否匹配；不匹配（残缺/损坏/被篡改）则重新下载
+    const existsValid = existsSync(destPath) && (await sha512File(destPath)) === expectedSha512
     if (!existsValid) {
-      await downloadDmg(downloadUrl, destPath, (percent) =>
+      await downloadDmg(downloadUrl, destPath, expectedSha512, (percent) =>
         sendStatus({ state: 'downloading', percent })
       )
     }
