@@ -131,6 +131,23 @@ interface OpmlApi {
   export: () => Promise<ApiResponse<{ canceled: true } | { canceled: false; filePath: string }>>
 }
 
+/** 自动更新状态（由主进程推送） */
+type UpdaterStatus =
+  | { state: 'disabled' }
+  | { state: 'checking' }
+  | { state: 'available'; version: string }
+  | { state: 'not-available' }
+  | { state: 'downloading'; percent: number }
+  | { state: 'downloaded' }
+  | { state: 'error'; message: string }
+
+interface UpdaterApi {
+  check: () => Promise<ApiResponse<{ state?: string }>>
+  install: () => Promise<ApiResponse<{ ok?: boolean }>>
+  /** 订阅更新状态事件，返回取消订阅函数 */
+  onStatus: (callback: (status: UpdaterStatus) => void) => () => void
+}
+
 /** 订阅源刷新进度事件（由后端推送） */
 export interface RefreshProgressEvent {
   feedId: number
@@ -146,6 +163,7 @@ interface AppApi {
   articles: ArticleApi
   config: ConfigApi
   opml: OpmlApi
+  updater: UpdaterApi
 }
 
 declare global {

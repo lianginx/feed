@@ -75,9 +75,13 @@ appImage:
 npmRebuild: false
 
 # ---------- 发布与自动更新 ----------
+# 使用 GitHub Releases 作为更新服务器，CI 构建产物自动上传，应用通过 electron-updater 拉取更新
 publish:
-  provider: generic # 使用通用 HTTP 服务分发更新
-  url: https://example.com/auto-updates # 更新服务器地址（占位，待替换）
+  provider: github # GitHub Releases
+  owner: lianginx # 仓库所属用户/组织
+  repo: feed # 仓库名
+  # releaseType：draft = 生成草稿（人工确认后再发布）；release = 推送 tag 即正式发布
+  releaseType: release
 
 # ---------- 依赖下载镜像 ----------
 # electronDownload：Electron 二进制下载配置（国内镜像加速）

@@ -1,6 +1,16 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
+/** 自动更新状态（与主进程 updater.ts 保持一致） */
+type UpdaterStatus =
+  | { state: 'disabled' }
+  | { state: 'checking' }
+  | { state: 'available'; version: string }
+  | { state: 'not-available' }
+  | { state: 'downloading'; percent: number }
+  | { state: 'downloaded' }
+  | { state: 'error'; message: string }
+
 const api = {
   feeds: {
     list: () => ipcRenderer.invoke('feeds:list'),
@@ -47,6 +57,18 @@ const api = {
   opml: {
     import: () => ipcRenderer.invoke('opml:import'),
     export: () => ipcRenderer.invoke('opml:export')
+  },
+  updater: {
+    check: () => ipcRenderer.invoke('updater:check'),
+    install: () => ipcRenderer.invoke('updater:install'),
+    onStatus: (callback: (status: UpdaterStatus) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, status: UpdaterStatus): void =>
+        callback(status)
+      ipcRenderer.on('updater:status', listener)
+      return () => {
+        ipcRenderer.removeListener('updater:status', listener)
+      }
+    }
   }
 }
 

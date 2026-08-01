@@ -10,6 +10,7 @@ import { createTray, getTrayRef } from './app/tray'
 import { registerAppProtocols } from './app/protocol'
 import { startScheduler, stopScheduler } from './services/timer'
 import { setTrayRef, scheduleBadgeUpdate } from './services/badge'
+import { initUpdater, registerUpdaterHandlers } from './services/updater'
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.lianginx.feed')
@@ -28,6 +29,10 @@ app.whenReady().then(() => {
 
   // 注册 IPC 处理器
   registerAllHandlers()
+  registerUpdaterHandlers()
+
+  // 初始化自动更新（非开发模式）
+  initUpdater()
 
   // 创建窗口和托盘
   createWindow()

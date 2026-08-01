@@ -33,6 +33,11 @@ export function buildAppMenu(): void {
         },
         { type: 'separator' },
         {
+          label: '检查更新…',
+          click: () => getMainWindow()?.webContents.send('menu:checkForUpdates')
+        },
+        { type: 'separator' },
+        {
           label: '退出',
           accelerator: 'CmdOrCtrl+Q',
           click: () => app.quit()

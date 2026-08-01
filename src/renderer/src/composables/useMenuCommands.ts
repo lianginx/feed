@@ -5,12 +5,14 @@ import { useSearchFocus } from './useSearchFocus'
 import { useConfirmDialog } from './useConfirmDialog'
 import { useFeeds } from './useFeeds'
 import { useArticles } from './useArticles'
+import { useUpdater } from './useUpdater'
 
 export function useMenuCommands(): void {
   const { showAddFeed } = useAddFeedDialog()
   const { showSettings } = useSettingsDialog()
   const { requestSearchFocus } = useSearchFocus()
   const { confirm } = useConfirmDialog()
+  const { checkForUpdates } = useUpdater()
   const {
     selectedFeedId,
     selectedCategoryId,
@@ -86,6 +88,10 @@ export function useMenuCommands(): void {
       showSettings.value = true
     })
 
+    window.electron.ipcRenderer.on('menu:checkForUpdates', () => {
+      void checkForUpdates()
+    })
+
     window.electron.ipcRenderer.on('menu:toggleStar', () => {
       if (currentArticle.value) {
         toggleStar(currentArticle.value.id)
@@ -106,6 +112,7 @@ export function useMenuCommands(): void {
     window.electron.ipcRenderer.removeAllListeners('menu:markAllRead')
     window.electron.ipcRenderer.removeAllListeners('menu:toggleRead')
     window.electron.ipcRenderer.removeAllListeners('menu:openSettings')
+    window.electron.ipcRenderer.removeAllListeners('menu:checkForUpdates')
     window.electron.ipcRenderer.removeAllListeners('menu:toggleStar')
     window.electron.ipcRenderer.removeAllListeners('menu:focusSearch')
   })
