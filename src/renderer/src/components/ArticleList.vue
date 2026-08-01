@@ -230,6 +230,7 @@ function openInBrowser(url: string | null): void {
                       v-if="articles[row.index].cover_image"
                       :src="articles[row.index].cover_image ?? undefined"
                       class="h-full aspect-4/3 rounded-md object-cover shrink-0 mt-0.5 bg-muted"
+                      :class="articles[row.index].is_read ? 'opacity-60' : ''"
                       loading="lazy"
                       @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
                     />
