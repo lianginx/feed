@@ -102,3 +102,4 @@ src/
 | [verification.md](./verification.md)     | 验证方案（功能 / 安全 / 体验 / 构建）                                       |
 | [phase2.md](./phase2.md)                 | 第二期功能（AI 摘要、Gist 云同步）                                          |
 | [alternatives.md](./alternatives.md)     | 备选方案（拖拽排序方案对比）                                                |
+| [release.md](./release.md)               | 发布与分发（CI 构建、自动更新、Homebrew 计划）                              |
