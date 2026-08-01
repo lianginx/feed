@@ -3,11 +3,17 @@ import { watch, ref } from 'vue'
 import { Star, ExternalLink, Rss, Clock, UserRound } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { useArticles } from '../composables/useArticles'
+import { useTitleInToolbar } from '../composables/useTitleInToolbar'
 import { sanitizeHtml } from '../utils/sanitize'
 
 const { currentArticle, toggleStar } = useArticles()
-const contentRef = ref<HTMLElement | null>(null)
 
+// 标题滚出视野后放进顶栏（类似 macOS 原生标题）
+const contentRef = ref<HTMLElement | null>(null)
+const toolbarRef = ref<HTMLElement | null>(null)
+const { titleInToolbar } = useTitleInToolbar(contentRef, toolbarRef, currentArticle)
+
+// 切换文章时滚动回顶部
 watch(currentArticle, () => {
   if (contentRef.value) {
     contentRef.value.scrollTop = 0
@@ -52,36 +58,49 @@ function openInBrowser(url: string | null): void {
 
     <!-- 文章内容 - 已选中文章 -->
     <template v-else>
-      <!-- 工具栏（可拖动区域，无分隔线靠间距分区，按钮右对齐） -->
-      <div class="p-2 px-3 flex items-center gap-2 min-h-9.5" style="-webkit-app-region: drag">
-        <div class="flex-1" />
-        <div style="-webkit-app-region: no-drag" class="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            class="text-muted-foreground"
-            :class="currentArticle.is_starred ? 'text-starred' : ''"
-            @click="toggleStar(currentArticle.id)"
-          >
-            <Star :fill="currentArticle.is_starred ? 'currentColor' : 'none'" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            class="text-muted-foreground"
-            @click="openInBrowser(currentArticle.url)"
-          >
-            <ExternalLink />
-          </Button>
+      <div ref="contentRef" class="flex-1 overflow-y-auto overscroll-contain">
+        <div
+          ref="toolbarRef"
+          class="sticky top-0 z-10 p-3 flex items-center gap-2 min-h-9.5 bg-background"
+          style="-webkit-app-region: drag"
+        >
+          <div class="flex-1 min-w-0 flex items-center">
+            <Transition name="title-fade">
+              <span
+                v-if="titleInToolbar"
+                class="min-w-0 font-medium text-foreground truncate select-none cursor-default"
+                :title="currentArticle.url ? '在浏览器中打开' : undefined"
+              >
+                {{ currentArticle.title }}
+              </span>
+            </Transition>
+          </div>
+          <div style="-webkit-app-region: no-drag" class="flex items-center gap-1 shrink-0">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              class="text-muted-foreground"
+              :class="currentArticle.is_starred ? 'text-starred' : ''"
+              @click="toggleStar(currentArticle.id)"
+            >
+              <Star :fill="currentArticle.is_starred ? 'currentColor' : 'none'" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              class="text-muted-foreground"
+              @click="openInBrowser(currentArticle.url)"
+            >
+              <ExternalLink />
+            </Button>
+          </div>
         </div>
-      </div>
 
-      <!-- 文章内容 -->
-      <div ref="contentRef" class="flex-1 overflow-y-auto">
-        <article class="max-w-3xl mx-auto px-8 py-6" style="user-select: text">
+        <article class="max-w-3xl mx-auto px-8" style="user-select: text">
           <header class="mb-8">
             <h1
-              class="text-[28px] font-bold text-foreground leading-snug mb-4 text-balance cursor-default hover:underline transition-colors"
+              ref="articleTitle"
+              class="text-3xl font-bold text-foreground leading-snug mb-4 text-balance cursor-default hover:underline transition-colors"
               :title="currentArticle.url ? '在浏览器中打开' : undefined"
               @click="openInBrowser(currentArticle.url)"
             >
@@ -115,7 +134,7 @@ function openInBrowser(url: string | null): void {
           <div
             v-if="currentArticle.content"
             v-highlight
-            class="prose prose-sm prose-neutral max-w-none dark:prose-invert"
+            class="prose prose-sm prose-neutral max-w-none dark:prose-invert pb-20"
             v-html="sanitizeHtml(currentArticle.content)"
           />
           <div v-else class="text-muted-foreground text-sm">暂无内容</div>
@@ -124,3 +143,17 @@ function openInBrowser(url: string | null): void {
     </template>
   </div>
 </template>
+
+<style scoped>
+.title-fade-enter-active,
+.title-fade-leave-active {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+.title-fade-enter-from,
+.title-fade-leave-to {
+  opacity: 0;
+  transform: translateY(3px);
+}
+</style>
