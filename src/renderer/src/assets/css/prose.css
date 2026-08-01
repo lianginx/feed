@@ -1,7 +1,7 @@
-/* 内联代码 - 柔和背景 + 品牌色 */
+/* 内联代码 - 柔和背景 + 对比前景色 */
 .prose :where(code):not(:where(pre code, pre *)) {
   background-color: var(--muted);
-  color: var(--accent);
+  color: var(--accent-foreground);
   padding: 0.15em 0.4em;
   border-radius: 4px;
   font-size: 0.875em;
@@ -12,10 +12,6 @@
 .prose :where(code):not(:where(pre code, pre *))::before,
 .prose :where(code):not(:where(pre code, pre *))::after {
   content: none !important;
-}
-
-[data-theme='dark'] .prose :where(code):not(:where(pre code, pre *)) {
-  background-color: color-mix(in srgb, var(--muted) 80%, transparent);
 }
 
 /* 代码块 - 纯背景，无边框，与侧边栏同色系 */
@@ -41,8 +37,8 @@
   font-weight: 400;
 }
 
-/* 行内代码在暗色下降低亮度 */
+/* 行内代码在暗色下降低背景亮度，文字用 accent-foreground 保证对比度 */
 [data-theme='dark'] .prose :where(code):not(:where(pre code, pre *)) {
   background-color: color-mix(in srgb, var(--muted) 80%, transparent);
-  color: var(--accent);
+  color: var(--accent-foreground);
 }

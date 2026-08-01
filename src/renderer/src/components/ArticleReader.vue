@@ -134,7 +134,7 @@ function openInBrowser(url: string | null): void {
           <div
             v-if="currentArticle.content"
             v-highlight
-            class="prose prose-sm prose-neutral max-w-none dark:prose-invert pb-20"
+            class="prose prose-neutral dark:prose-invert max-w-none pb-20"
             v-html="sanitizeHtml(currentArticle.content)"
           />
           <div v-else class="text-muted-foreground text-sm">暂无内容</div>
