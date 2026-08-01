@@ -8,5 +8,15 @@ export function useToast() {
     else sonnerToast.info(message)
   }
 
-  return { showToast }
+  /** 显示持续存在的加载提示，返回其 id（用于后续 dismiss） */
+  function showLoading(message: string): string | number {
+    return sonnerToast.loading(message)
+  }
+
+  /** 关闭指定 id 的提示 */
+  function dismissToast(id?: string | number): void {
+    sonnerToast.dismiss(id)
+  }
+
+  return { showToast, showLoading, dismissToast }
 }

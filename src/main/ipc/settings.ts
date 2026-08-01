@@ -1,6 +1,7 @@
 import { ipcMain, nativeTheme, BrowserWindow } from 'electron'
 import { getSettings, updateSettings, type AppSettings } from '../config'
 import { startScheduler } from '../services/timer'
+import { refreshAutoCheckTimer } from '../services/updater'
 import { success, error } from './util'
 
 export function registerSettingsHandlers(): void {
@@ -29,6 +30,10 @@ export function registerSettingsHandlers(): void {
       // 如果更新了刷新间隔，重启调度器
       if (settings.updateInterval !== undefined) {
         startScheduler()
+      }
+      // 如果更新了自动检查更新相关设置，重建定时器
+      if (settings.autoCheckUpdate !== undefined || settings.updateCheckInterval !== undefined) {
+        refreshAutoCheckTimer()
       }
       return success(updated)
     } catch (e) {

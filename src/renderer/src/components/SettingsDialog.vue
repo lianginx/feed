@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { useApp, type Theme } from '../composables/useApp'
 import { useFeeds } from '../composables/useFeeds'
 
@@ -88,6 +89,15 @@ const intervalOptions = [
   { value: 0, label: '不自动刷新' }
 ]
 
+const { autoCheckUpdate, updateCheckInterval, setAutoCheckUpdate, setUpdateCheckInterval } =
+  useApp()
+
+const updateCheckOptions = [
+  { value: 360, label: '6 小时' },
+  { value: 720, label: '12 小时' },
+  { value: 1440, label: '24 小时' }
+]
+
 function close(): void {
   emit('update:open', false)
 }
@@ -135,6 +145,38 @@ function close(): void {
             <SelectContent>
               <SelectItem
                 v-for="opt in intervalOptions"
+                :key="opt.value"
+                :value="String(opt.value)"
+              >
+                {{ opt.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <!-- 自动检查更新 -->
+        <div class="grid gap-2">
+          <div class="flex items-center justify-between">
+            <label
+              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >自动检查更新</label
+            >
+            <Switch
+              :model-value="autoCheckUpdate"
+              @update:model-value="(v) => setAutoCheckUpdate(!!v)"
+            />
+          </div>
+          <Select
+            :model-value="String(updateCheckInterval)"
+            :disabled="!autoCheckUpdate"
+            @update:model-value="(v) => setUpdateCheckInterval(Number(v))"
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                v-for="opt in updateCheckOptions"
                 :key="opt.value"
                 :value="String(opt.value)"
               >

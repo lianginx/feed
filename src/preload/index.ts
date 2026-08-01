@@ -60,6 +60,7 @@ const api = {
   },
   updater: {
     check: () => ipcRenderer.invoke('updater:check'),
+    download: () => ipcRenderer.invoke('updater:download'),
     install: () => ipcRenderer.invoke('updater:install'),
     onStatus: (callback: (status: UpdaterStatus) => void): (() => void) => {
       const listener = (_event: Electron.IpcRendererEvent, status: UpdaterStatus): void =>

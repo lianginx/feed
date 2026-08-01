@@ -2,16 +2,20 @@ import Store from 'electron-store'
 
 export interface AppSettings {
   theme: 'light' | 'dark' | 'system'
-  updateInterval: number // 分钟，默认 30
+  updateInterval: number // RSS 刷新间隔，分钟，默认 30
   fontSize: number
   windowBounds: { x?: number; y?: number; width: number; height: number }
+  autoCheckUpdate: boolean // 是否自动检查更新，默认 true
+  updateCheckInterval: number // 自动检查更新间隔，分钟，默认 360（6 小时）
 }
 
 const defaults: AppSettings = {
   theme: 'system',
   updateInterval: 30,
   fontSize: 16,
-  windowBounds: { width: 1200, height: 800 }
+  windowBounds: { width: 1200, height: 800 },
+  autoCheckUpdate: true,
+  updateCheckInterval: 360
 }
 
 const store = new Store<AppSettings>({
@@ -19,7 +23,10 @@ const store = new Store<AppSettings>({
 })
 
 export function getSettings(): AppSettings {
-  return store.store
+  // 用 defaults 兜底合并：electron-store 的 defaults 只在配置文件首次创建时生效，
+  // 已存在的旧配置文件不会自动补新字段（如 autoCheckUpdate），
+  // 这里手动合并，确保缺失字段返回默认值而非 undefined
+  return { ...defaults, ...store.store }
 }
 
 export function updateSettings(partial: Partial<AppSettings>): AppSettings {
@@ -29,7 +36,7 @@ export function updateSettings(partial: Partial<AppSettings>): AppSettings {
       ;(store as any).set(key, value)
     }
   }
-  return store.store
+  return { ...defaults, ...store.store }
 }
 
 export default store

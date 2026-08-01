@@ -62,6 +62,8 @@ interface AppSettings {
   updateInterval: number
   fontSize: number
   windowBounds: { x?: number; y?: number; width: number; height: number }
+  autoCheckUpdate: boolean
+  updateCheckInterval: number
 }
 
 interface RefreshResult {
@@ -143,6 +145,7 @@ type UpdaterStatus =
 
 interface UpdaterApi {
   check: () => Promise<ApiResponse<{ state?: string }>>
+  download: () => Promise<ApiResponse<{ ok?: boolean }>>
   install: () => Promise<ApiResponse<{ ok?: boolean }>>
   /** 订阅更新状态事件，返回取消订阅函数 */
   onStatus: (callback: (status: UpdaterStatus) => void) => () => void

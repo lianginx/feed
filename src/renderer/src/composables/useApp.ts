@@ -5,6 +5,8 @@ export type Theme = 'light' | 'dark' | 'system'
 const theme = ref<Theme>('system')
 const fontSize = ref(16)
 const updateInterval = ref(30)
+const autoCheckUpdate = ref(true)
+const updateCheckInterval = ref(360)
 
 function resolveTheme(t: Theme): 'light' | 'dark' {
   if (t === 'system') {
@@ -37,6 +39,8 @@ export function useApp() {
       theme.value = result.data.theme
       fontSize.value = result.data.fontSize
       updateInterval.value = result.data.updateInterval
+      autoCheckUpdate.value = result.data.autoCheckUpdate
+      updateCheckInterval.value = result.data.updateCheckInterval
     }
   }
 
@@ -55,14 +59,28 @@ export function useApp() {
     await window.api.config.update({ updateInterval: minutes })
   }
 
+  async function setAutoCheckUpdate(enabled: boolean): Promise<void> {
+    autoCheckUpdate.value = enabled
+    await window.api.config.update({ autoCheckUpdate: enabled })
+  }
+
+  async function setUpdateCheckInterval(minutes: number): Promise<void> {
+    updateCheckInterval.value = minutes
+    await window.api.config.update({ updateCheckInterval: minutes })
+  }
+
   return {
     theme,
     resolvedTheme,
     fontSize,
     updateInterval,
+    autoCheckUpdate,
+    updateCheckInterval,
     loadSettings,
     setTheme,
     setFontSize,
-    setUpdateInterval
+    setUpdateInterval,
+    setAutoCheckUpdate,
+    setUpdateCheckInterval
   }
 }
