@@ -8,13 +8,4 @@
 html {
   user-select: none;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  scrollbar-width: none;
-}
-
-*:focus-visible {
-  box-shadow: none !important;
 }
