@@ -6,7 +6,7 @@ name: Build & Release
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
   workflow_dispatch:
 
 # 需要写权限，才能创建 GitHub Release 并上传产物
@@ -14,8 +14,31 @@ permissions:
   contents: write
 
 jobs:
+  # 预创建 GitHub Release：
+  # electron-builder 在 Release 已存在时会直接上传资产、不会重新创建。
+  # 三个平台并行 --publish always 时若都不存在，会同时尝试创建导致 422 already_exists 冲突，
+  # 因此先在此 job 创建空 Release，让后续构建 job 只上传不创建。
+  prepare:
+    name: Prepare release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create empty release (skip if exists)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME:-${GITHUB_SHA}}"
+          echo "Preparing release for tag: ${TAG}"
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists, skipping creation"
+          else
+            gh release create "${TAG}" --title "${TAG}" --notes "自动构建发布" || \
+              echo "release create 失败（可能并行冲突），继续尝试让构建 job 上传"
+          fi
+
   build:
     name: Build on ${{ matrix.os }}
+    needs: prepare
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false # 单个平台失败不阻塞其他平台
