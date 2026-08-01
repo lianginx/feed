@@ -171,7 +171,9 @@ export function initUpdater(): void {
     autoUpdater.autoDownload = false
     autoUpdater.autoInstallOnAppQuit = false
     autoUpdater.on('checking-for-update', () => sendStatus({ state: 'checking' }))
-    autoUpdater.on('update-not-available', () => sendStatus({ state: 'not-available' }))
+    // 注意：这里不监听 update-not-available，
+    // 因为 checkMacManualUpdate() 会在检查完手动发送 not-available，
+    // 若两者都发会导致「已是最新版本」提示重复出现两次
     autoUpdater.on('error', (err) => sendStatus({ state: 'error', message: err.message }))
   } else {
     autoUpdater.autoDownload = true
