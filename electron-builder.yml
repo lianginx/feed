@@ -1,45 +1,85 @@
+# electron-builder 打包配置
+
+# ---------- 应用基本信息 ----------
+# appId：应用唯一标识符，用于系统级区分（写入安装记录 / 注册表）
 appId: com.lianginx.feed
-productName: feed
+# productName：应用对外显示名称（安装后、任务栏/菜单栏显示）
+productName: Feed
+
+# ---------- 目录与打包内容 ----------
 directories:
+  # buildResources：构建资源目录（存放图标、entitlements 等构建期资源）
   buildResources: build
+
+# files：需要打包进应用的资源，以 ! 开头表示排除
 files:
-  - '!**/.vscode/*'
-  - '!src/*'
-  - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
-  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
-  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - "!**/.vscode/*" # 排除编辑器配置
+  - "!src/*" # 排除源代码（已由编译产物替代）
+  - "!electron.vite.config.{js,ts,mjs,cjs}" # 排除构建配置
+  # 排除开发工具配置与文档
+  - "!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}"
+  - "!{.env,.env.*,.npmrc,pnpm-lock.yaml}" # 排除环境变量与依赖锁文件
+  - "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}" # 排除 TypeScript 配置
+
+# asarUnpack：这些资源不压缩进 asar，保持原样以支持运行时动态加载
 asarUnpack:
   - resources/**
+
+# ---------- Windows 平台 ----------
 win:
+  # executableName：Windows 可执行文件名
   executableName: feed
+
+# nsis：Windows 安装器（NSIS 格式）
 nsis:
-  artifactName: ${name}-${version}-setup.${ext}
-  shortcutName: ${productName}
-  uninstallDisplayName: ${productName}
-  createDesktopShortcut: always
+  artifactName: ${name}-${version}-setup.${ext} # 安装包文件名模板
+  shortcutName: ${productName} # 开始菜单快捷方式名称
+  uninstallDisplayName: ${productName} # 卸载时显示的名称
+  createDesktopShortcut: always # 始终创建桌面快捷方式
+
+# ---------- macOS 平台 ----------
 mac:
+  # 签名授权文件：继承的 entitlements（沙盒能力声明）
   entitlementsInherit: build/entitlements.mac.plist
-  extendInfo:
-    - NSCameraUsageDescription: Application requests access to the device's camera.
-    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
-    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
-    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+  # 禁用时间戳：codesign 不再请求 timestamp.apple.com（网络不可达会导致签名卡死）
+  # 如需上架/公证，请恢复默认并确保能访问 Apple 服务器
+  timestamp: "none"
+  # 已移除原 extendInfo 权限声明（相机/麦克风/文件夹）：
+  # 它们只是 electron-builder 默认模板占位文案，应用未开启沙盒且不调用相关 API，无需声明。
+  # 若未来需要新增系统能力描述，可在此处按需添加（示例见下方注释）。
+  # extendInfo:
+  #   - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+  # notarize：关闭公证（需要 Apple 开发者账号，暂不启用）
   notarize: false
+
+# dmg：macOS 磁盘映像
 dmg:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${productName}-${version}.${ext} # DMG 文件名模板
+
+# ---------- Linux 平台 ----------
 linux:
+  # target：打包目标格式列表
   target:
     - AppImage
     - snap
     - deb
-  maintainer: Liang
-  category: Utility
+  maintainer: Liang # 维护者（写入包元数据）
+  category: Utility # 应用分类（桌面环境使用）
+
+# appImage：AppImage 格式
 appImage:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${productName}-${version}.${ext} # AppImage 文件名模板
+
+# ---------- 通用配置 ----------
+# npmRebuild：是否重新编译原生依赖（本项目无原生模块，跳过以加快构建）
 npmRebuild: false
+
+# ---------- 发布与自动更新 ----------
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: generic # 使用通用 HTTP 服务分发更新
+  url: https://example.com/auto-updates # 更新服务器地址（占位，待替换）
+
+# ---------- 依赖下载镜像 ----------
+# electronDownload：Electron 二进制下载配置（国内镜像加速）
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
