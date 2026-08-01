@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { watch, ref } from 'vue'
-import { Star, ExternalLink } from '@lucide/vue'
+import { Star, ExternalLink, Rss, Clock, UserRound } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { useArticles } from '../composables/useArticles'
 import { sanitizeHtml } from '../utils/sanitize'
@@ -52,31 +52,26 @@ function openInBrowser(url: string | null): void {
 
     <!-- 文章内容 - 已选中文章 -->
     <template v-else>
-      <!-- 工具栏（可拖动区域） -->
-      <div
-        class="p-2 border-b border-border flex items-center gap-2 min-h-9.5"
-        style="-webkit-app-region: drag"
-      >
+      <!-- 工具栏（可拖动区域，无分隔线靠间距分区，按钮右对齐） -->
+      <div class="p-2 px-3 flex items-center gap-2 min-h-9.5" style="-webkit-app-region: drag">
         <div class="flex-1" />
         <div style="-webkit-app-region: no-drag" class="flex items-center gap-1">
           <Button
-            class="h-8 text-xs"
             variant="ghost"
-            size="sm"
-            :class="currentArticle.is_starred ? 'text-yellow-500' : ''"
+            size="icon-sm"
+            class="text-muted-foreground"
+            :class="currentArticle.is_starred ? 'text-starred' : ''"
             @click="toggleStar(currentArticle.id)"
           >
             <Star :fill="currentArticle.is_starred ? 'currentColor' : 'none'" />
-            {{ currentArticle.is_starred ? '已星标' : '星标' }}
           </Button>
           <Button
-            class="h-8 text-xs"
             variant="ghost"
-            size="sm"
+            size="icon-sm"
+            class="text-muted-foreground"
             @click="openInBrowser(currentArticle.url)"
           >
             <ExternalLink />
-            在浏览器打开
           </Button>
         </div>
       </div>
@@ -84,18 +79,36 @@ function openInBrowser(url: string | null): void {
       <!-- 文章内容 -->
       <div ref="contentRef" class="flex-1 overflow-y-auto">
         <article class="max-w-3xl mx-auto px-8 py-6" style="user-select: text">
-          <header class="mb-6">
+          <header class="mb-8">
             <h1
-              class="text-2xl font-bold text-foreground leading-snug mb-3 cursor-default hover:text-accent hover:underline transition-colors"
+              class="text-[28px] font-bold text-foreground leading-snug mb-4 text-balance cursor-default hover:underline transition-colors"
               :title="currentArticle.url ? '在浏览器中打开' : undefined"
               @click="openInBrowser(currentArticle.url)"
             >
               {{ currentArticle.title }}
             </h1>
-            <div class="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-              <span>{{ currentArticle.feed_title }}</span>
-              <span v-if="currentArticle.author">{{ currentArticle.author }}</span>
-              <span>{{ formatDate(currentArticle.published_at) }}</span>
+            <div
+              class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-muted-foreground"
+            >
+              <span class="flex items-center gap-1.5">
+                <img
+                  v-if="currentArticle.favicon_url"
+                  :src="currentArticle.favicon_url"
+                  class="size-4 rounded-sm"
+                  alt=""
+                  @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
+                />
+                <Rss v-else class="size-4 text-muted-foreground/50" />
+                {{ currentArticle.feed_title }}
+              </span>
+              <span v-if="currentArticle.author" class="flex items-center gap-1.5">
+                <UserRound class="size-4 text-muted-foreground/50" />
+                {{ currentArticle.author }}
+              </span>
+              <span class="flex items-center gap-1.5">
+                <Clock class="size-4 text-muted-foreground/50" />
+                {{ formatDate(currentArticle.published_at) }}
+              </span>
             </div>
           </header>
 

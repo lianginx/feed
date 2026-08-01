@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watch, ref, computed, nextTick } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
-import { Search, Star, X } from '@lucide/vue'
+import { Search, Star, X, Newspaper } from '@lucide/vue'
 import { dayjs } from '../utils/dayjs'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -65,7 +65,7 @@ const virtualizer = useVirtualizer(
   computed(() => ({
     count: articles.value.length,
     getScrollElement: () => parentRef.value,
-    estimateSize: () => 110,
+    estimateSize: () => 115,
     overscan: 10
   }))
 )
@@ -112,9 +112,9 @@ function openInBrowser(url: string | null): void {
 </script>
 
 <template>
-  <div class="h-full border-r border-border flex flex-col">
-    <!-- 顶栏：常驻搜索框 -->
-    <div class="p-2 border-b border-border flex items-center min-h-9.5">
+  <div class="h-full flex flex-col">
+    <!-- 顶栏：常驻搜索框（无分隔线，靠间距分区） -->
+    <div class="p-3 flex items-center min-h-9.5">
       <div class="relative flex-1 h-8">
         <Search
           class="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none"
@@ -124,7 +124,7 @@ function openInBrowser(url: string | null): void {
           v-model="searchQuery"
           type="text"
           placeholder="搜索文章..."
-          class="h-full w-full pl-8 pr-8 rounded-md bg-muted/60 border-transparent shadow-none transition-colors hover:bg-muted/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
+          class="h-full w-full pl-8 pr-8 rounded-md bg-muted/70 border-transparent shadow-none transition-colors hover:bg-muted focus:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
           @input="onSearchInput"
           @keyup.escape="clearSearch"
         />
@@ -148,9 +148,12 @@ function openInBrowser(url: string | null): void {
       </div>
       <div
         v-else-if="articles.length === 0"
-        class="flex items-center justify-center h-32 text-muted-foreground text-sm"
+        class="flex flex-col items-center justify-center h-48 gap-2 text-muted-foreground"
       >
-        暂无文章
+        <div class="size-10 rounded-full bg-muted flex items-center justify-center">
+          <Newspaper class="size-5 text-muted-foreground/60" />
+        </div>
+        <p class="text-sm">暂无文章</p>
       </div>
       <template v-else>
         <div :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
@@ -166,96 +169,103 @@ function openInBrowser(url: string | null): void {
               transform: `translateY(${row.start}px)`
             }"
           >
-            <!-- 文章条目 -->
-            <ContextMenu v-if="row.index < articles.length">
-              <ContextMenuTrigger>
-                <button
-                  class="w-full h-full text-left px-4 border-b border-border transition-colors hover:bg-accent"
-                  :class="{
-                    'bg-accent': articles[row.index].id === currentArticle?.id
-                  }"
-                  @click="openArticle(articles[row.index].id)"
-                  @dblclick="openInBrowser(articles[row.index].url)"
-                >
-                  <div class="flex items-start gap-3 py-2.5 h-full">
-                    <div class="flex-1 min-w-0 h-full flex flex-col">
-                      <div>
-                        <div class="flex items-center gap-1.5">
-                          <span
-                            v-if="!articles[row.index].is_read"
-                            class="w-2 h-2 rounded-full bg-unread-dot shrink-0"
-                          />
-                          <Star
-                            v-if="articles[row.index].is_starred"
-                            class="w-3 h-3 text-starred shrink-0 fill-starred"
-                          />
-                          <h3
-                            class="text-sm font-medium truncate"
+            <!-- 文章条目：悬浮行 + 圆角 hover，无分隔线 -->
+            <div v-if="row.index < articles.length" class="h-full px-3 pb-2">
+              <ContextMenu>
+                <ContextMenuTrigger class="block h-full">
+                  <button
+                    class="w-full h-full text-left rounded-lg p-3 transition-colors hover:bg-accent"
+                    :class="{
+                      'bg-accent': articles[row.index].id === currentArticle?.id
+                    }"
+                    @click="openArticle(articles[row.index].id)"
+                    @dblclick="openInBrowser(articles[row.index].url)"
+                  >
+                    <div class="flex items-start gap-3 h-full">
+                      <div class="flex-1 min-w-0 h-full flex flex-col">
+                        <div>
+                          <div class="flex items-center gap-1.5">
+                            <span
+                              v-if="!articles[row.index].is_read"
+                              class="w-2 h-2 rounded-full bg-unread-dot shrink-0"
+                            />
+                            <Star
+                              v-if="articles[row.index].is_starred"
+                              class="w-3 h-3 text-starred shrink-0 fill-starred"
+                            />
+                            <h3
+                              class="truncate text-sm"
+                              :class="
+                                articles[row.index].is_read
+                                  ? 'font-medium text-foreground/60'
+                                  : 'font-semibold text-foreground'
+                              "
+                            >
+                              {{ articles[row.index].title }}
+                            </h3>
+                          </div>
+                          <p
+                            v-if="articles[row.index].summary"
+                            class="text-xs mt-1 line-clamp-2"
                             :class="
-                              articles[row.index].is_read ? 'text-foreground/60' : 'text-foreground'
+                              articles[row.index].is_read
+                                ? 'text-muted-foreground/60'
+                                : 'text-muted-foreground'
                             "
                           >
-                            {{ articles[row.index].title }}
-                          </h3>
+                            {{ articles[row.index].summary }}
+                          </p>
                         </div>
-                        <p
-                          v-if="articles[row.index].summary"
-                          class="text-xs mt-1 line-clamp-2"
+                        <div
+                          class="flex items-center gap-1.5 mt-auto text-xs overflow-hidden"
                           :class="
                             articles[row.index].is_read
-                              ? 'text-muted-foreground/60'
-                              : 'text-muted-foreground'
+                              ? 'text-muted-foreground/40'
+                              : 'text-muted-foreground/60'
                           "
                         >
-                          {{ articles[row.index].summary }}
-                        </p>
+                          <span class="truncate min-w-0">
+                            {{ articles[row.index].feed_title }}
+                          </span>
+                          <span class="shrink-0 text-muted-foreground/40">·</span>
+                          <span class="shrink-0">
+                            {{ dayjs(articles[row.index].published_at! * 1000).fromNow() }}
+                          </span>
+                        </div>
                       </div>
-                      <div
-                        class="flex items-center gap-2 mt-auto text-xs overflow-hidden"
-                        :class="
-                          articles[row.index].is_read
-                            ? 'text-muted-foreground/40'
-                            : 'text-muted-foreground/60'
-                        "
-                      >
-                        <span class="truncate min-w-0">
-                          {{ articles[row.index].feed_title }}
-                        </span>
-                        <span class="shrink-0">
-                          {{ dayjs(articles[row.index].published_at! * 1000).fromNow() }}
-                        </span>
-                      </div>
+                      <img
+                        v-if="articles[row.index].cover_image"
+                        :src="articles[row.index].cover_image ?? undefined"
+                        class="h-full aspect-square rounded-md object-cover shrink-0 bg-muted ring-1 ring-inset ring-black/10 dark:ring-white/10"
+                        :class="articles[row.index].is_read ? 'opacity-60' : ''"
+                        loading="lazy"
+                        @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
+                      />
                     </div>
-                    <img
-                      v-if="articles[row.index].cover_image"
-                      :src="articles[row.index].cover_image ?? undefined"
-                      class="h-full aspect-4/3 rounded-md object-cover shrink-0 mt-0.5 bg-muted"
-                      :class="articles[row.index].is_read ? 'opacity-60' : ''"
-                      loading="lazy"
-                      @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
-                    />
-                  </div>
-                </button>
-              </ContextMenuTrigger>
-              <ContextMenuContent>
-                <ContextMenuItem @select="toggleRead(articles[row.index].id)">
-                  {{ articles[row.index].is_read ? '标记未读' : '标为已读' }}
-                </ContextMenuItem>
-                <ContextMenuItem @select="toggleStar(articles[row.index].id)">
-                  {{ articles[row.index].is_starred ? '取消星标' : '星标' }}
-                </ContextMenuItem>
-                <ContextMenuSeparator />
-                <ContextMenuItem
-                  v-if="articles[row.index].url"
-                  @select="openInBrowser(articles[row.index].url)"
-                >
-                  在浏览器中打开
-                </ContextMenuItem>
-              </ContextMenuContent>
-            </ContextMenu>
+                  </button>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem @select="toggleRead(articles[row.index].id)">
+                    {{ articles[row.index].is_read ? '标记未读' : '标为已读' }}
+                  </ContextMenuItem>
+                  <ContextMenuItem @select="toggleStar(articles[row.index].id)">
+                    {{ articles[row.index].is_starred ? '取消星标' : '星标' }}
+                  </ContextMenuItem>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem
+                    v-if="articles[row.index].url"
+                    @select="openInBrowser(articles[row.index].url)"
+                  >
+                    在浏览器中打开
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
+            </div>
           </div>
         </div>
-        <div class="h-40" />
+        <div class="h-20 flex justify-center text-xs text-muted-foreground/70">
+          <span class="mt-4">已经到底了</span>
+        </div>
       </template>
     </div>
   </div>
