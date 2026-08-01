@@ -61,7 +61,7 @@ function openInBrowser(url: string | null): void {
       <div ref="contentRef" class="flex-1 overflow-y-auto overscroll-contain">
         <div
           ref="toolbarRef"
-          class="sticky top-0 z-10 p-3 flex items-center gap-2 min-h-9.5 bg-background"
+          class="sticky top-0 z-10 p-3 flex items-center gap-2 min-h-9.5 bg-card"
           style="-webkit-app-region: drag"
         >
           <div class="flex-1 min-w-0 flex items-center">
