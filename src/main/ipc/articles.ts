@@ -84,7 +84,7 @@ export function registerArticleHandlers(): void {
       const article = db
         .prepare(
           `
-        SELECT a.*, f.title as feed_title, f.site_url
+        SELECT a.*, f.title as feed_title, f.site_url, f.favicon_url
         FROM articles a
         JOIN feeds f ON a.feed_id = f.id
         WHERE a.id = ?
