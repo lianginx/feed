@@ -7,7 +7,7 @@ import { useAddFeedDialog } from './composables/useAddFeedDialog'
 import { useAddCategoryDialog } from './composables/useAddCategoryDialog'
 import { useSettingsDialog } from './composables/useSettingsDialog'
 import { useConfirmDialog } from './composables/useConfirmDialog'
-import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar'
+import { SidebarProvider, Sidebar } from '@/components/ui/sidebar'
 import SidebarNav from './components/Sidebar.vue'
 import ArticleList from './components/ArticleList.vue'
 import ArticleReader from './components/ArticleReader.vue'
@@ -94,18 +94,25 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <SidebarProvider :style="{ '--sidebar-width': '20rem' }" class="h-screen overflow-hidden">
-    <Sidebar collapsible="none" class="border-r border-sidebar-border">
+  <SidebarProvider
+    :style="{ '--sidebar-width': '20rem' }"
+    class="h-screen overflow-hidden bg-canvas px-3 gap-3"
+  >
+    <!-- 侧边栏不做卡片，透明化直接陈列在地面上 -->
+    <Sidebar collapsible="none" class="pt-12 bg-transparent">
       <SidebarNav />
     </Sidebar>
-    <SidebarInset class="overflow-hidden flex-row p-0">
-      <div class="flex-4 min-w-0 overflow-hidden">
-        <ArticleList />
-      </div>
-      <div class="flex-8 min-w-0 overflow-hidden">
-        <ArticleReader />
-      </div>
-    </SidebarInset>
+    <!-- 地面：承载卡片的画布，卡片之间留 gap；卡片用多层阴影浮起 -->
+    <div
+      class="my-3 flex-4 min-w-0 overflow-hidden rounded-xl bg-card shadow-card animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ease-out"
+    >
+      <ArticleList />
+    </div>
+    <div
+      class="my-3 flex-8 min-w-0 overflow-hidden rounded-xl bg-card shadow-card animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ease-out [animation-delay:80ms]"
+    >
+      <ArticleReader />
+    </div>
   </SidebarProvider>
 
   <ToastNotification />

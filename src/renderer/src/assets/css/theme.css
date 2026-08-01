@@ -1,14 +1,32 @@
 :root {
   --unread-dot: oklch(0.623 0.214 259.815);
   --starred: oklch(0.795 0.184 86.047);
+  /* 地面（canvas）：侧边栏与卡片陈列的背景 */
+  --canvas: oklch(0.98 0 0);
+  /* 卡片深度：用分层透明阴影代替生硬边框（1px ring + 抬升 + 环境光） */
+  --card-shadow:
+    0px 0px 0px 1px oklch(0 0 0 / 0.06),
+    0px 1px 2px -1px oklch(0 0 0 / 0.06),
+    0px 2px 4px 0px oklch(0 0 0 / 0.04);
+  --card-shadow-hover:
+    0px 0px 0px 1px oklch(0 0 0 / 0.08),
+    0px 1px 2px -1px oklch(0 0 0 / 0.08),
+    0px 2px 4px 0px oklch(0 0 0 / 0.06);
 }
 
 [data-theme='dark'] {
   --unread-dot: oklch(0.623 0.214 259.815);
   --starred: oklch(0.795 0.184 86.047);
+  --canvas: oklch(0.14 0 0);
+  /* 深色下简化为单层白环，分层深度阴影在暗背景上不可见 */
+  --card-shadow: 0 0 0 1px oklch(1 0 0 / 0.08);
+  --card-shadow-hover: 0 0 0 1px oklch(1 0 0 / 0.13);
 }
 
 @theme inline {
   --color-unread-dot: var(--unread-dot);
   --color-starred: var(--starred);
+  --color-canvas: var(--canvas);
+  --shadow-card: var(--card-shadow);
+  --shadow-card-hover: var(--card-shadow-hover);
 }
