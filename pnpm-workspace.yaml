@@ -4,3 +4,8 @@ allowBuilds:
   electron-winstaller: true
   esbuild: true
   vue-demi: true
+
+# @electron/get@3.0.0 发布产物缺失 ElectronDownloadCacheMode 导出（构建崩溃），
+# 强制 app-builder-lib 使用 3.1.0（修复版），不影响 electron 用的 2.x。
+overrides:
+  app-builder-lib>@electron/get: 3.1.0
