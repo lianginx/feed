@@ -59,9 +59,10 @@ dmg:
 # ---------- Linux 平台 ----------
 linux:
   # target：打包目标格式列表
+  # 注意：snap 默认发布目标是 Snap Store（需 snapcraft + Snap Store 凭据），
+  # 本项目分发渠道为 GitHub Releases，故移除 snap，避免 CI 构建失败
   target:
     - AppImage
-    - snap
     - deb
   maintainer: Liang # 维护者（写入包元数据）
   category: Utility # 应用分类（桌面环境使用）
