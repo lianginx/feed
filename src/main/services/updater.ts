@@ -102,7 +102,9 @@ async function checkMacManualUpdate(): Promise<{ success: boolean; error?: strin
     // 下载地址形如 https://github.com/lianginx/feed/releases/download/vX.Y.Z/Feed-X.Y.Z.dmg
     const downloadUrl = `https://github.com/lianginx/feed/releases/download/v${updateInfo.version}/${dmgName}`
 
-    const destPath = join(app.getPath('temp'), `Feed-${updateInfo.version}.dmg`)
+    // 下载到用户的「下载」目录（~/Downloads），方便用户找到并安装，
+    // 不要藏在临时目录里
+    const destPath = join(app.getPath('downloads'), `Feed-${updateInfo.version}.dmg`)
     if (!existsSync(destPath)) {
       await downloadDmg(downloadUrl, destPath, (percent) =>
         sendStatus({ state: 'downloading', percent })
