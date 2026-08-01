@@ -12,6 +12,15 @@
     0px 0px 0px 1px oklch(0 0 0 / 0.08),
     0px 1px 2px -1px oklch(0 0 0 / 0.08),
     0px 2px 4px 0px oklch(0 0 0 / 0.06);
+  /* 悬浮控件（返回顶部按钮）：抬升更高，浮于内容之上 */
+  --fab-shadow:
+    0px 0px 0px 1px oklch(0 0 0 / 0.07),
+    0px 2px 8px -2px oklch(0 0 0 / 0.14),
+    0px 6px 20px -6px oklch(0 0 0 / 0.14);
+  --fab-shadow-hover:
+    0px 0px 0px 1px oklch(0 0 0 / 0.1),
+    0px 4px 12px -2px oklch(0 0 0 / 0.18),
+    0px 8px 24px -6px oklch(0 0 0 / 0.16);
 }
 
 [data-theme='dark'] {
@@ -21,6 +30,9 @@
   /* 深色下简化为单层白环，分层深度阴影在暗背景上不可见 */
   --card-shadow: 0 0 0 1px oklch(1 0 0 / 0.08);
   --card-shadow-hover: 0 0 0 1px oklch(1 0 0 / 0.13);
+  /* 深色：白环 + 黑色环境光，保证在暗背景上可见 */
+  --fab-shadow: 0 0 0 1px oklch(1 0 0 / 0.1), 0 2px 10px -2px oklch(0 0 0 / 0.5);
+  --fab-shadow-hover: 0 0 0 1px oklch(1 0 0 / 0.16), 0 4px 16px -4px oklch(0 0 0 / 0.6);
 }
 
 @theme inline {
@@ -29,4 +41,6 @@
   --color-canvas: var(--canvas);
   --shadow-card: var(--card-shadow);
   --shadow-card-hover: var(--card-shadow-hover);
+  --shadow-fab: var(--fab-shadow);
+  --shadow-fab-hover: var(--fab-shadow-hover);
 }

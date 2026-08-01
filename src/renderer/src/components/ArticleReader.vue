@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { watch, ref } from 'vue'
-import { Star, ExternalLink, Rss, Clock, UserRound } from '@lucide/vue'
+import { Star, ExternalLink, Rss, Clock, UserRound, ArrowUp } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { useArticles } from '../composables/useArticles'
 import { useTitleInToolbar } from '../composables/useTitleInToolbar'
@@ -13,10 +13,23 @@ const contentRef = ref<HTMLElement | null>(null)
 const toolbarRef = ref<HTMLElement | null>(null)
 const { titleInToolbar } = useTitleInToolbar(contentRef, toolbarRef, currentArticle)
 
+// 返回顶部按钮：滚动超过阈值才显示，悬浮在内容右下角
+const BACK_TO_TOP_THRESHOLD = 400
+const showBackToTop = ref(false)
+
+function onContentScroll(): void {
+  showBackToTop.value = (contentRef.value?.scrollTop ?? 0) > BACK_TO_TOP_THRESHOLD
+}
+
+function scrollToTop(): void {
+  contentRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 // 切换文章时滚动回顶部
 watch(currentArticle, () => {
   if (contentRef.value) {
     contentRef.value.scrollTop = 0
+    showBackToTop.value = false
   }
 })
 
@@ -33,7 +46,7 @@ function openInBrowser(url: string | null): void {
 </script>
 
 <template>
-  <div class="h-full flex flex-col overflow-hidden">
+  <div class="relative h-full flex flex-col overflow-hidden">
     <!-- 空状态 - 未选中文章 -->
     <div v-if="!currentArticle" class="flex-1 flex items-center justify-center">
       <div class="text-center">
@@ -58,7 +71,11 @@ function openInBrowser(url: string | null): void {
 
     <!-- 文章内容 - 已选中文章 -->
     <template v-else>
-      <div ref="contentRef" class="flex-1 overflow-y-auto overscroll-contain">
+      <div
+        ref="contentRef"
+        class="flex-1 overflow-y-auto overscroll-contain"
+        @scroll="onContentScroll"
+      >
         <div
           ref="toolbarRef"
           class="sticky top-0 z-10 p-3 flex items-center gap-2 min-h-9.5 bg-card"
@@ -140,6 +157,23 @@ function openInBrowser(url: string | null): void {
           <div v-else class="text-muted-foreground text-sm">暂无内容</div>
         </article>
       </div>
+
+      <!-- 返回顶部：悬浮右下角，滚动超过阈值后出现 -->
+      <Transition name="back-to-top">
+        <Button
+          v-if="showBackToTop"
+          variant="ghost"
+          size="icon"
+          class="back-to-top-btn group absolute bottom-5 z-20 size-10 rounded-full bg-background/95 text-muted-foreground shadow-fab backdrop-blur-sm hover:bg-background hover:text-foreground hover:shadow-fab-hover active:scale-[0.96]"
+          title="返回顶部"
+          aria-label="返回顶部"
+          @click="scrollToTop"
+        >
+          <ArrowUp
+            class="size-5 transition-transform duration-200 ease-out group-hover:-translate-y-0.5"
+          />
+        </Button>
+      </Transition>
     </template>
   </div>
 </template>
@@ -155,5 +189,25 @@ function openInBrowser(url: string | null): void {
 .title-fade-leave-to {
   opacity: 0;
   transform: translateY(3px);
+}
+
+.back-to-top-enter-active,
+.back-to-top-leave-active {
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out;
+}
+.back-to-top-enter-from,
+.back-to-top-leave-to {
+  opacity: 0;
+  transform: translateY(6px) scale(0.96);
+}
+
+/* 返回顶部按钮：锚定正文列（max-w-3xl，即 48rem）右缘外侧。
+   公式：正文右缘到卡片右缘的空白 d = (100% - min(100%, 48rem)) / 2，
+   right = max(固定贴边 1.25rem, d - 按钮宽(2.5rem) - 间隙(1rem))。
+   卡片宽度不足时自动退化为贴卡片右缘向内，避免溢出。 */
+.back-to-top-btn {
+  right: max(1.25rem, calc((100% - min(100%, 48rem)) / 2 - 3.5rem));
 }
 </style>
