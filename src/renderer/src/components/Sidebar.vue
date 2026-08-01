@@ -404,7 +404,7 @@ function onCategoryDragEnd(): void {
 </script>
 
 <template>
-  <SidebarHeader class="p-0 pb-2 gap-2" style="-webkit-app-region: drag">
+  <SidebarHeader class="p-0 pt-12 pb-2 gap-2" style="-webkit-app-region: drag">
     <SidebarMenuButton
       style="-webkit-app-region: no-drag"
       :is-active="filter === 'all'"

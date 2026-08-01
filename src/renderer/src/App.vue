@@ -99,7 +99,7 @@ onUnmounted(() => {
     class="h-screen overflow-hidden bg-canvas px-3 gap-3"
   >
     <!-- 侧边栏不做卡片，透明化直接陈列在地面上 -->
-    <Sidebar collapsible="none" class="pt-12 bg-transparent">
+    <Sidebar collapsible="none" class="bg-transparent">
       <SidebarNav />
     </Sidebar>
     <!-- 地面：承载卡片的画布，卡片之间留 gap；卡片用多层阴影浮起 -->
