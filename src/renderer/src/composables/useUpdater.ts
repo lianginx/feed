@@ -24,10 +24,13 @@ export function useUpdater(): { checkForUpdates: () => Promise<void> } {
 
   /** 询问用户是否立即重启安装 */
   async function applyDownloaded(): Promise<void> {
+    const isMac = window.electron?.process?.platform === 'darwin'
     const ok = await confirm({
       title: '更新已就绪',
-      message: '新版本已下载完成，重启应用即可完成安装。现在重启吗？',
-      confirmText: '重启安装'
+      message: isMac
+        ? '新版本已下载完成。应用将退出并打开安装包，请把 Feed 拖入「应用程序」文件夹完成安装。'
+        : '新版本已下载完成，重启应用即可完成安装。现在重启吗？',
+      confirmText: isMac ? '退出并打开安装包' : '重启安装'
     })
     if (ok) {
       await window.api.updater.install()
