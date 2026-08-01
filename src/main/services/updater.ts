@@ -4,7 +4,7 @@ import { ipcMain, app, shell, net } from 'electron'
 // 只能用默认导入拿到整个 module.exports（含 getter）后再解构。
 import electronUpdater from 'electron-updater'
 import { is } from '@electron-toolkit/utils'
-import { createWriteStream, existsSync } from 'fs'
+import { createWriteStream, existsSync, statSync } from 'fs'
 import { join } from 'path'
 import { getMainWindow } from '../app/window'
 
@@ -61,13 +61,20 @@ function downloadDmg(
       const file = createWriteStream(destPath)
       response.on('data', (chunk) => {
         received += chunk.length
+        file.write(chunk)
         if (total > 0) {
           onProgress(Math.round((received / total) * 100))
         }
       })
       response.on('end', () => {
-        file.end()
-        resolve()
+        file.end(() => {
+          // 校验文件完整性：实际大小应等于 Content-Length
+          if (total > 0 && received !== total) {
+            reject(new Error(`下载不完整：期望 ${total} 字节，实际 ${received} 字节`))
+            return
+          }
+          resolve()
+        })
       })
       response.on('error', (err) => {
         file.destroy()
@@ -105,7 +112,9 @@ async function checkMacManualUpdate(): Promise<{ success: boolean; error?: strin
     // 下载到用户的「下载」目录（~/Downloads），方便用户找到并安装，
     // 不要藏在临时目录里
     const destPath = join(app.getPath('downloads'), `Feed-${updateInfo.version}.dmg`)
-    if (!existsSync(destPath)) {
+    // 已存在但文件过小（<1MB）说明上次下载失败留下残缺文件，需重新下载
+    const existsValid = existsSync(destPath) && statSync(destPath).size > 1024 * 1024
+    if (!existsValid) {
       await downloadDmg(downloadUrl, destPath, (percent) =>
         sendStatus({ state: 'downloading', percent })
       )
