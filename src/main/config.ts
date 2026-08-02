@@ -11,7 +11,7 @@ export interface AppSettings {
 const defaults: AppSettings = {
   theme: 'system',
   updateInterval: 30,
-  windowBounds: { width: 1440, height: 780 },
+  windowBounds: { width: 1440, height: 870 },
   autoCheckUpdate: true,
   updateCheckInterval: 360
 }
