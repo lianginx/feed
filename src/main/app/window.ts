@@ -28,8 +28,9 @@ export function createWindow(): void {
 
   mainWindow = new BrowserWindow({
     acceptFirstMouse: true,
-    width: bounds.width || 1200,
-    height: bounds.height || 800,
+    // 兜底 1440×780：与 config.ts 默认 windowBounds 保持一致，三栏（320 + flex-4 + flex-8）下最舒适
+    width: bounds.width || 1440,
+    height: bounds.height || 780,
     x: bounds.x,
     y: bounds.y,
     show: false,

@@ -13,7 +13,9 @@ const defaults: AppSettings = {
   theme: 'system',
   updateInterval: 30,
   fontSize: 16,
-  windowBounds: { width: 1200, height: 800 },
+  // 默认窗口尺寸：三栏布局（侧栏 320px + 列表 flex-4 + 正文 flex-8 = 1:2）。
+  // 1440 宽时列表约 357px、正文约 715px，正文行宽最舒适；780 高在 13" 屏（1440×900）可完整显示
+  windowBounds: { width: 1440, height: 780 },
   autoCheckUpdate: true,
   updateCheckInterval: 360
 }
