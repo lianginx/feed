@@ -26,7 +26,8 @@ watch(resolvedTheme, applyTheme, { immediate: true })
 // 监听系统主题变化
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
   if (theme.value === 'system') {
-    applyTheme(resolvedTheme.value)
+    // 直接读取实时 matchMedia，避免使用被缓存的 computed（其依赖不含 matchMedia，会返回过期值）
+    applyTheme(resolveTheme(theme.value))
   }
 })
 
