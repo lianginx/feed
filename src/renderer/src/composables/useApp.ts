@@ -3,7 +3,6 @@ import { ref, computed, watch } from 'vue'
 export type Theme = 'light' | 'dark' | 'system'
 
 const theme = ref<Theme>('system')
-const fontSize = ref(16)
 const updateInterval = ref(30)
 const autoCheckUpdate = ref(true)
 const updateCheckInterval = ref(360)
@@ -37,7 +36,6 @@ export function useApp() {
     const result = await window.api.config.get()
     if (result.success && result.data) {
       theme.value = result.data.theme
-      fontSize.value = result.data.fontSize
       updateInterval.value = result.data.updateInterval
       autoCheckUpdate.value = result.data.autoCheckUpdate
       updateCheckInterval.value = result.data.updateCheckInterval
@@ -47,11 +45,6 @@ export function useApp() {
   async function setTheme(t: Theme): Promise<void> {
     theme.value = t
     await window.api.config.update({ theme: t })
-  }
-
-  async function setFontSize(size: number): Promise<void> {
-    fontSize.value = size
-    await window.api.config.update({ fontSize: size })
   }
 
   async function setUpdateInterval(minutes: number): Promise<void> {
@@ -72,13 +65,11 @@ export function useApp() {
   return {
     theme,
     resolvedTheme,
-    fontSize,
     updateInterval,
     autoCheckUpdate,
     updateCheckInterval,
     loadSettings,
     setTheme,
-    setFontSize,
     setUpdateInterval,
     setAutoCheckUpdate,
     setUpdateCheckInterval

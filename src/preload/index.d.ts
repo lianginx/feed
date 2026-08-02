@@ -60,7 +60,6 @@ interface ArticleListResult {
 interface AppSettings {
   theme: 'light' | 'dark' | 'system'
   updateInterval: number
-  fontSize: number
   windowBounds: { x?: number; y?: number; width: number; height: number }
   autoCheckUpdate: boolean
   updateCheckInterval: number
