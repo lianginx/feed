@@ -1,34 +1,97 @@
-# feed
+# Feed — 简洁的 RSS 阅读器
 
-An Electron application with Vue and TypeScript
+> 一个清爽、专注阅读的桌面端 RSS / Atom 订阅阅读器。
+> 支持 macOS / Windows / Linux。把你喜欢的博客、新闻、漫画站点聚合到一个地方，安静地读，告别一个个开网页。
 
-## Recommended IDE Setup
+## ✨ 特性
 
-- [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar)
+- 📡 **订阅 RSS / Atom**：把喜欢的网站添加进来，一处聚合阅读
+- 🗂️ **分类管理**：给订阅源分组，支持拖拽排序
+- ⭐ **星标收藏**：好文章一键星标，随时回看
+- 🔍 **全文搜索**：本地全文索引，秒搜所有历史文章
+- 📥 **OPML 导入 / 导出**：从旧阅读器一键搬家，也能随时备份带走
+- 🌗 **深色 / 浅色主题**：跟随系统或手动切换
+- 🖥️ **系统托盘 + 未读徽标**：最小化到托盘，未读数量一目了然
+- 🔄 **定时后台刷新**：自动拉取最新文章，打开即看
+- ⌨️ **快捷键**：键盘流操作，阅读更顺手
+- ⬆️ **自动更新**：新版本后台下载，重启即完成升级
+- 🔒 **安全净化**：文章内容经过净化处理，安心阅读
 
-## Project Setup
+## 📸 截图
 
-### Install
+<!-- TODO: 补充主界面截图（建议 1280×800 左右） -->
+![主界面](docs/screenshots/main.png)
+
+## ⬇️ 下载安装
+
+到 [GitHub Releases](https://github.com/lianginx/feed/releases) 下载对应平台的安装包：
+
+| 平台    | 安装包                                       |
+| ------- | -------------------------------------------- |
+| macOS   | `Feed-<版本号>.dmg`                          |
+| Windows | `feed-<版本号>-setup.exe`                    |
+| Linux   | `Feed-<版本号>.AppImage`（另有 `.deb` 可选） |
+
+> [!WARNING]
+> **macOS 首次打开可能被系统拦截**：应用目前未做 Apple 签名和公证，Gatekeeper 会提示无法验证开发者，也可能出现下面两种情况：
+
+**情况一：提示「无法验证开发者」**
+
+右键（或按住 `Ctrl` 点击）应用图标 → 选择「打开」→ 再点一次「打开」即可运行。
+
+**情况二：提示「应用已损坏，无法打开」**
+
+这是未签名应用被 Gatekeeper 拦下的**假损坏**（文件没有坏）。需要先在「终端」里执行命令，清除系统的隔离标记：
 
 ```bash
-$ pnpm install
+xattr -cr /Applications/Feed.app
 ```
 
-### Development
+## 🚀 快速上手
+
+1. **添加订阅源**：点击侧边栏顶部的「+」→ 粘贴博客 / 网站的 RSS 地址（例如 `https://example.com/feed.xml`）→ 确定。应用会自动识别标题和图标。
+2. **整理分类**：右键侧边栏空白处可以新建 / 重命名 / 删除分类，右键订阅源可以移动到分类，直接拖拽也能调整顺序。
+3. **开始阅读**：点击左侧订阅源 → 中间的文章列表 → 点击任意文章即可阅读。选中文章后，用 `Cmd / Ctrl + D` 收藏（星标）、`Cmd / Ctrl + E` 标记已读 / 未读。
+
+> 💡 **不知道怎么找 RSS 地址？** 大多数网站页面底部都有「RSS / 订阅」链接，或直接在域名后加 `/feed`、`/rss`、`/atom.xml` 试试。也可以从旧阅读器导出 OPML 文件，通过「导入 OPML」整体搬进来。
+
+## ⌨️ 快捷键
+
+| 快捷键                   | 功能                    |
+| ------------------------ | ----------------------- |
+| `Cmd / Ctrl + N`         | 添加订阅源              |
+| `Cmd / Ctrl + R`         | 刷新当前订阅源          |
+| `Cmd / Ctrl + Shift + R` | 刷新全部订阅源          |
+| `Cmd / Ctrl + F`         | 搜索文章                |
+| `Cmd / Ctrl + E`         | 标为已读 / 未读         |
+| `Cmd / Ctrl + D`         | 收藏 / 取消收藏（星标） |
+| `Cmd / Ctrl + Shift + A` | 全部标为已读            |
+| `Cmd / Ctrl + ,`         | 打开设置                |
+
+> 「标为已读 / 未读」和「收藏」需要先选中一篇文章才生效（菜单项会随当前状态自动启用或置灰）。
+
+## ❓ 常见问题
+
+### 我的数据存在哪里？
+所有订阅和文章都保存在本地 SQLite 数据库中（macOS 位于 `~/Library/Application Support/Feed/feed.db`），数据完全属于你自己。
+
+### 如何从别的阅读器迁移？
+在旧阅读器里导出 OPML 文件 → 在本应用菜单里选择「导入 OPML」即可。以后想换工具，也可以随时「导出 OPML」把数据带走。
+
+### 怎么更新到新版本？
+应用会自动检查更新并在后台下载，重启后完成升级；也可以随时点菜单栏「检查更新…」手动检查。
+
+### 我订阅的网站没有 RSS 怎么办？
+如果网站本身不提供 RSS，可以先用第三方服务（如 [RSSHub](https://docs.rsshub.app/)）为它生成一个订阅地址，再粘贴进来。
+
+## 👨‍💻 开发者
+
+Feed 基于 Electron + Vue 3 + TypeScript 构建。想本地开发或参与贡献：
 
 ```bash
-$ pnpm dev
+pnpm install   # 安装依赖
+pnpm dev       # 启动开发环境
+pnpm build     # 类型检查 + 构建
 ```
 
-### Build
-
-```bash
-# For windows
-$ pnpm build:win
-
-# For macOS
-$ pnpm build:mac
-
-# For Linux
-$ pnpm build:linux
-```
+更多架构、数据库、发布细节见 [docs/](./docs/) 目录下的文档，发版流程见 [docs/release.md](./docs/release.md)。
