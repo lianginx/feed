@@ -457,13 +457,13 @@ function onCategoryDragEnd(): void {
           <RefreshCw :class="{ 'animate-spin': refreshingFeedIds.size > 0 }" />
         </Button>
         <Button
-          class="size-8"
+          class="size-6 [&_svg]:size-5"
           size="icon-sm"
           variant="link"
           title="添加订阅源"
           @click="showAddFeed = true"
         >
-          <Plus :size="28" />
+          <Plus />
         </Button>
       </div>
     </div>
