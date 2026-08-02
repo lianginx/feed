@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3'
+import { DEFAULT_CATEGORIES, DEFAULT_FEEDS } from './defaultFeeds'
 
 export interface Migration {
   version: number
@@ -130,5 +131,34 @@ CREATE TRIGGER IF NOT EXISTS articles_au AFTER UPDATE ON articles BEGIN
   VALUES (new.id, new.title, new.content, new.author);
 END;
 `
+  },
+  {
+    version: 5,
+    name: 'seed-default-feeds',
+    up: (db) => {
+      // 已有订阅源则跳过，避免打扰已有数据的用户
+      const { count } = db.prepare('SELECT COUNT(*) AS count FROM feeds').get() as {
+        count: number
+      }
+      if (count > 0) return
+
+      const catStmt = db.prepare(
+        'INSERT OR IGNORE INTO categories (name, sort_order) VALUES (?, ?)'
+      )
+      const catLookup = db.prepare('SELECT id FROM categories WHERE name = ?')
+      const feedStmt = db.prepare(
+        'INSERT OR IGNORE INTO feeds (url, title, category_id, sort_order) VALUES (?, ?, ?, ?)'
+      )
+
+      // 按顺序建分类，保证侧边栏展示顺序稳定
+      DEFAULT_CATEGORIES.forEach((name, i) => {
+        catStmt.run(name, i)
+      })
+
+      DEFAULT_FEEDS.forEach((feed, i) => {
+        const cat = catLookup.get(feed.category) as { id: number } | undefined
+        feedStmt.run(feed.url, feed.title, cat?.id ?? null, i)
+      })
+    }
   }
 ]
