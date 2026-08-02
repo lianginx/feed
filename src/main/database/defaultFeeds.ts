@@ -17,7 +17,6 @@ export const DEFAULT_CATEGORIES: string[] = ['科技资讯', '新闻媒体', '�
 /** 默认订阅源列表 */
 export const DEFAULT_FEEDS: DefaultFeed[] = [
   // 科技资讯
-  { title: '36氪', url: 'https://36kr.com/feed', category: '科技资讯' },
   { title: 'IT之家', url: 'https://www.ithome.com/rss/', category: '科技资讯' },
   { title: '少数派', url: 'https://sspai.com/feed', category: '科技资讯' },
   { title: '小众软件', url: 'https://feed.appinn.com/', category: '科技资讯' },
