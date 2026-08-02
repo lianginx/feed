@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio'
 import { app } from 'electron'
 import { join, extname } from 'path'
-import { existsSync, mkdirSync, createWriteStream } from 'fs'
+import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { getConnection } from '../database/connection'
 
 let faviconDir: string | null = null
@@ -50,96 +50,120 @@ function extFromUrl(url: string): string {
 }
 
 /**
- * 下载 favicon 并缓存到本地。
- * 返回本地协议 URL（favicon://{feedId}.ext），下载失败则返回远程 URL 的 data URI 兜底或 null。
+ * 判断响应内容是否为可用的图片（排除 HTML/纯文本等错误页）。
  */
-export async function downloadAndCacheFavicon(
-  faviconUrl: string | null,
-  feedId: number
-): Promise<string | null> {
-  if (!faviconUrl) return null
+function isImageContentType(contentType: string | null): boolean {
+  if (!contentType) return true
+  const t = contentType.split(';')[0].trim().toLowerCase()
+  return !t.startsWith('text/html') && !t.startsWith('text/plain')
+}
 
+/**
+ * 尝试下载单个 favicon 候选并缓存到本地。
+ * 成功返回本地协议 URL（favicon://{feedId}.ext），失败返回 null。
+ */
+async function tryDownloadFavicon(faviconUrl: string, feedId: number): Promise<string | null> {
   const dir = getFaviconDir()
 
-  // 先尝试 HEAD 请求获取 Content-Type
+  // 先 HEAD 拿 Content-Type 推断扩展名
   let ext = '.ico'
+  let headOk = false
   try {
     const headRes = await fetch(faviconUrl, { method: 'HEAD', signal: AbortSignal.timeout(3000) })
     if (headRes.ok) {
+      headOk = true
       ext = extFromContentType(headRes.headers.get('content-type'))
     }
   } catch {
-    ext = extFromUrl(faviconUrl)
+    // HEAD 请求失败，忽略
   }
+  // HEAD 非 ok（如 405）时按 URL 推断扩展名，避免 SVG 被存成 .ico
+  if (!headOk) ext = extFromUrl(faviconUrl)
 
   const fileName = `${feedId}${ext}`
   const filePath = join(dir, fileName)
 
   try {
     const response = await fetch(faviconUrl, { signal: AbortSignal.timeout(8000) })
-    if (!response.ok) return faviconUrl // 回退到远程 URL
+    if (!response.ok) return null
+    if (!isImageContentType(response.headers.get('content-type'))) return null
 
     const buffer = Buffer.from(await response.arrayBuffer())
-    createWriteStream(filePath).write(buffer)
+    if (buffer.length === 0) return null
 
+    writeFileSync(filePath, buffer)
     return `favicon://${fileName}`
   } catch {
-    // 下载失败，返回远程 URL 作为兜底
-    return faviconUrl
+    return null
   }
 }
 
 /**
- * 多层降级解析 favicon URL。
- * 层级：feed.image → HTML link → /favicon.ico → Google 服务 → null
+ * 使用 DuckDuckGo 的 favicon 服务作为兜底方案（国内可达、免 key）。
  */
-export async function resolveFavicon(
+function duckduckgoFaviconFallback(baseUrl: URL): string | null {
+  try {
+    return `https://icons.duckduckgo.com/ip3/${baseUrl.hostname}.ico`
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 构造 favicon 候选 URL 列表（按优先级，逐个尝试下载）。
+ * 层级：feed.image → HTML link → /favicon.ico → DuckDuckGo 服务
+ */
+async function buildFaviconCandidates(
   siteUrl: string | null,
   feedImageUrl?: string
-): Promise<string | null> {
-  // 第 1 层：feed 自带的图片
-  if (feedImageUrl) return feedImageUrl
+): Promise<string[]> {
+  const candidates: string[] = []
 
-  if (!siteUrl) return null
+  // 第 1 层：feed 自带的 image（可能是 logo/OG 图，下载阶段会校验有效性）
+  if (feedImageUrl) candidates.push(feedImageUrl)
+
+  if (!siteUrl) return candidates
 
   let baseUrl: URL
   try {
     baseUrl = new URL(siteUrl)
   } catch {
-    return null
+    return candidates
   }
 
+  // 第 2 层：从 HTML 中解析 <link rel="icon"> 标签（使用 cheerio）
   try {
-    // 第 2 层：从 HTML 中解析 <link rel="icon"> 标签（使用 cheerio）
     const htmlFavicon = await fetchHtmlFavicon(baseUrl)
-    if (htmlFavicon) return htmlFavicon
+    if (htmlFavicon) candidates.push(htmlFavicon)
   } catch {
     // 忽略 HTML 解析失败
   }
 
   // 第 3 层：直接取 /favicon.ico
-  const icoUrl = `${baseUrl.protocol}//${baseUrl.hostname}/favicon.ico`
-  try {
-    const res = await fetch(icoUrl, { method: 'HEAD', signal: AbortSignal.timeout(3000) })
-    if (res.ok) return icoUrl
-  } catch {
-    // 忽略 HEAD 请求失败
-  }
+  candidates.push(`${baseUrl.protocol}//${baseUrl.hostname}/favicon.ico`)
 
-  // 第 4 层：Google favicon 服务兜底
-  return googleFaviconFallback(baseUrl)
+  // 第 4 层：DuckDuckGo favicon 服务兜底
+  const fallback = duckduckgoFaviconFallback(baseUrl)
+  if (fallback) candidates.push(fallback)
+
+  return candidates
 }
 
 /**
- * 使用 Google 的 favicon 服务作为兜底方案。
+ * 解析并缓存订阅源的 favicon，逐个尝试候选 URL。
+ * 返回最终的本地 favicon URL（favicon://{feedId}.ext）；全部失败返回 null。
  */
-function googleFaviconFallback(baseUrl: URL): string | null {
-  try {
-    const domain = baseUrl.hostname
-    return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
-  } catch {
-    return null
+export async function resolveAndCacheFavicon(
+  feedId: number,
+  siteUrl: string | null,
+  feedImageUrl?: string
+): Promise<string | null> {
+  const candidates = await buildFaviconCandidates(siteUrl, feedImageUrl)
+  for (const url of candidates) {
+    const result = await tryDownloadFavicon(url, feedId)
+    if (result) return result
   }
+  return null
 }
 
 /**
@@ -209,8 +233,7 @@ export async function refreshFeedFavicon(feedId: number): Promise<string | null>
   if (!feed) return null
 
   const siteUrl = feed.site_url || feed.url
-  const remoteUrl = await resolveFavicon(siteUrl)
-  const finalUrl = await downloadAndCacheFavicon(remoteUrl, feedId)
+  const finalUrl = await resolveAndCacheFavicon(feedId, siteUrl)
   updateFavicon(feedId, finalUrl)
   return finalUrl
 }

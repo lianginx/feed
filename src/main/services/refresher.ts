@@ -1,6 +1,6 @@
 import { getConnection } from '../database/connection'
 import { parseFeed } from './rss'
-import { resolveFavicon, downloadAndCacheFavicon } from './favicon'
+import { resolveAndCacheFavicon } from './favicon'
 import { scheduleBadgeUpdate } from './badge'
 import { getMainWindow } from '../app/window'
 import DOMPurify from 'dompurify'
@@ -53,8 +53,7 @@ export async function refreshSingleFeed(feedId: number): Promise<RefreshResult> 
     // 缓存 favicon
     try {
       const siteUrl = parsed.link || feed.url
-      const remoteUrl = await resolveFavicon(siteUrl, parsed.image?.url)
-      const localUrl = await downloadAndCacheFavicon(remoteUrl, feedId)
+      const localUrl = await resolveAndCacheFavicon(feedId, siteUrl, parsed.image?.url)
       if (localUrl) {
         db.prepare('UPDATE feeds SET favicon_url = ? WHERE id = ?').run(localUrl, feedId)
       }
