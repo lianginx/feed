@@ -66,8 +66,24 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      # ELECTRON_MIRROR：让 @electron/rebuild 下载 Electron headers 走 npmmirror 镜像，
+      # 避免依赖 GitHub 连通性（曾因连接 github.com 的 Cloudflare IP 超时导致 install 失败）
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          for attempt in 1 2 3; do
+            echo "pnpm install --frozen-lockfile（第 ${attempt} 次尝试）"
+            if pnpm install --frozen-lockfile; then
+              break
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "安装失败（可能是瞬时网络问题），10 秒后重试..."
+              sleep 10
+            else
+              exit 1
+            fi
+          done
+        env:
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
 
       # 未配置代码签名证书：macOS/Windows 均跳过签名（避免 CI 卡在签名/公证环节）
       # GITHUB_TOKEN 由仓库自动提供，electron-builder 用它把产物上传到 GitHub Releases
