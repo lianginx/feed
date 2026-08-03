@@ -33,7 +33,14 @@ export async function refreshAllFeeds(): Promise<void> {
 export async function refreshSingleFeed(feedId: number): Promise<RefreshResult> {
   const db = getConnection()
   const feed = db.prepare('SELECT * FROM feeds WHERE id = ?').get(feedId) as
-    | { id: number; url: string; title: string; custom_title: number; error_count: number }
+    | {
+        id: number
+        url: string
+        title: string
+        custom_title: number
+        error_count: number
+        favicon_url: string | null
+      }
     | undefined
 
   if (!feed) {
@@ -60,15 +67,18 @@ export async function refreshSingleFeed(feedId: number): Promise<RefreshResult> 
       ).run(parsed.title, parsed.description || null, parsed.link || null, feedId)
     }
 
-    // 缓存 favicon
-    try {
-      const siteUrl = parsed.link || feed.url
-      const localUrl = await resolveAndCacheFavicon(feedId, siteUrl, parsed.image?.url)
-      if (localUrl) {
-        db.prepare('UPDATE feeds SET favicon_url = ? WHERE id = ?').run(localUrl, feedId)
+    // 缓存 favicon：已有则跳过，避免每次定时刷新都重复拉取站点首页/图标；
+    // 手动「刷新图标」（feeds:refreshFavicon）仍会强制重新下载
+    if (!feed.favicon_url) {
+      try {
+        const siteUrl = parsed.link || feed.url
+        const localUrl = await resolveAndCacheFavicon(feedId, siteUrl, parsed.image?.url)
+        if (localUrl) {
+          db.prepare('UPDATE feeds SET favicon_url = ? WHERE id = ?').run(localUrl, feedId)
+        }
+      } catch {
+        // favicon 刷新失败不影响同步
       }
-    } catch {
-      // favicon 刷新失败不影响同步
     }
 
     // 同步文章（去重 + 更新已有）
