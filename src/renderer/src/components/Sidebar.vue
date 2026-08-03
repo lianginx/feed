@@ -185,6 +185,16 @@ function handleSelectUnread(): void {
   filter.value = 'unread'
 }
 
+async function handleMarkAllReadGlobal(): Promise<void> {
+  const ok = await confirm({
+    title: '全部标为已读',
+    message: '将把全部文章标记为已读，确定？',
+    confirmText: '全部标为已读'
+  })
+  if (!ok) return
+  await handleMarkAllRead()
+}
+
 function handleSelectStarred(): void {
   selectFeed(null)
   selectCategory(undefined)
@@ -417,21 +427,28 @@ function onCategoryDragEnd(): void {
         </span>
       </span>
     </SidebarMenuButton>
-    <SidebarMenuButton
-      style="-webkit-app-region: no-drag"
-      :is-active="filter === 'unread'"
-      @click="handleSelectUnread"
-    >
-      <span class="flex w-full items-center justify-between">
-        <span class="flex items-center gap-2">
-          <BookOpen class="size-4" />
-          <span>未读文章</span>
-        </span>
-        <span v-if="unreadCount > 0" class="text-xs tabular-nums text-sidebar-foreground/50">{{
-          unreadCount
-        }}</span>
-      </span>
-    </SidebarMenuButton>
+    <ContextMenu>
+      <ContextMenuTrigger as-child>
+        <SidebarMenuButton
+          style="-webkit-app-region: no-drag"
+          :is-active="filter === 'unread'"
+          @click="handleSelectUnread"
+        >
+          <span class="flex w-full items-center justify-between">
+            <span class="flex items-center gap-2">
+              <BookOpen class="size-4" />
+              <span>未读文章</span>
+            </span>
+            <span v-if="unreadCount > 0" class="text-xs tabular-nums text-sidebar-foreground/50">{{
+              unreadCount
+            }}</span>
+          </span>
+        </SidebarMenuButton>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem @select="handleMarkAllReadGlobal">全部标为已读</ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
     <SidebarMenuButton
       style="-webkit-app-region: no-drag"
       :is-active="filter === 'starred'"
