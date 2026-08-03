@@ -1,6 +1,7 @@
 import { app, ipcMain, Menu } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import { getMainWindow } from './window'
+import { createSettingsWindow } from './settingsWindow'
 
 /**
  * 构建并设置应用菜单。
@@ -29,7 +30,7 @@ export function buildAppMenu(): void {
         {
           label: '设置…',
           accelerator: 'CmdOrCtrl+,',
-          click: () => getMainWindow()?.webContents.send('menu:openSettings')
+          click: () => createSettingsWindow()
         },
         { type: 'separator' },
         {

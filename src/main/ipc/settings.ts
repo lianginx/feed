@@ -1,5 +1,6 @@
 import { ipcMain, nativeTheme, BrowserWindow } from 'electron'
 import { getSettings, updateSettings, type AppSettings } from '../config'
+import { getMainWindow } from '../app/window'
 import { startScheduler } from '../services/timer'
 import { refreshAutoCheckTimer } from '../services/updater'
 import { success, error } from './util'
@@ -35,6 +36,8 @@ export function registerSettingsHandlers(): void {
       if (settings.autoCheckUpdate !== undefined || settings.updateCheckInterval !== undefined) {
         refreshAutoCheckTimer()
       }
+      // 通知主窗口重新加载配置（如主题变化即时生效）
+      getMainWindow()?.webContents.send('config:changed')
       return success(updated)
     } catch (e) {
       return error((e as Error).message)
