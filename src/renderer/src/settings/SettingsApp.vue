@@ -33,10 +33,12 @@ const {
   setUpdateInterval,
   syncConfig,
   setSyncConfig,
-  loadSettings
+  loadSettings,
+  autoCheckUpdate,
+  updateCheckInterval,
+  setAutoCheckUpdate,
+  setUpdateCheckInterval
 } = useApp()
-const { autoCheckUpdate, updateCheckInterval, setAutoCheckUpdate, setUpdateCheckInterval } =
-  useApp()
 const { runSync } = useSync()
 
 const themes: { value: Theme; label: string }[] = [
