@@ -1,5 +1,4 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
 
 /** 自动更新状态（与主进程 updater.ts 保持一致） */
 type UpdaterStatus =
@@ -11,7 +10,28 @@ type UpdaterStatus =
   | { state: 'downloaded' }
   | { state: 'error'; message: string }
 
+/**
+ * 订阅主进程事件：包裹回调并剥离 IpcRendererEvent，只透传业务数据，
+ * 避免把底层 ipcRenderer / 事件对象暴露给渲染进程（Electron 安全规则 #20）。
+ * 返回取消订阅函数。
+ */
+function onChannel<A extends unknown[]>(
+  channel: string,
+  callback: (...args: A) => void
+): () => void {
+  const listener = (_event: Electron.IpcRendererEvent, ...args: unknown[]): void =>
+    callback(...(args as A))
+  ipcRenderer.on(channel, listener)
+  return () => {
+    ipcRenderer.off(channel, listener)
+  }
+}
+
 const api = {
+  system: {
+    /** 当前操作系统平台（darwin / win32 / linux） */
+    platform: process.platform
+  },
   feeds: {
     list: () => ipcRenderer.invoke('feeds:list'),
     add: (params: { url: string; title?: string; categoryId?: number }) =>
@@ -25,7 +45,17 @@ const api = {
       ipcRenderer.invoke('feeds:updateSortOrder', feeds),
     refreshFavicon: (id: number) => ipcRenderer.invoke('feeds:refreshFavicon', id),
     refresh: (feedId: number) => ipcRenderer.invoke('feeds:refresh', feedId),
-    parseUrl: (url: string) => ipcRenderer.invoke('feeds:parseUrl', url)
+    parseUrl: (url: string) => ipcRenderer.invoke('feeds:parseUrl', url),
+    /** 订阅单个订阅源刷新进度事件，返回取消订阅函数 */
+    onRefreshProgress: (
+      callback: (data: {
+        feedId: number
+        status: 'fetching' | 'complete' | 'error'
+        inserted?: number
+        updated?: number
+        error?: string
+      }) => void
+    ): (() => void) => onChannel('feeds:refresh-progress', callback)
   },
   categories: {
     list: () => ipcRenderer.invoke('categories:list'),
@@ -52,37 +82,47 @@ const api = {
   },
   config: {
     get: () => ipcRenderer.invoke('config:get'),
-    update: (settings: Record<string, unknown>) => ipcRenderer.invoke('config:update', settings)
+    update: (settings: Record<string, unknown>) => ipcRenderer.invoke('config:update', settings),
+    /** 订阅配置变更事件，返回取消订阅函数 */
+    onChanged: (callback: () => void): (() => void) => onChannel('config:changed', callback)
   },
   opml: {
     import: () => ipcRenderer.invoke('opml:import'),
     export: () => ipcRenderer.invoke('opml:export')
   },
+  menu: {
+    /** 上报菜单可用状态（主进程据此置灰菜单项） */
+    updateState: (state: { hasArticle: boolean; hasFeedContext: boolean }): void =>
+      ipcRenderer.send('menu:updateState', state),
+    onAddFeed: (callback: () => void): (() => void) => onChannel('menu:addFeed', callback),
+    onRefreshFeed: (callback: () => void): (() => void) => onChannel('menu:refreshFeed', callback),
+    onRefreshAllFeeds: (callback: () => void): (() => void) =>
+      onChannel('menu:refreshAllFeeds', callback),
+    onMarkListRead: (callback: () => void): (() => void) =>
+      onChannel('menu:markListRead', callback),
+    onMarkAllRead: (callback: () => void): (() => void) => onChannel('menu:markAllRead', callback),
+    onToggleRead: (callback: () => void): (() => void) => onChannel('menu:toggleRead', callback),
+    onCheckForUpdates: (callback: () => void): (() => void) =>
+      onChannel('menu:checkForUpdates', callback),
+    onToggleStar: (callback: () => void): (() => void) => onChannel('menu:toggleStar', callback),
+    onFocusSearch: (callback: () => void): (() => void) => onChannel('menu:focusSearch', callback)
+  },
   updater: {
     check: () => ipcRenderer.invoke('updater:check'),
     download: () => ipcRenderer.invoke('updater:download'),
     install: () => ipcRenderer.invoke('updater:install'),
-    onStatus: (callback: (status: UpdaterStatus) => void): (() => void) => {
-      const listener = (_event: Electron.IpcRendererEvent, status: UpdaterStatus): void =>
-        callback(status)
-      ipcRenderer.on('updater:status', listener)
-      return () => {
-        ipcRenderer.removeListener('updater:status', listener)
-      }
-    }
+    onStatus: (callback: (status: UpdaterStatus) => void): (() => void) =>
+      onChannel('updater:status', callback)
   }
 }
 
 if (process.contextIsolated) {
   try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
   } catch (error) {
     console.error(error)
   }
 } else {
-  // @ts-ignore (define in dts)
-  window.electron = electronAPI
   // @ts-ignore (define in dts)
   window.api = api
 }

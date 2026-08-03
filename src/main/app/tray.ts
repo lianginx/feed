@@ -1,5 +1,7 @@
 import { app, Tray, Menu, nativeImage } from 'electron'
 import { getMainWindow } from './window'
+import { createSettingsWindow } from './settingsWindow'
+import { refreshAllFeeds } from '../services/refresher'
 import icon from '../../../resources/icon.png?asset'
 
 let tray: Tray | null = null
@@ -28,15 +30,14 @@ export function createTray(): void {
     { type: 'separator' },
     {
       label: '刷新所有订阅',
-      click: () => getMainWindow()?.webContents.send('sync:refreshAll')
+      click: () => {
+        void refreshAllFeeds()
+      }
     },
     { type: 'separator' },
     {
       label: '设置',
-      click: () => {
-        getMainWindow()?.show()
-        getMainWindow()?.webContents.send('menu:openSettings')
-      }
+      click: () => createSettingsWindow()
     },
     { type: 'separator' },
     {

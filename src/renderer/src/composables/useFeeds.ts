@@ -144,47 +144,38 @@ export function useFeeds() {
   }
 
   // 监听单个订阅源刷新进度
-  const refreshHandler = (
-    _event: Electron.IpcRendererEvent,
-    data: {
-      feedId: number
-      status: string
-      inserted?: number
-      updated?: number
-      error?: string
-    }
-  ): void => {
-    if (data.status === 'fetching') {
-      refreshingFeedIds.value = new Set(refreshingFeedIds.value).add(data.feedId)
-    } else {
-      const next = new Set(refreshingFeedIds.value)
-      next.delete(data.feedId)
-      refreshingFeedIds.value = next
-
-      // 刷新完成后重载列表，更新未读数
-      if (data.status === 'complete') {
-        loadFeeds()
-        // 同步刷新文章列表（与当前视图相关的订阅源完成时）
-        const { loadArticles } = useArticles()
-        if (selectedFeedId.value !== null) {
-          if (data.feedId === selectedFeedId.value) {
-            loadArticles(selectedFeedId.value, undefined, filter.value)
-          }
-        } else {
-          loadArticles(undefined, selectedCategoryId.value, filter.value)
-        }
-      } else if (data.status === 'error') {
-        loadFeeds()
-      }
-    }
-  }
+  let stopRefreshListener: (() => void) | null = null
 
   onMounted(() => {
-    window.electron.ipcRenderer.on('feeds:refresh-progress', refreshHandler)
+    stopRefreshListener = window.api.feeds.onRefreshProgress((data) => {
+      if (data.status === 'fetching') {
+        refreshingFeedIds.value = new Set(refreshingFeedIds.value).add(data.feedId)
+      } else {
+        const next = new Set(refreshingFeedIds.value)
+        next.delete(data.feedId)
+        refreshingFeedIds.value = next
+
+        // 刷新完成后重载列表，更新未读数
+        if (data.status === 'complete') {
+          loadFeeds()
+          // 同步刷新文章列表（与当前视图相关的订阅源完成时）
+          const { loadArticles } = useArticles()
+          if (selectedFeedId.value !== null) {
+            if (data.feedId === selectedFeedId.value) {
+              loadArticles(selectedFeedId.value, undefined, filter.value)
+            }
+          } else {
+            loadArticles(undefined, selectedCategoryId.value, filter.value)
+          }
+        } else if (data.status === 'error') {
+          loadFeeds()
+        }
+      }
+    })
   })
 
   onUnmounted(() => {
-    window.electron.ipcRenderer.removeListener('feeds:refresh-progress', refreshHandler)
+    stopRefreshListener?.()
   })
 
   return {

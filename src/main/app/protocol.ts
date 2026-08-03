@@ -8,6 +8,12 @@ import { getFaviconDir } from '../services/favicon'
  * - 拦截图片请求，将 Referer/Origin 替换为图片自身域名以绕过防盗链
  */
 export function registerAppProtocols(): void {
+  // 权限请求默认拒绝（安全规则 #5）：应用不加载远程网页内容，无需任何网页权限
+  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+    console.warn(`[Permission] 已拒绝权限请求: ${permission}`)
+    callback(false)
+  })
+
   // 图片请求将 Referer/Origin 替换为图片自身域名，绕过防盗链
   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
     if (details.resourceType === 'image') {

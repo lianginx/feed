@@ -75,6 +75,18 @@ appImage:
 # npmRebuild：是否重新编译原生依赖（本项目无原生模块，跳过以加快构建）
 npmRebuild: false
 
+# electronFuses：打包时翻转 Electron Fuses（安全规则 #19），electron-builder 会在代码签名前自动应用
+# - runAsNode / nodeCliInspect / nodeOptions：关闭可被滥用的 Node 运行参数，收窄 RCE 提权面
+# - enableCookieEncryption：磁盘上的 Cookie 使用系统级密钥加密（单向过渡，启用后不可再关闭）
+# 可选（更激进、会改变加载语义，需打包回归验证后再开启）：
+#   enableEmbeddedAsarIntegrityValidation: true
+#   onlyLoadAppFromAsar: true
+electronFuses:
+  runAsNode: false
+  enableNodeCliInspectArguments: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableCookieEncryption: true
+
 # ---------- 发布与自动更新 ----------
 # 使用 GitHub Releases 作为更新服务器，CI 构建产物自动上传，应用通过 electron-updater 拉取更新
 publish:

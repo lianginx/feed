@@ -5,7 +5,6 @@ import { useFeeds } from './composables/useFeeds'
 import { useMenuCommands } from './composables/useMenuCommands'
 import { useAddFeedDialog } from './composables/useAddFeedDialog'
 import { useAddCategoryDialog } from './composables/useAddCategoryDialog'
-import { useSettingsDialog } from './composables/useSettingsDialog'
 import { useConfirmDialog } from './composables/useConfirmDialog'
 import { SidebarProvider, Sidebar } from '@/components/ui/sidebar'
 import SidebarNav from './components/Sidebar.vue'
@@ -14,7 +13,6 @@ import ArticleReader from './components/ArticleReader.vue'
 import ToastNotification from './components/ToastNotification.vue'
 import AddFeedDialog from './components/AddFeedDialog.vue'
 import AddCategoryDialog from './components/AddCategoryDialog.vue'
-import SettingsDialog from './components/SettingsDialog.vue'
 import ConfirmDialog from './components/ConfirmDialog.vue'
 
 const { loadSettings } = useApp()
@@ -30,7 +28,6 @@ const {
   handleAddCategory,
   handleUpdateCategory
 } = useAddCategoryDialog()
-const { showSettings } = useSettingsDialog()
 const {
   show: showConfirmDialog,
   title: confirmDialogTitle,
@@ -39,6 +36,8 @@ const {
   variant: confirmVariant,
   resolveConfirm
 } = useConfirmDialog()
+
+let stopConfigListener: (() => void) | null = null
 
 // 全局禁用浏览器默认右键菜单（自定义 ContextMenu 已自行处理 preventDefault）
 function onContextMenu(e: MouseEvent): void {
@@ -86,10 +85,18 @@ onMounted(async () => {
   observer.observe(document.body, { childList: true, subtree: true })
   await loadSettings()
   await loadFeeds()
+
+  // 设置窗口变更后重载配置
+  stopConfigListener = window.api.config.onChanged(onConfigChanged)
 })
+
+function onConfigChanged(): void {
+  void loadSettings()
+}
 
 onUnmounted(() => {
   document.removeEventListener('contextmenu', onContextMenu)
+  stopConfigListener?.()
 })
 </script>
 
@@ -127,8 +134,6 @@ onUnmounted(() => {
     @add="handleAddCategory"
     @update="handleUpdateCategory"
   />
-
-  <SettingsDialog v-model:open="showSettings" />
 
   <ConfirmDialog
     :open="showConfirmDialog"

@@ -3,6 +3,7 @@ import { electronApp } from '@electron-toolkit/utils'
 import { initializeDatabase, closeConnection } from './database'
 import { registerAllHandlers } from './ipc/index'
 import { setupIpcLogger } from './ipc/logger'
+import { guardIpcHandlers } from './ipc/util'
 import { getSettings } from './config'
 import { createWindow, getMainWindow, setIsQuitting } from './app/window'
 import { buildAppMenu } from './app/menu'
@@ -26,6 +27,9 @@ app.whenReady().then(() => {
 
   // 开发环境 IPC 日志（必须在注册处理器之前）
   setupIpcLogger()
+
+  // 统一校验 IPC 调用来源（安全规则 #17）
+  guardIpcHandlers()
 
   // 注册 IPC 处理器
   registerAllHandlers()

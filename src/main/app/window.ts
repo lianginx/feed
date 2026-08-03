@@ -14,6 +14,22 @@ export function getMainWindow(): BrowserWindow | null {
   return mainWindow
 }
 
+/** 允许在系统浏览器中打开的外部链接协议白名单（安全规则 #15） */
+const SAFE_EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:'])
+
+/**
+ * 在系统浏览器中安全地打开外部链接，仅允许白名单协议。
+ */
+function openExternalSafe(url: string): void {
+  try {
+    if (SAFE_EXTERNAL_PROTOCOLS.has(new URL(url).protocol)) {
+      shell.openExternal(url).catch(() => {})
+    }
+  } catch {
+    // 忽略无法解析的 URL
+  }
+}
+
 /**
  * 创建主窗口，绑定窗口状态记忆和关闭时最小化到托盘的行为。
  */
@@ -37,8 +53,8 @@ export function createWindow(): void {
     backgroundColor: isDark ? '#0a0a0a' : '#fafafa',
     ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' } : {}),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.mjs'),
-      sandbox: false,
+      preload: join(__dirname, '../preload/index.cjs'),
+      sandbox: true,
       spellcheck: false
     }
   })
@@ -74,7 +90,7 @@ export function createWindow(): void {
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+    openExternalSafe(details.url)
     return { action: 'deny' }
   })
 
@@ -92,7 +108,7 @@ export function createWindow(): void {
       const protocol = new URL(url).protocol
       if (protocol === 'http:' || protocol === 'https:') {
         event.preventDefault()
-        shell.openExternal(url).catch(() => {})
+        openExternalSafe(url)
       }
     } catch {
       // 忽略无法解析的 URL

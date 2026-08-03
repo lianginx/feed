@@ -1,6 +1,5 @@
 import { getSettings } from '../config'
-import { getConnection } from '../database/connection'
-import { refreshSingleFeed } from './refresher'
+import { refreshAllFeeds } from './refresher'
 
 let timer: ReturnType<typeof setInterval> | null = null
 
@@ -16,7 +15,12 @@ export function startScheduler(): void {
   // 立即刷新一次，避免首次启动后要等一个间隔
   refreshAllFeeds()
 
-  timer = setInterval(refreshAllFeeds, intervalMs)
+  // 间隔为 0 表示关闭自动刷新，仅手动触发
+  if (intervalMs <= 0) return
+
+  timer = setInterval(() => {
+    refreshAllFeeds()
+  }, intervalMs)
 }
 
 /**
@@ -27,14 +31,4 @@ export function stopScheduler(): void {
     clearInterval(timer)
     timer = null
   }
-}
-
-/**
- * 刷新所有订阅源（并发执行，通知逻辑在 refreshSingleFeed 内部）。
- */
-async function refreshAllFeeds(): Promise<void> {
-  const db = getConnection()
-  const feeds = db.prepare('SELECT id FROM feeds').all() as { id: number }[]
-
-  await Promise.allSettled(feeds.map((feed) => refreshSingleFeed(feed.id)))
 }

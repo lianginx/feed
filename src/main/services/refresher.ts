@@ -18,6 +18,16 @@ export interface RefreshResult {
 }
 
 /**
+ * 刷新所有订阅源（并发执行，通知逻辑在 refreshSingleFeed 内部）。
+ */
+export async function refreshAllFeeds(): Promise<void> {
+  const db = getConnection()
+  const feeds = db.prepare('SELECT id FROM feeds').all() as { id: number }[]
+
+  await Promise.allSettled(feeds.map((feed) => refreshSingleFeed(feed.id)))
+}
+
+/**
  * 刷新单个订阅源：拉取 RSS → 更新 feed 元信息 → 缓存 favicon → 同步文章。
  */
 export async function refreshSingleFeed(feedId: number): Promise<RefreshResult> {

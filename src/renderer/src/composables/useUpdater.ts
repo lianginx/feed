@@ -47,7 +47,7 @@ export function useUpdater(): { checkForUpdates: () => Promise<void> } {
 
   /** 询问用户是否立即重启安装 */
   async function applyDownloaded(): Promise<void> {
-    const isMac = window.electron?.process?.platform === 'darwin'
+    const isMac = window.api.system.platform === 'darwin'
     const ok = await confirm({
       title: '更新已就绪',
       message: isMac

@@ -1,5 +1,3 @@
-import type { ElectronAPI } from '@electron-toolkit/preload'
-
 interface ApiResponse<T = unknown> {
   success: boolean
   data?: T
@@ -91,6 +89,8 @@ interface FeedApi {
   refreshFavicon: (id: number) => Promise<ApiResponse<{ id: number; favicon_url: string | null }>>
   refresh: (feedId: number) => Promise<ApiResponse<RefreshResult>>
   parseUrl: (url: string) => Promise<ApiResponse<unknown>>
+  /** 订阅单个订阅源刷新进度事件，返回取消订阅函数 */
+  onRefreshProgress: (callback: (data: RefreshProgressEvent) => void) => () => void
 }
 
 interface CategoryApi {
@@ -121,6 +121,8 @@ interface ArticleApi {
 interface ConfigApi {
   get: () => Promise<ApiResponse<AppSettings>>
   update: (settings: Record<string, unknown>) => Promise<ApiResponse<AppSettings>>
+  /** 订阅配置变更事件，返回取消订阅函数 */
+  onChanged: (callback: () => void) => () => void
 }
 
 interface OpmlApi {
@@ -159,6 +161,30 @@ export interface RefreshProgressEvent {
   error?: string
 }
 
+/** 菜单可用状态（渲染进程 → 主进程，用于菜单项置灰） */
+interface MenuState {
+  hasArticle: boolean
+  hasFeedContext: boolean
+}
+
+interface MenuApi {
+  updateState: (state: MenuState) => void
+  onAddFeed: (callback: () => void) => () => void
+  onRefreshFeed: (callback: () => void) => () => void
+  onRefreshAllFeeds: (callback: () => void) => () => void
+  onMarkListRead: (callback: () => void) => () => void
+  onMarkAllRead: (callback: () => void) => () => void
+  onToggleRead: (callback: () => void) => () => void
+  onCheckForUpdates: (callback: () => void) => () => void
+  onToggleStar: (callback: () => void) => () => void
+  onFocusSearch: (callback: () => void) => () => void
+}
+
+/** 系统信息（仅暴露必要信息，符合 Electron 安全规则 #20） */
+interface SystemApi {
+  platform: string
+}
+
 interface AppApi {
   feeds: FeedApi
   categories: CategoryApi
@@ -166,11 +192,12 @@ interface AppApi {
   config: ConfigApi
   opml: OpmlApi
   updater: UpdaterApi
+  menu: MenuApi
+  system: SystemApi
 }
 
 declare global {
   interface Window {
-    electron: ElectronAPI
     api: AppApi
   }
 }
