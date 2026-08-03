@@ -78,7 +78,7 @@ src/
     │   │   ├── ArticleReader.vue
     │   │   ├── AddFeedDialog.vue
     │   │   ├── AddCategoryDialog.vue
-    │   │   └── SettingsDialog.vue
+    │   │   └── EditFeedDialog.vue
     │   ├── utils/
     │   │   ├── sanitize.ts   # DOMPurify HTML 净化
     │   │   └── index.ts
