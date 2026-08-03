@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Upload, Download, CheckCircle2, Save, Settings, Cloud, Database } from '@lucide/vue'
+import {
+  Upload,
+  Download,
+  CheckCircle2,
+  Save,
+  Settings,
+  Cloud,
+  Database,
+  Eye,
+  EyeOff
+} from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Input } from '@/components/ui/input'
@@ -100,9 +110,32 @@ const syncTokenInput = ref(syncConfig.value.token ?? '')
 const syncWebdavUrlInput = ref(syncConfig.value.webdavUrl ?? '')
 const syncWebdavUsernameInput = ref(syncConfig.value.webdavUsername ?? '')
 const syncWebdavPasswordInput = ref(syncConfig.value.webdavPassword ?? '')
+const showWebdavPassword = ref(false)
 const syncSaved = ref(false)
+const syncError = ref<string | null>(null)
 
 async function handleSaveSync(): Promise<void> {
+  syncError.value = null
+  // 校验所选载体的必填项
+  if (syncProvider.value === 'gist' || syncProvider.value === 'gitee') {
+    if (!syncTokenInput.value.trim()) {
+      syncError.value = '请填写访问 Token'
+      return
+    }
+  } else if (syncProvider.value === 'webdav') {
+    if (!syncWebdavUrlInput.value.trim()) {
+      syncError.value = '请填写服务器地址'
+      return
+    }
+    if (!syncWebdavUsernameInput.value.trim()) {
+      syncError.value = '请填写用户名'
+      return
+    }
+    if (!syncWebdavPasswordInput.value) {
+      syncError.value = '请填写密码'
+      return
+    }
+  }
   const partial: Partial<SyncConfig> = { provider: syncProvider.value }
   if (syncProvider.value === 'gist' || syncProvider.value === 'gitee') {
     partial.token = syncTokenInput.value.trim()
@@ -309,12 +342,23 @@ onMounted(async () => {
             </div>
             <div class="flex items-center justify-between gap-6 py-3">
               <span class="text-sm shrink-0">密码</span>
-              <Input
-                v-model="syncWebdavPasswordInput"
-                type="password"
-                placeholder="密码"
-                class="w-72"
-              />
+              <div class="relative w-72">
+                <Input
+                  v-model="syncWebdavPasswordInput"
+                  :type="showWebdavPassword ? 'text' : 'password'"
+                  placeholder="密码"
+                  class="w-full pr-9"
+                />
+                <button
+                  type="button"
+                  class="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+                  :aria-label="showWebdavPassword ? '隐藏密码' : '显示密码'"
+                  @click="showWebdavPassword = !showWebdavPassword"
+                >
+                  <EyeOff v-if="showWebdavPassword" class="size-4" />
+                  <Eye v-else class="size-4" />
+                </button>
+              </div>
             </div>
           </template>
 
@@ -327,6 +371,7 @@ onMounted(async () => {
               <CheckCircle2 class="size-3" />
               已保存
             </span>
+            <span v-else-if="syncError" class="text-xs text-destructive">{{ syncError }}</span>
           </div>
           <p class="mt-4 text-xs text-muted-foreground leading-relaxed">
             <template v-if="syncProvider === 'none'">

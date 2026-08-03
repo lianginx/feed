@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Upload, Download, CheckCircle2, Save } from '@lucide/vue'
+import { Upload, Download, CheckCircle2, Save, Eye, EyeOff } from '@lucide/vue'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -109,7 +109,9 @@ const syncTokenInput = ref(syncConfig.value.token ?? '')
 const syncWebdavUrlInput = ref(syncConfig.value.webdavUrl ?? '')
 const syncWebdavUsernameInput = ref(syncConfig.value.webdavUsername ?? '')
 const syncWebdavPasswordInput = ref(syncConfig.value.webdavPassword ?? '')
+const showWebdavPassword = ref(false)
 const syncSaved = ref(false)
+const syncError = ref<string | null>(null)
 
 // 每次打开对话框时，用已保存的配置回填编辑态
 watch(
@@ -122,10 +124,33 @@ watch(
     syncWebdavUsernameInput.value = syncConfig.value.webdavUsername ?? ''
     syncWebdavPasswordInput.value = syncConfig.value.webdavPassword ?? ''
     syncSaved.value = false
+    syncError.value = null
+    showWebdavPassword.value = false
   }
 )
 
 async function handleSaveSync(): Promise<void> {
+  syncError.value = null
+  // 校验所选载体的必填项
+  if (syncProvider.value === 'gist' || syncProvider.value === 'gitee') {
+    if (!syncTokenInput.value.trim()) {
+      syncError.value = '请填写访问 Token'
+      return
+    }
+  } else if (syncProvider.value === 'webdav') {
+    if (!syncWebdavUrlInput.value.trim()) {
+      syncError.value = '请填写服务器地址'
+      return
+    }
+    if (!syncWebdavUsernameInput.value.trim()) {
+      syncError.value = '请填写用户名'
+      return
+    }
+    if (!syncWebdavPasswordInput.value) {
+      syncError.value = '请填写密码'
+      return
+    }
+  }
   const partial: Partial<SyncConfig> = { provider: syncProvider.value }
   if (syncProvider.value === 'gist' || syncProvider.value === 'gitee') {
     partial.token = syncTokenInput.value.trim()
@@ -291,7 +316,23 @@ function close(): void {
                 placeholder="WebDAV 地址，如 https://dav.jianguoyun.com/dav"
               />
               <Input v-model="syncWebdavUsernameInput" placeholder="用户名" />
-              <Input v-model="syncWebdavPasswordInput" type="password" placeholder="密码" />
+              <div class="relative">
+                <Input
+                  v-model="syncWebdavPasswordInput"
+                  :type="showWebdavPassword ? 'text' : 'password'"
+                  placeholder="密码"
+                  class="pr-9"
+                />
+                <button
+                  type="button"
+                  class="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+                  :aria-label="showWebdavPassword ? '隐藏密码' : '显示密码'"
+                  @click="showWebdavPassword = !showWebdavPassword"
+                >
+                  <EyeOff v-if="showWebdavPassword" class="size-4" />
+                  <Eye v-else class="size-4" />
+                </button>
+              </div>
             </template>
 
             <div class="flex items-center gap-2">
@@ -303,6 +344,7 @@ function close(): void {
                 <CheckCircle2 class="size-3" />
                 已保存
               </span>
+              <span v-else-if="syncError" class="text-xs text-destructive">{{ syncError }}</span>
             </div>
             <p class="text-xs text-muted-foreground leading-relaxed">
               <template v-if="syncProvider === 'none'">
