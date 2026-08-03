@@ -1,5 +1,6 @@
 import { protocol, net, session } from 'electron'
-import { join } from 'path'
+import { join, isAbsolute, relative } from 'path'
+import { pathToFileURL } from 'url'
 import { getFaviconDir } from '../services/favicon'
 
 /**
@@ -32,7 +33,18 @@ export function registerAppProtocols(): void {
 
   // 注册 favicon:// 协议，用于从本地缓存加载 favicon
   protocol.handle('favicon', (request) => {
-    const filePath = join(getFaviconDir(), request.url.slice('favicon://'.length))
-    return net.fetch(`file://${filePath}`)
+    // 防路径穿越（安全规则 #20：不信任渲染进程输入）：
+    // 仅允许 favicon 缓存目录内的文件，解析后路径跳出目录一律返回 404
+    try {
+      const name = decodeURIComponent(request.url.slice('favicon://'.length))
+      const filePath = join(getFaviconDir(), name)
+      const rel = relative(getFaviconDir(), filePath)
+      if (rel.startsWith('..') || isAbsolute(rel)) {
+        return new Response('Not Found', { status: 404 })
+      }
+      return net.fetch(pathToFileURL(filePath).toString())
+    } catch {
+      return new Response('Not Found', { status: 404 })
+    }
   })
 }
