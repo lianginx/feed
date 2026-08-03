@@ -18,21 +18,32 @@ jobs:
   # electron-builder 在 Release 已存在时会直接上传资产、不会重新创建。
   # 三个平台并行 --publish always 时若都不存在，会同时尝试创建导致 422 already_exists 冲突，
   # 因此先在此 job 创建空 Release，让后续构建 job 只上传不创建。
+  # Release notes 由脚本基于「上一个 tag → 当前 tag」的提交历史自动生成。
   prepare:
     name: Prepare release
     runs-on: ubuntu-latest
     steps:
+      # fetch-depth: 0 拉取完整历史，用于对比上一个 tag 生成 release notes
       - uses: actions/checkout@v4
-      - name: Create empty release (skip if exists)
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes
+        shell: bash
+        run: bash .github/scripts/generate-release-notes.sh "${GITHUB_REF_NAME:-${GITHUB_SHA}}" /tmp/release-notes.md
+
+      - name: Create or update release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${GITHUB_REF_NAME:-${GITHUB_SHA}}"
           echo "Preparing release for tag: ${TAG}"
           if gh release view "${TAG}" >/dev/null 2>&1; then
-            echo "Release ${TAG} already exists, skipping creation"
+            echo "Release ${TAG} 已存在，更新 notes"
+            gh release edit "${TAG}" --notes-file /tmp/release-notes.md
           else
-            gh release create "${TAG}" --title "${TAG}" --notes "自动构建发布" || \
+            echo "创建 Release ${TAG}"
+            gh release create "${TAG}" --title "${TAG}" --notes-file /tmp/release-notes.md || \
               echo "release create 失败（可能并行冲突），继续尝试让构建 job 上传"
           fi
 
