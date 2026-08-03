@@ -160,5 +160,45 @@ END;
         feedStmt.run(feed.url, feed.title, cat?.id ?? null, i)
       })
     }
+  },
+  {
+    version: 6,
+    name: 'rebuild-fts-with-detail-full',
+    up: `
+-- v4 建的 FTS 表用了 detail='none'，该模式不支持短语/多 token 的 MATCH 查询
+-- （trigram 把词拆成多个 token 后被当作短语直接报错），搜索只能退化为 LIKE 全表扫描。
+-- 重建为默认 detail=full，使 FTS5 MATCH 可正常利用索引。
+DROP TRIGGER IF EXISTS articles_ai;
+DROP TRIGGER IF EXISTS articles_ad;
+DROP TRIGGER IF EXISTS articles_au;
+DROP TABLE IF EXISTS articles_fts;
+
+CREATE VIRTUAL TABLE IF NOT EXISTS articles_fts USING fts5(
+  title, content, author,
+  tokenize='trigram',
+  content='articles',
+  content_rowid='id'
+);
+
+INSERT INTO articles_fts(rowid, title, content, author)
+  SELECT id, title, content, author FROM articles;
+
+CREATE TRIGGER IF NOT EXISTS articles_ai AFTER INSERT ON articles BEGIN
+  INSERT INTO articles_fts(rowid, title, content, author)
+  VALUES (new.id, new.title, new.content, new.author);
+END;
+
+CREATE TRIGGER IF NOT EXISTS articles_ad AFTER DELETE ON articles BEGIN
+  INSERT INTO articles_fts(articles_fts, rowid, title, content, author)
+  VALUES ('delete', old.id, old.title, old.content, old.author);
+END;
+
+CREATE TRIGGER IF NOT EXISTS articles_au AFTER UPDATE ON articles BEGIN
+  INSERT INTO articles_fts(articles_fts, rowid, title, content, author)
+  VALUES ('delete', old.id, old.title, old.content, old.author);
+  INSERT INTO articles_fts(rowid, title, content, author)
+  VALUES (new.id, new.title, new.content, new.author);
+END;
+`
   }
 ]

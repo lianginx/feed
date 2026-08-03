@@ -45,12 +45,20 @@ export function registerArticleHandlers(): void {
 
       if (query) {
         const terms = query.split(/\s+/).filter(Boolean)
-        terms.forEach((term, i) => {
-          queryParams[`like${i}`] = `%${term}%`
-          conditions.push(
-            `(fts.title LIKE @like${i} OR fts.content LIKE @like${i} OR fts.author LIKE @like${i})`
-          )
-        })
+        if (terms.every((t) => t.length >= 3)) {
+          // 词长 ≥3：用 FTS5 MATCH（trigram 索引），避免前导通配符 LIKE 的全表扫描；
+          // 每个词用双引号包裹并转义，防止用户输入破坏 MATCH 查询语法
+          queryParams.match = terms.map((t) => `"${t.replace(/"/g, '""')}"`).join(' OR ')
+          conditions.push('fts MATCH @match')
+        } else {
+          // 短词（<3 字符）trigram 无法索引匹配，降级为 LIKE 子串查询
+          terms.forEach((term, i) => {
+            queryParams[`like${i}`] = `%${term}%`
+            conditions.push(
+              `(fts.title LIKE @like${i} OR fts.content LIKE @like${i} OR fts.author LIKE @like${i})`
+            )
+          })
+        }
       }
 
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
