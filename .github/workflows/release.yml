@@ -68,7 +68,9 @@ jobs:
 
       # ELECTRON_MIRROR：让 @electron/rebuild 下载 Electron headers 走 npmmirror 镜像，
       # 避免依赖 GitHub 连通性（曾因连接 github.com 的 Cloudflare IP 超时导致 install 失败）
+      # shell: bash：Windows runner 默认 PowerShell，而循环是 bash 语法，必须显式指定
       - name: Install dependencies
+        shell: bash
         run: |
           for attempt in 1 2 3; do
             echo "pnpm install --frozen-lockfile（第 ${attempt} 次尝试）"
