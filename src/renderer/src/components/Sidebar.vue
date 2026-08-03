@@ -446,7 +446,9 @@ function onCategoryDragEnd(): void {
         </SidebarMenuButton>
       </ContextMenuTrigger>
       <ContextMenuContent>
-        <ContextMenuItem @select="handleMarkAllReadGlobal">全部标为已读</ContextMenuItem>
+        <ContextMenuItem style="-webkit-app-region: no-drag" @select="handleMarkAllReadGlobal">
+          全部标为已读
+        </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
     <SidebarMenuButton
