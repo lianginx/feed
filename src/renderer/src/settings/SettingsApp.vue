@@ -110,6 +110,12 @@ async function handleSaveSync(): Promise<void> {
     partial.webdavUrl = syncWebdavUrlInput.value.trim()
     partial.webdavUsername = syncWebdavUsernameInput.value.trim()
     partial.webdavPassword = syncWebdavPasswordInput.value
+  } else {
+    // 关闭同步：清空凭据，避免敏感信息残留配置
+    partial.token = ''
+    partial.webdavUrl = ''
+    partial.webdavUsername = ''
+    partial.webdavPassword = ''
   }
   await setSyncConfig(partial)
   syncSaved.value = true
@@ -313,12 +319,7 @@ onMounted(async () => {
           </template>
 
           <div class="mt-5 flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              :disabled="syncProvider === 'none'"
-              @click="handleSaveSync"
-            >
+            <Button variant="outline" size="sm" @click="handleSaveSync">
               <Save class="size-3.5" />
               保存同步设置
             </Button>
@@ -339,7 +340,8 @@ onMounted(async () => {
               在 Gitee 个人设置 → 私人令牌 创建 token（勾选 gists 权限）。
             </template>
             <template v-else>
-              WebDAV 支持坚果云、Nextcloud 等；地址填写目录 URL，如 https://dav.jianguoyun.com/dav。
+              WebDAV 支持坚果云、Nextcloud 等；地址填写父目录 URL（如
+              https://dav.jianguoyun.com/dav），应用会自动创建 feed-sync 子目录存放同步数据。
             </template>
           </p>
         </section>
