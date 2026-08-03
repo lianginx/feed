@@ -318,11 +318,17 @@ export async function resolveConflict(choice: 'local' | 'remote'): Promise<SyncR
 /**
  * 订阅源/分类发生变更后，防抖触发一次自动同步。
  * 无论一次性改了多少条，都只会在最后一次变更后短暂延迟触发一次。
+ * 若触发时恰有同步正在执行（启动/定时/手动），则延迟到其结束后再触发，
+ * 避免本次变更被 runSync 的 syncing 保护静默丢弃。
  */
 export function scheduleSync(): void {
   if (debounceTimer) clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => {
     debounceTimer = null
+    if (syncing) {
+      scheduleSync()
+      return
+    }
     void runSync()
   }, AUTO_SYNC_DEBOUNCE_MS)
 }
