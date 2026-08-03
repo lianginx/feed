@@ -148,12 +148,14 @@ function openInBrowser(url: string | null): void {
             </div>
           </header>
 
+          <!-- eslint-disable vue/no-v-html -- 内容已由 sanitizeHtml（DOMPurify）净化 -->
           <div
             v-if="currentArticle.content"
             v-highlight
             class="prose prose-neutral dark:prose-invert max-w-none pb-20"
             v-html="sanitizeHtml(currentArticle.content)"
           />
+          <!-- eslint-enable vue/no-v-html -->
           <div v-else class="text-muted-foreground text-sm">暂无内容</div>
         </article>
       </div>
