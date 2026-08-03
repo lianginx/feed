@@ -142,118 +142,110 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="relative flex h-screen overflow-hidden bg-background text-foreground">
+  <div class="relative flex gap-3 p-3 h-screen overflow-hidden bg-sidebar text-foreground">
     <!-- 顶部可拖拽区域（macOS hiddenInset 透明标题栏需要它才能拖动窗口） -->
-    <div class="absolute inset-x-0 top-0 z-10 h-8 shrink-0" style="-webkit-app-region: drag"></div>
+    <div class="absolute inset-x-0 top-0 z-10 h-10 shrink-0" style="-webkit-app-region: drag" />
+
     <!-- 左侧导航 -->
-    <nav class="flex w-44 shrink-0 flex-col border-r border-sidebar-border bg-sidebar p-2 pt-8">
-      <div class="space-y-1">
-        <button
-          v-for="item in navItems"
-          :key="item.id"
-          type="button"
-          class="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors"
-          :class="
-            activeSection === item.id
-              ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-              : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground'
-          "
-          @click="activeSection = item.id"
-        >
-          <component :is="item.icon" class="size-4 shrink-0" />
-          <span>{{ item.label }}</span>
-        </button>
-      </div>
+    <nav class="flex w-44 shrink-0 flex-col gap-2 pt-8">
+      <button
+        v-for="item in navItems"
+        :key="item.id"
+        type="button"
+        class="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-sidebar-accent data-[activated=true]:bg-sidebar-accent"
+        :data-activated="activeSection === item.id"
+        @click="activeSection = item.id"
+      >
+        <component :is="item.icon" class="size-4 shrink-0" />
+        <span>{{ item.label }}</span>
+      </button>
     </nav>
 
     <!-- 内容区 -->
-    <main class="min-w-0 flex-1 overflow-y-auto px-8 pt-8 pb-6">
+    <main class="min-w-0 flex-1 overflow-y-auto p-8 bg-background rounded-xl">
       <div v-if="activeSection === 'general'">
         <!-- 外观 -->
         <section>
-          <h2 class="text-sm font-medium text-foreground">外观</h2>
-          <div class="mt-1 divide-y divide-border">
-            <div class="flex items-center justify-between gap-6 py-3">
-              <span class="text-sm">主题</span>
-              <div class="w-44 shrink-0">
-                <Select :model-value="theme" @update:model-value="(v) => setTheme(v as Theme)">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="t in themes" :key="t.value" :value="t.value">
-                      {{ t.label }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <h2 class="text-sm font-medium text-foreground mb-1">外观</h2>
+          <div class="flex items-center justify-between gap-6 py-3">
+            <span class="text-sm">主题</span>
+            <div class="w-44 shrink-0">
+              <Select :model-value="theme" @update:model-value="(v) => setTheme(v as Theme)">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="t in themes" :key="t.value" :value="t.value">
+                    {{ t.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </section>
 
         <!-- 内容 -->
         <section class="mt-8">
-          <h2 class="text-sm font-medium text-foreground">内容</h2>
-          <div class="mt-1 divide-y divide-border">
-            <div class="flex items-center justify-between gap-6 py-3">
-              <div class="min-w-0">
-                <div class="text-sm">自动刷新</div>
-                <div class="mt-0.5 text-xs text-muted-foreground">
-                  按设定间隔自动拉取订阅源最新内容
-                </div>
-              </div>
-              <div class="w-44 shrink-0">
-                <Select
-                  :model-value="String(updateInterval)"
-                  @update:model-value="(v) => setUpdateInterval(Number(v))"
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem
-                      v-for="opt in intervalOptions"
-                      :key="opt.value"
-                      :value="String(opt.value)"
-                    >
-                      {{ opt.label }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+          <h2 class="text-sm font-medium text-foreground mb-1">内容</h2>
+          <div class="flex items-center justify-between gap-6 py-3">
+            <div class="min-w-0">
+              <div class="text-sm">自动刷新</div>
+              <div class="mt-0.5 text-xs text-muted-foreground">
+                按设定间隔自动拉取订阅源最新内容
               </div>
             </div>
-            <div class="flex items-center justify-between gap-6 py-3">
-              <div class="min-w-0">
-                <div class="text-sm">自动检查更新</div>
-                <div class="mt-0.5 text-xs text-muted-foreground">有新版本时自动下载并提示安装</div>
-              </div>
-              <Switch
-                :model-value="autoCheckUpdate"
-                @update:model-value="(v) => setAutoCheckUpdate(!!v)"
-              />
+            <div class="w-44 shrink-0">
+              <Select
+                class="hover:bg-muted"
+                :model-value="String(updateInterval)"
+                @update:model-value="(v) => setUpdateInterval(Number(v))"
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="opt in intervalOptions"
+                    :key="opt.value"
+                    :value="String(opt.value)"
+                  >
+                    {{ opt.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div class="flex items-center justify-between gap-6 py-3">
-              <span class="text-sm">检查间隔</span>
-              <div class="w-44 shrink-0">
-                <Select
-                  :model-value="String(updateCheckInterval)"
-                  :disabled="!autoCheckUpdate"
-                  @update:model-value="(v) => setUpdateCheckInterval(Number(v))"
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem
-                      v-for="opt in updateCheckOptions"
-                      :key="opt.value"
-                      :value="String(opt.value)"
-                    >
-                      {{ opt.label }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          </div>
+          <div class="flex items-center justify-between gap-6 py-3">
+            <div class="min-w-0">
+              <div class="text-sm">自动检查更新</div>
+              <div class="mt-0.5 text-xs text-muted-foreground">有新版本时自动下载并提示安装</div>
+            </div>
+            <Switch
+              :model-value="autoCheckUpdate"
+              @update:model-value="(v) => setAutoCheckUpdate(!!v)"
+            />
+          </div>
+          <div class="flex items-center justify-between gap-6 py-3">
+            <span class="text-sm">检查间隔</span>
+            <div class="w-44 shrink-0">
+              <Select
+                :model-value="String(updateCheckInterval)"
+                :disabled="!autoCheckUpdate"
+                @update:model-value="(v) => setUpdateCheckInterval(Number(v))"
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="opt in updateCheckOptions"
+                    :key="opt.value"
+                    :value="String(opt.value)"
+                  >
+                    {{ opt.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </section>
@@ -261,66 +253,64 @@ onMounted(async () => {
 
       <div v-else-if="activeSection === 'sync'">
         <section>
-          <h2 class="text-sm font-medium text-foreground">订阅源同步</h2>
-          <div class="mt-1 divide-y divide-border">
-            <div class="flex items-center justify-between gap-6 py-3">
-              <div class="min-w-0">
-                <div class="text-sm">同步方式</div>
-                <div class="mt-0.5 text-xs text-muted-foreground">订阅源与分类自动同步到云端</div>
-              </div>
-              <div class="w-44 shrink-0">
-                <Select
-                  :model-value="syncProvider"
-                  @update:model-value="(v) => (syncProvider = v as SyncConfig['provider'])"
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">关闭</SelectItem>
-                    <SelectItem value="gist">GitHub Gist</SelectItem>
-                    <SelectItem value="gitee">Gitee 代码片段</SelectItem>
-                    <SelectItem value="webdav">WebDAV</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <h2 class="text-sm font-medium text-foreground mb-1">订阅源同步</h2>
+          <div class="flex items-center justify-between gap-6 py-3">
+            <div class="min-w-0">
+              <div class="text-sm">同步方式</div>
+              <div class="mt-0.5 text-xs text-muted-foreground">订阅源与分类自动同步到云端</div>
             </div>
-
-            <template v-if="syncProvider === 'gist' || syncProvider === 'gitee'">
-              <div class="flex items-center justify-between gap-6 py-3">
-                <span class="text-sm shrink-0">访问 Token</span>
-                <Input
-                  v-model="syncTokenInput"
-                  type="password"
-                  placeholder="粘贴 Token"
-                  class="w-64"
-                />
-              </div>
-            </template>
-            <template v-else-if="syncProvider === 'webdav'">
-              <div class="flex items-center justify-between gap-6 py-3">
-                <span class="text-sm shrink-0">服务器地址</span>
-                <Input
-                  v-model="syncWebdavUrlInput"
-                  placeholder="https://dav.jianguoyun.com/dav"
-                  class="w-72"
-                />
-              </div>
-              <div class="flex items-center justify-between gap-6 py-3">
-                <span class="text-sm shrink-0">用户名</span>
-                <Input v-model="syncWebdavUsernameInput" placeholder="用户名" class="w-72" />
-              </div>
-              <div class="flex items-center justify-between gap-6 py-3">
-                <span class="text-sm shrink-0">密码</span>
-                <Input
-                  v-model="syncWebdavPasswordInput"
-                  type="password"
-                  placeholder="密码"
-                  class="w-72"
-                />
-              </div>
-            </template>
+            <div class="w-44 shrink-0">
+              <Select
+                :model-value="syncProvider"
+                @update:model-value="(v) => (syncProvider = v as SyncConfig['provider'])"
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">关闭</SelectItem>
+                  <SelectItem value="gist">GitHub Gist</SelectItem>
+                  <SelectItem value="gitee">Gitee 代码片段</SelectItem>
+                  <SelectItem value="webdav">WebDAV</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
+          <template v-if="syncProvider === 'gist' || syncProvider === 'gitee'">
+            <div class="flex items-center justify-between gap-6 py-3">
+              <span class="text-sm shrink-0">访问 Token</span>
+              <Input
+                v-model="syncTokenInput"
+                type="password"
+                placeholder="粘贴 Token"
+                class="w-64"
+              />
+            </div>
+          </template>
+          <template v-else-if="syncProvider === 'webdav'">
+            <div class="flex items-center justify-between gap-6 py-3">
+              <span class="text-sm shrink-0">服务器地址</span>
+              <Input
+                v-model="syncWebdavUrlInput"
+                placeholder="https://dav.jianguoyun.com/dav"
+                class="w-72"
+              />
+            </div>
+            <div class="flex items-center justify-between gap-6 py-3">
+              <span class="text-sm shrink-0">用户名</span>
+              <Input v-model="syncWebdavUsernameInput" placeholder="用户名" class="w-72" />
+            </div>
+            <div class="flex items-center justify-between gap-6 py-3">
+              <span class="text-sm shrink-0">密码</span>
+              <Input
+                v-model="syncWebdavPasswordInput"
+                type="password"
+                placeholder="密码"
+                class="w-72"
+              />
+            </div>
+          </template>
 
           <div class="mt-5 flex items-center gap-3">
             <Button
@@ -357,25 +347,23 @@ onMounted(async () => {
 
       <div v-else>
         <section>
-          <h2 class="text-sm font-medium text-foreground">数据</h2>
-          <div class="mt-1 divide-y divide-border">
-            <div class="flex items-center justify-between gap-6 py-3">
-              <div class="min-w-0">
-                <div class="text-sm">OPML 导入导出</div>
-                <div class="mt-0.5 text-xs text-muted-foreground">用标准 OPML 格式迁移订阅列表</div>
-              </div>
-              <div class="flex shrink-0 gap-2">
-                <Button variant="outline" size="sm" :disabled="importing" @click="handleImportOpml">
-                  <Spinner v-if="importing" />
-                  <Upload v-else class="size-3.5" />
-                  {{ importing ? '导入中…' : '导入' }}
-                </Button>
-                <Button variant="outline" size="sm" :disabled="exporting" @click="handleExportOpml">
-                  <Spinner v-if="exporting" />
-                  <Download v-else class="size-3.5" />
-                  {{ exporting ? '导出中…' : '导出' }}
-                </Button>
-              </div>
+          <h2 class="text-sm font-medium text-foreground mb-1">数据</h2>
+          <div class="flex items-center justify-between gap-6 py-3">
+            <div class="min-w-0">
+              <div class="text-sm">OPML 导入导出</div>
+              <div class="mt-0.5 text-xs text-muted-foreground">用标准 OPML 格式迁移订阅列表</div>
+            </div>
+            <div class="flex shrink-0 gap-2">
+              <Button variant="outline" size="sm" :disabled="importing" @click="handleImportOpml">
+                <Spinner v-if="importing" />
+                <Upload v-else class="size-3.5" />
+                {{ importing ? '导入中…' : '导入' }}
+              </Button>
+              <Button variant="outline" size="sm" :disabled="exporting" @click="handleExportOpml">
+                <Spinner v-if="exporting" />
+                <Download v-else class="size-3.5" />
+                {{ exporting ? '导出中…' : '导出' }}
+              </Button>
             </div>
           </div>
           <div
