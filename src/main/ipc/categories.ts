@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import { getConnection } from '../database/connection'
 import { success, error } from './util'
 import { scheduleBadgeUpdate } from '../services/badge'
+import { scheduleSync } from '../services/sync'
 
 export function registerCategoryHandlers(): void {
   ipcMain.handle('categories:list', async () => {
@@ -27,6 +28,7 @@ export function registerCategoryHandlers(): void {
     try {
       const db = getConnection()
       const result = db.prepare('INSERT INTO categories (name) VALUES (?)').run(name)
+      scheduleSync()
       return success({ id: result.lastInsertRowid })
     } catch (e) {
       return error((e as Error).message)
@@ -37,6 +39,7 @@ export function registerCategoryHandlers(): void {
     try {
       const db = getConnection()
       db.prepare('UPDATE categories SET name = ? WHERE id = ?').run(name, id)
+      scheduleSync()
       return success({ id })
     } catch (e) {
       return error((e as Error).message)
@@ -69,6 +72,7 @@ export function registerCategoryHandlers(): void {
         // 删除分类本身
         db.prepare('DELETE FROM categories WHERE id = ?').run(id)
       })()
+      scheduleSync()
       return success({ id, feedCount })
     } catch (e) {
       return error((e as Error).message)
@@ -105,6 +109,7 @@ export function registerCategoryHandlers(): void {
             stmt.run(item.sort_order, item.id)
           }
         })()
+        scheduleSync()
         return success({ updated: items.length })
       } catch (e) {
         return error((e as Error).message)

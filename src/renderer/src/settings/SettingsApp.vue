@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Upload, Download, CheckCircle2, Settings, Database } from '@lucide/vue'
+import { Upload, Download, CheckCircle2, Save, Settings, Cloud, Database } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -12,10 +13,21 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useApp, type Theme } from '../composables/useApp'
+import { useSync } from '../composables/useSync'
+import type { SyncConfig } from '../types'
 
-const { theme, updateInterval, setTheme, setUpdateInterval, loadSettings } = useApp()
+const {
+  theme,
+  updateInterval,
+  setTheme,
+  setUpdateInterval,
+  syncConfig,
+  setSyncConfig,
+  loadSettings
+} = useApp()
 const { autoCheckUpdate, updateCheckInterval, setAutoCheckUpdate, setUpdateCheckInterval } =
   useApp()
+const { runSync } = useSync()
 
 const themes: { value: Theme; label: string }[] = [
   { value: 'light', label: '浅色' },
@@ -82,16 +94,50 @@ async function handleExportOpml(): Promise<void> {
   }
 }
 
+// ---------- 订阅源同步（本地编辑态，点「保存同步设置」后写入配置） ----------
+const syncProvider = ref<SyncConfig['provider']>(syncConfig.value.provider)
+const syncTokenInput = ref(syncConfig.value.token ?? '')
+const syncWebdavUrlInput = ref(syncConfig.value.webdavUrl ?? '')
+const syncWebdavUsernameInput = ref(syncConfig.value.webdavUsername ?? '')
+const syncWebdavPasswordInput = ref(syncConfig.value.webdavPassword ?? '')
+const syncSaved = ref(false)
+
+async function handleSaveSync(): Promise<void> {
+  const partial: Partial<SyncConfig> = { provider: syncProvider.value }
+  if (syncProvider.value === 'gist' || syncProvider.value === 'gitee') {
+    partial.token = syncTokenInput.value.trim()
+  } else if (syncProvider.value === 'webdav') {
+    partial.webdavUrl = syncWebdavUrlInput.value.trim()
+    partial.webdavUsername = syncWebdavUsernameInput.value.trim()
+    partial.webdavPassword = syncWebdavPasswordInput.value
+  }
+  await setSyncConfig(partial)
+  syncSaved.value = true
+  // 配置变更后立即在后台执行一次同步，让设置立即可用
+  await runSync()
+  setTimeout(() => {
+    syncSaved.value = false
+  }, 2000)
+}
+
 // ---------- 左侧导航 ----------
-const activeSection = ref<'general' | 'data'>('general')
+const activeSection = ref<'general' | 'sync' | 'data'>('general')
 
 const navItems = [
   { id: 'general', label: '常规', icon: Settings },
+  { id: 'sync', label: '同步', icon: Cloud },
   { id: 'data', label: '数据', icon: Database }
 ] as const
 
 onMounted(async () => {
   await loadSettings()
+  // 用已保存的配置回填同步编辑态
+  syncProvider.value = syncConfig.value.provider
+  syncTokenInput.value = syncConfig.value.token ?? ''
+  syncWebdavUrlInput.value = syncConfig.value.webdavUrl ?? ''
+  syncWebdavUsernameInput.value = syncConfig.value.webdavUsername ?? ''
+  syncWebdavPasswordInput.value = syncConfig.value.webdavPassword ?? ''
+  syncSaved.value = false
 })
 </script>
 
@@ -210,6 +256,102 @@ onMounted(async () => {
               </div>
             </div>
           </div>
+        </section>
+      </div>
+
+      <div v-else-if="activeSection === 'sync'">
+        <section>
+          <h2 class="text-sm font-medium text-foreground">订阅源同步</h2>
+          <div class="mt-1 divide-y divide-border">
+            <div class="flex items-center justify-between gap-6 py-3">
+              <div class="min-w-0">
+                <div class="text-sm">同步方式</div>
+                <div class="mt-0.5 text-xs text-muted-foreground">订阅源与分类自动同步到云端</div>
+              </div>
+              <div class="w-44 shrink-0">
+                <Select
+                  :model-value="syncProvider"
+                  @update:model-value="(v) => (syncProvider = v as SyncConfig['provider'])"
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">关闭</SelectItem>
+                    <SelectItem value="gist">GitHub Gist</SelectItem>
+                    <SelectItem value="gitee">Gitee 代码片段</SelectItem>
+                    <SelectItem value="webdav">WebDAV</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <template v-if="syncProvider === 'gist' || syncProvider === 'gitee'">
+              <div class="flex items-center justify-between gap-6 py-3">
+                <span class="text-sm shrink-0">访问 Token</span>
+                <Input
+                  v-model="syncTokenInput"
+                  type="password"
+                  placeholder="粘贴 Token"
+                  class="w-64"
+                />
+              </div>
+            </template>
+            <template v-else-if="syncProvider === 'webdav'">
+              <div class="flex items-center justify-between gap-6 py-3">
+                <span class="text-sm shrink-0">服务器地址</span>
+                <Input
+                  v-model="syncWebdavUrlInput"
+                  placeholder="https://dav.jianguoyun.com/dav"
+                  class="w-72"
+                />
+              </div>
+              <div class="flex items-center justify-between gap-6 py-3">
+                <span class="text-sm shrink-0">用户名</span>
+                <Input v-model="syncWebdavUsernameInput" placeholder="用户名" class="w-72" />
+              </div>
+              <div class="flex items-center justify-between gap-6 py-3">
+                <span class="text-sm shrink-0">密码</span>
+                <Input
+                  v-model="syncWebdavPasswordInput"
+                  type="password"
+                  placeholder="密码"
+                  class="w-72"
+                />
+              </div>
+            </template>
+          </div>
+
+          <div class="mt-5 flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              :disabled="syncProvider === 'none'"
+              @click="handleSaveSync"
+            >
+              <Save class="size-3.5" />
+              保存同步设置
+            </Button>
+            <span v-if="syncSaved" class="text-xs text-primary flex items-center gap-1">
+              <CheckCircle2 class="size-3" />
+              已保存
+            </span>
+          </div>
+          <p class="mt-4 text-xs text-muted-foreground leading-relaxed">
+            <template v-if="syncProvider === 'none'">
+              启用后，订阅源与分类会自动同步到云端（未读/已读/星标、文章内容不参与同步）。
+            </template>
+            <template v-else-if="syncProvider === 'gist'">
+              在 GitHub Settings → Developer settings → Personal access tokens 创建 classic
+              token，勾选 gist 权限。
+            </template>
+            <template v-else-if="syncProvider === 'gitee'">
+              在 Gitee 个人设置 → 私人令牌 创建 token（勾选 gists 权限）。
+            </template>
+            <template v-else>
+              WebDAV 支持坚果云、Nextcloud 等；地址填写目录 URL，如 https://dav.jianguoyun.com/dav。
+            </template>
+          </p>
         </section>
       </div>
 

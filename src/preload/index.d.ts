@@ -61,6 +61,24 @@ interface AppSettings {
   windowBounds: { x?: number; y?: number; width: number; height: number }
   autoCheckUpdate: boolean
   updateCheckInterval: number
+  sync: SyncConfig
+}
+
+/** 订阅源同步配置 */
+interface SyncConfig {
+  provider: 'none' | 'gist' | 'gitee' | 'webdav'
+  token?: string
+  gistId?: string
+  webdavUrl?: string
+  webdavUsername?: string
+  webdavPassword?: string
+}
+
+/** 一次同步的结果（由主进程同步服务返回 / 推送） */
+interface SyncResult {
+  status: 'disabled' | 'noop' | 'pushed' | 'pulled' | 'conflict' | 'error'
+  error?: string
+  lastSyncedAt?: number
 }
 
 interface RefreshResult {
@@ -132,6 +150,16 @@ interface OpmlApi {
     >
   >
   export: () => Promise<ApiResponse<{ canceled: true } | { canceled: false; filePath: string }>>
+  /** 订阅 OPML 导入完成事件，返回取消订阅函数 */
+  onImported: (callback: () => void) => () => void
+}
+
+interface SyncApi {
+  run: () => Promise<ApiResponse<SyncResult>>
+  resolve: (choice: 'local' | 'remote') => Promise<ApiResponse<SyncResult>>
+  status: () => Promise<ApiResponse<{ lastSyncedAt: number | null }>>
+  /** 订阅同步状态事件（由主进程推送），返回取消订阅函数 */
+  onStatus: (callback: (result: SyncResult) => void) => () => void
 }
 
 /** 自动更新状态（由主进程推送） */
@@ -191,6 +219,7 @@ interface AppApi {
   articles: ArticleApi
   config: ConfigApi
   opml: OpmlApi
+  sync: SyncApi
   updater: UpdaterApi
   menu: MenuApi
   system: SystemApi

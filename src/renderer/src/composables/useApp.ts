@@ -1,4 +1,5 @@
 import { ref, computed, watch } from 'vue'
+import type { SyncConfig } from '../types'
 
 export type Theme = 'light' | 'dark' | 'system'
 
@@ -6,6 +7,7 @@ const theme = ref<Theme>('system')
 const updateInterval = ref(30)
 const autoCheckUpdate = ref(true)
 const updateCheckInterval = ref(360)
+const syncConfig = ref<SyncConfig>({ provider: 'none' })
 
 function resolveTheme(t: Theme): 'light' | 'dark' {
   if (t === 'system') {
@@ -40,6 +42,7 @@ export function useApp() {
       updateInterval.value = result.data.updateInterval
       autoCheckUpdate.value = result.data.autoCheckUpdate
       updateCheckInterval.value = result.data.updateCheckInterval
+      syncConfig.value = result.data.sync ?? { provider: 'none' }
     }
   }
 
@@ -63,16 +66,29 @@ export function useApp() {
     await window.api.config.update({ updateCheckInterval: minutes })
   }
 
+  async function setSyncConfig(partial: Partial<SyncConfig>): Promise<void> {
+    // 空字符串视为未填写，存储时省略
+    const next: SyncConfig = { ...syncConfig.value, ...partial }
+    if (!next.token) delete next.token
+    if (!next.webdavUrl) delete next.webdavUrl
+    if (!next.webdavUsername) delete next.webdavUsername
+    if (!next.webdavPassword) delete next.webdavPassword
+    syncConfig.value = next
+    await window.api.config.update({ sync: next })
+  }
+
   return {
     theme,
     resolvedTheme,
     updateInterval,
     autoCheckUpdate,
     updateCheckInterval,
+    syncConfig,
     loadSettings,
     setTheme,
     setUpdateInterval,
     setAutoCheckUpdate,
-    setUpdateCheckInterval
+    setUpdateCheckInterval,
+    setSyncConfig
   }
 }

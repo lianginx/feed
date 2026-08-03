@@ -6,6 +6,7 @@ import { useMenuCommands } from './composables/useMenuCommands'
 import { useAddFeedDialog } from './composables/useAddFeedDialog'
 import { useAddCategoryDialog } from './composables/useAddCategoryDialog'
 import { useConfirmDialog } from './composables/useConfirmDialog'
+import { useSync, registerSyncListener } from './composables/useSync'
 import { SidebarProvider, Sidebar } from '@/components/ui/sidebar'
 import SidebarNav from './components/Sidebar.vue'
 import ArticleList from './components/ArticleList.vue'
@@ -14,6 +15,7 @@ import ToastNotification from './components/ToastNotification.vue'
 import AddFeedDialog from './components/AddFeedDialog.vue'
 import AddCategoryDialog from './components/AddCategoryDialog.vue'
 import ConfirmDialog from './components/ConfirmDialog.vue'
+import SyncConflictDialog from './components/SyncConflictDialog.vue'
 
 const { loadSettings } = useApp()
 const { loadFeeds } = useFeeds()
@@ -36,8 +38,11 @@ const {
   variant: confirmVariant,
   resolveConfirm
 } = useConfirmDialog()
+const { pendingConflict, resolveConflict, loadStatus } = useSync()
 
+let stopSyncListener: (() => void) | null = null
 let stopConfigListener: (() => void) | null = null
+let stopOpmlListener: (() => void) | null = null
 
 // 全局禁用浏览器默认右键菜单（自定义 ContextMenu 已自行处理 preventDefault）
 function onContextMenu(e: MouseEvent): void {
@@ -85,19 +90,35 @@ onMounted(async () => {
   observer.observe(document.body, { childList: true, subtree: true })
   await loadSettings()
   await loadFeeds()
+  // 注册同步状态监听，并加载上次同步时间；远端拉取后刷新订阅列表
+  stopSyncListener = registerSyncListener(() => {
+    void loadFeeds()
+  })
+  await loadStatus()
 
-  // 设置窗口变更后重载配置
+  // 设置窗口变更后重载配置、OPML 导入后刷新订阅列表
   stopConfigListener = window.api.config.onChanged(onConfigChanged)
+  stopOpmlListener = window.api.opml.onImported(onOpmlImported)
 })
 
 function onConfigChanged(): void {
   void loadSettings()
 }
 
+function onOpmlImported(): void {
+  void loadFeeds()
+}
+
 onUnmounted(() => {
   document.removeEventListener('contextmenu', onContextMenu)
   stopConfigListener?.()
+  stopOpmlListener?.()
+  stopSyncListener?.()
 })
+
+async function handleSyncConflictChoice(choice: 'local' | 'remote'): Promise<void> {
+  await resolveConflict(choice)
+}
 </script>
 
 <template>
@@ -148,5 +169,15 @@ onUnmounted(() => {
         if (!open) showConfirmDialog = false
       }
     "
+  />
+
+  <SyncConflictDialog
+    :open="pendingConflict"
+    @update:open="
+      (open) => {
+        if (!open) pendingConflict = false
+      }
+    "
+    @choose="handleSyncConflictChoice"
   />
 </template>

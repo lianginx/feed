@@ -3,6 +3,7 @@ import { getConnection } from '../database/connection'
 import { parseFeed, validateFeed } from '../services/rss'
 import { resolveAndCacheFavicon, refreshFeedFavicon } from '../services/favicon'
 import { refreshSingleFeed } from '../services/refresher'
+import { scheduleSync } from '../services/sync'
 import { success, error } from './util'
 
 export function registerFeedHandlers(): void {
@@ -61,6 +62,9 @@ export function registerFeedHandlers(): void {
           /* favicon 获取失败不影响添加 */
         }
 
+        // 订阅列表已变更，防抖触发自动同步
+        scheduleSync()
+
         return success({ id: feedId })
       } catch (e) {
         return error((e as Error).message)
@@ -101,6 +105,7 @@ export function registerFeedHandlers(): void {
 
         values.push(id)
         db.prepare(`UPDATE feeds SET ${fields.join(', ')} WHERE id = ?`).run(...values)
+        scheduleSync()
         return success({ id })
       } catch (e) {
         return error((e as Error).message)
@@ -116,6 +121,7 @@ export function registerFeedHandlers(): void {
         db.prepare('DELETE FROM articles WHERE feed_id = ?').run(id)
         db.prepare('DELETE FROM feeds WHERE id = ?').run(id)
       })()
+      scheduleSync()
       return success({ id })
     } catch (e) {
       return error((e as Error).message)
@@ -133,6 +139,7 @@ export function registerFeedHandlers(): void {
             stmt.run(feed.sort_order, feed.id)
           }
         })()
+        scheduleSync()
         return success({ updated: feeds.length })
       } catch (e) {
         return error((e as Error).message)

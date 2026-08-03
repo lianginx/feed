@@ -88,7 +88,9 @@ const api = {
   },
   opml: {
     import: () => ipcRenderer.invoke('opml:import'),
-    export: () => ipcRenderer.invoke('opml:export')
+    export: () => ipcRenderer.invoke('opml:export'),
+    /** 订阅 OPML 导入完成事件，返回取消订阅函数 */
+    onImported: (callback: () => void): (() => void) => onChannel('opml:imported', callback)
   },
   menu: {
     /** 上报菜单可用状态（主进程据此置灰菜单项） */
@@ -106,6 +108,13 @@ const api = {
       onChannel('menu:checkForUpdates', callback),
     onToggleStar: (callback: () => void): (() => void) => onChannel('menu:toggleStar', callback),
     onFocusSearch: (callback: () => void): (() => void) => onChannel('menu:focusSearch', callback)
+  },
+  sync: {
+    run: () => ipcRenderer.invoke('sync:run'),
+    resolve: (choice: 'local' | 'remote') => ipcRenderer.invoke('sync:resolve', choice),
+    status: () => ipcRenderer.invoke('sync:status'),
+    onStatus: (callback: (result: unknown) => void): (() => void) =>
+      onChannel('sync:status', callback)
   },
   updater: {
     check: () => ipcRenderer.invoke('updater:check'),

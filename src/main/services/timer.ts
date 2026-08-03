@@ -1,5 +1,6 @@
 import { getSettings } from '../config'
 import { refreshAllFeeds } from './refresher'
+import { runSync } from './sync'
 
 let timer: ReturnType<typeof setInterval> | null = null
 
@@ -15,11 +16,16 @@ export function startScheduler(): void {
   // 立即刷新一次，避免首次启动后要等一个间隔
   refreshAllFeeds()
 
+  // 启动时同步订阅源列表（若已配置同步）
+  void runSync()
+
   // 间隔为 0 表示关闭自动刷新，仅手动触发
   if (intervalMs <= 0) return
 
   timer = setInterval(() => {
     refreshAllFeeds()
+    // 定时同步订阅源列表
+    void runSync()
   }, intervalMs)
 }
 

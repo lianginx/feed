@@ -2,6 +2,8 @@ import { ipcMain, dialog } from 'electron'
 import { readFileSync, writeFileSync } from 'fs'
 import { getConnection } from '../database/connection'
 import { refreshSingleFeed } from '../services/refresher'
+import { scheduleSync } from '../services/sync'
+import { getMainWindow } from '../app/window'
 import { success, error } from './util'
 import opml from 'opml'
 
@@ -88,6 +90,9 @@ function importFeeds(entries: FeedEntry[]): { total: number; added: number; skip
 
   doImport()
 
+  // 订阅列表已变更，防抖触发自动同步
+  scheduleSync()
+
   return { total: entries.length, added: newEntries.length, skipped: skippedDuplicates }
 }
 
@@ -173,6 +178,11 @@ export function registerOpmlHandlers(): void {
       const body = await parseOpml(content)
       const entries = collectFeeds(body.subs)
       const importResult = importFeeds(entries)
+
+      // 通知主窗口刷新订阅列表
+      if (importResult.added > 0) {
+        getMainWindow()?.webContents.send('opml:imported')
+      }
 
       return success({ canceled: false, ...importResult })
     } catch (e) {
