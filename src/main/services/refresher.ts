@@ -100,8 +100,10 @@ export async function refreshSingleFeed(feedId: number): Promise<RefreshResult> 
 
         const content = item.content || item.contentSnippet || ''
         const sanitizedContent = purify.sanitize(content)
-        const publishedAt = item.pubDate
-          ? Math.floor(new Date(item.pubDate).getTime() / 1000)
+        // 无效（无法解析）的发布时间回退为当前时间，避免 NaN 落库导致按时间排序异常
+        const parsedTime = item.pubDate ? new Date(item.pubDate).getTime() : NaN
+        const publishedAt = Number.isFinite(parsedTime)
+          ? Math.floor(parsedTime / 1000)
           : Math.floor(Date.now() / 1000)
 
         const existing = db
