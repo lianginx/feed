@@ -42,8 +42,9 @@ export function sanitizeHtml(html: string): string {
       'span',
       'video',
       'audio',
-      'source',
-      'iframe'
+      'source'
+      // 注意：刻意不放开 iframe——RSS 内容来自不可信站点，
+      // 允许 iframe 会引入同源 XSS 面（开发模式）与钓鱼/挖矿等滥用风险
     ],
     ALLOWED_ATTR: [
       'href',
@@ -58,11 +59,10 @@ export function sanitizeHtml(html: string): string {
       'id',
       'data-highlighted',
       'controls',
-      'autoplay',
       'loop',
-      'frameborder',
-      'allowfullscreen',
+      // style 保留：RSS 内容普遍使用内联样式，DOMPurify 会清洗其中的危险 CSS
       'style'
+      // 不放开 autoplay：恶意条目可借此自动播放音视频骚扰
     ],
     ALLOW_DATA_ATTR: false
   })
