@@ -35,8 +35,7 @@
 
 沿用 electron-vite 默认的 preload 设计：
 
-- `window.electron`：electron-vite 内置的 `electronAPI`（ipcRenderer 封装）
-- `window.api`：业务 API 对象（在 preload/index.ts 的 `api` 对象中扩展）
+- `window.api`：业务 API 对象（在 preload/index.ts 的 `api` 对象中扩展）。所有事件订阅都通过 `api.*.onXxx(cb)` 包裹回调并剥离 `IpcRendererEvent`，只透传业务数据；不再暴露原始 `ipcRenderer`（遵循 Electron 安全规则 #20）
 
 ```typescript
 // preload/index.ts 扩展示例
@@ -77,10 +76,11 @@ const api = {
     get: () => ipcRenderer.invoke('config:get'),
     update: (settings: Partial<AppSettings>) => ipcRenderer.invoke('config:update', settings)
   },
-  // 刷新相关
+  // 同步相关
   sync: {
-    refreshFeed: (feedId: number) => ipcRenderer.invoke('sync:refreshFeed', feedId),
-    refreshAll: () => ipcRenderer.invoke('sync:refreshAll')
+    run: () => ipcRenderer.invoke('sync:run'),
+    resolve: (choice: 'local' | 'remote') => ipcRenderer.invoke('sync:resolve', choice),
+    status: () => ipcRenderer.invoke('sync:status')
   }
 }
 ```
@@ -120,7 +120,6 @@ graph TB
 
     subgraph "Preload 桥接"
         API[window.api 业务接口]
-        Electron[window.electron 电子接口]
     end
 
     subgraph "Main 进程 (Node.js)"
