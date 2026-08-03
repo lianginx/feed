@@ -31,7 +31,9 @@ group() {
 }
 
 {
-  printf '# %s\n\n' "${TAG}"
+  # 不输出 "# <tag>" 大标题：GitHub Release 页面本身会显示标题，重复显得冗余
+  # 自动生成说明放头部
+  printf '自动生成：基于 %s 的提交历史。\n\n' "${RANGE}"
 
   if [ -z "${COMMITS}" ]; then
     printf '本次无代码变更。\n'
@@ -50,6 +52,4 @@ group() {
   if [ -n "${others}" ]; then
     printf '\n## 其他\n%s\n' "$(printf '%s\n' "${others}" | sed 's/^/- /')"
   fi
-
-  printf '\n---\n自动生成：基于 %s 的提交历史。\n' "${RANGE}"
 } > "${OUT}"
