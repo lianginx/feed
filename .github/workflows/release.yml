@@ -19,9 +19,13 @@ jobs:
   # 三个平台并行 --publish always 时若都不存在，会同时尝试创建导致 422 already_exists 冲突，
   # 因此先在此 job 创建空 Release，让后续构建 job 只上传不创建。
   # Release notes 由脚本基于「上一个 tag → 当前 tag」的提交历史自动生成。
+  # 仅 tag 触发（v*）时创建 draft release：
+  # workflow_dispatch 手动触发时 GITHUB_REF_NAME 是分支名（如 main），
+  # 用它创建 release 会产生错误命名的正式发布，因此非 tag 触发整个 job 跳过。
   prepare:
     name: Prepare release
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       # fetch-depth: 0 拉取完整历史，用于对比上一个 tag 生成 release notes
       - uses: actions/checkout@v4
@@ -47,9 +51,16 @@ jobs:
               echo "release create 失败（可能并行冲突），继续尝试让构建 job 上传"
           fi
 
+  # 手动触发（workflow_dispatch）只做构建验证，不发布产物到 Release。
+  # 注意：needs 的上游 job 被跳过时下游默认也会被跳过（除非显式 if），
+  # 因此必须显式判断才能在 prepare 跳过（手动触发）时继续构建验证。
+  # 同时排除 prepare 失败：publish 的 releaseType 为 release，
+  # prepare 失败时若继续构建，electron-builder --publish 会直接创建正式
+  # release（无 release notes、未经 draft 确认即公开），必须阻止。
   build:
     name: Build on ${{ matrix.os }}
     needs: prepare
+    if: ${{ !cancelled() && needs.prepare.result != 'failure' }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false # 单个平台失败不阻塞其他平台
@@ -100,23 +111,32 @@ jobs:
 
       # 未配置代码签名证书：macOS/Windows 均跳过签名（避免 CI 卡在签名/公证环节）
       # GITHUB_TOKEN 由仓库自动提供，electron-builder 用它把产物上传到 GitHub Releases
+      # 仅 tag 触发时 --publish always 上传到 draft release；手动触发只构建不发布
       - name: Build & Publish
-        run: pnpm ${{ matrix.script }} --publish always
+        run: pnpm ${{ matrix.script }} --publish ${{ startsWith(github.ref, 'refs/tags/v') && 'always' || 'never' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
   publish:
     name: Publish release
     needs: build
-    if: ${{ needs.build.result == 'success' }}
+    if: startsWith(github.ref, 'refs/tags/v') && needs.build.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Publish release
+      - name: Publish release（失败重试 3 次）
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${GITHUB_REF_NAME:-${GITHUB_SHA}}"
+          TAG="${GITHUB_REF_NAME}"
           echo "Publishing release ${TAG}"
-          gh release edit "${TAG}" --draft=false
+          for attempt in 1 2 3; do
+            if gh release edit "${TAG}" --draft=false; then
+              echo "Release ${TAG} 已正式发布"
+              exit 0
+            fi
+            echo "发布失败（第 ${attempt} 次尝试），5 秒后重试..."
+            sleep 5
+          done
+          exit 1
