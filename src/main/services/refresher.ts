@@ -1,5 +1,5 @@
 import { getConnection } from '../database/connection'
-import { parseFeed, type ParsedFeed } from './rss'
+import { parseFeed, toFriendlyFeedError, type ParsedFeed } from './rss'
 import { resolveAndCacheFavicon } from './favicon'
 import { scheduleBadgeUpdate } from './badge'
 import { getMainWindow } from '../app/window'
@@ -182,17 +182,21 @@ export async function refreshSingleFeed(feedId: number): Promise<RefreshResult> 
 
     return { feedId, success: true, inserted, updated }
   } catch (e) {
+    const friendlyError = toFriendlyFeedError(e)
+    // 原始技术细节记录到日志，供排查
+    console.error(`[refresher] feed ${feedId} 刷新失败:`, e)
+
     db.prepare(
       "UPDATE feeds SET last_error = ?, error_count = error_count + 1, last_updated = strftime('%s','now') WHERE id = ?"
-    ).run((e as Error).message, feedId)
+    ).run(friendlyError, feedId)
 
     // 通知前端：刷新失败
     win?.webContents.send('feeds:refresh-progress', {
       feedId,
       status: 'error',
-      error: (e as Error).message
+      error: friendlyError
     })
 
-    return { feedId, success: false, error: (e as Error).message, inserted: 0, updated: 0 }
+    return { feedId, success: false, error: friendlyError, inserted: 0, updated: 0 }
   }
 }

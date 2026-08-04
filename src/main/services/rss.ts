@@ -43,6 +43,61 @@ export interface ParsedArticle {
 }
 
 /**
+ * 将订阅源拉取/解析错误转换为友好提示文本。
+ * 原始技术细节（错误 code/message）会记录到日志，供排查使用。
+ */
+export function toFriendlyFeedError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error)
+  const code =
+    error instanceof Error && 'code' in error ? (error as NodeJS.ErrnoException).code : undefined
+
+  // 域名解析失败
+  if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
+    return '域名解析失败，请检查订阅源地址是否正确'
+  }
+  // 连接被拒绝
+  if (code === 'ECONNREFUSED') {
+    return '连接被拒绝，网站可能已下线或屏蔽了访问'
+  }
+  // 连接被重置/中断
+  if (code === 'ECONNRESET' || /socket hang up/i.test(message)) {
+    return '网络连接被中断，请检查网络后重试'
+  }
+  // 网络不可达/离线
+  if (code === 'ENETUNREACH' || code === 'EHOSTUNREACH' || code === 'ENETDOWN') {
+    return '网络不可达，请检查网络连接'
+  }
+  // TLS/证书错误
+  if (
+    code === 'CERT_HAS_EXPIRED' ||
+    code === 'DEPTH_ZERO_SELF_SIGNED_CERT' ||
+    /certificate|TLS|SSL/i.test(message)
+  ) {
+    return '网站证书校验失败，可能存在安全风险'
+  }
+  // 超时
+  if (code === 'ETIMEDOUT' || /timed out|timeout|timeout of/i.test(message)) {
+    return '请求超时，请检查网络或稍后重试'
+  }
+  // HTTP 状态码错误
+  const statusMatch = message.match(/Status code (\d+)/)
+  if (statusMatch) {
+    const status = Number(statusMatch[1])
+    if (status >= 500) {
+      return '服务器暂时不可用（' + status + '），请稍后重试'
+    }
+    return '订阅源地址可能已失效（' + status + '），请检查地址是否正确'
+  }
+  // XML/解析错误
+  if (/parse|XML|Feed not recognized|Unable to parse/i.test(message)) {
+    return '内容解析失败，可能不是有效的 RSS 订阅源'
+  }
+
+  // 兜底：保留原始信息（含 code）以便定位问题
+  return '刷新失败：' + message
+}
+
+/**
  * 解析 RSS/Atom 订阅源。
  */
 export async function parseFeed(url: string): Promise<ParsedFeed> {
@@ -81,7 +136,6 @@ export async function validateFeed(
     const feed = await parseFeed(url)
     return { valid: true, title: feed.title }
   } catch (error) {
-    const message = error instanceof Error ? error.message : '解析失败'
-    return { valid: false, error: message }
+    return { valid: false, error: toFriendlyFeedError(error) }
   }
 }
