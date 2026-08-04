@@ -18,21 +18,10 @@ export function buildAppMenu(): void {
         },
         { type: 'separator' },
         {
-          label: '隐藏',
-          accelerator: 'CmdOrCtrl+H',
-          click: () => app.hide()
-        },
-        {
-          label: '显示全部',
-          role: 'unhide'
-        },
-        { type: 'separator' },
-        {
           label: '设置…',
           accelerator: 'CmdOrCtrl+,',
           click: () => createSettingsWindow()
         },
-        { type: 'separator' },
         {
           label: '检查更新…',
           click: () => getMainWindow()?.webContents.send('menu:checkForUpdates')
@@ -48,7 +37,6 @@ export function buildAppMenu(): void {
     {
       label: '编辑',
       submenu: [
-        { type: 'separator' },
         {
           label: '剪切',
           accelerator: 'CmdOrCtrl+X',
