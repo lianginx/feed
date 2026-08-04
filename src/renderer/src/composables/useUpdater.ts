@@ -19,14 +19,21 @@ export function useUpdater(): { checkForUpdates: () => Promise<void> } {
   async function checkForUpdates(): Promise<void> {
     // 检查期间显示持续提示，避免「点了没反应」的错觉；
     // 自动检查（后台/启动时）不会走到这里，保持静默
-    const loadingId = showLoading('正在检查更新…')
+    let loadingId: string | number | undefined
+    const loadingTimer = window.setTimeout(() => {
+      loadingId = showLoading('正在检查更新…')
+    }, 200)
+
     try {
       const res = await window.api.updater.check()
       if (!res.success) {
         showToast(res.error || '检查更新失败', 'error')
       }
     } finally {
-      dismissToast(loadingId)
+      clearTimeout(loadingTimer)
+      if (loadingId !== undefined) {
+        dismissToast(loadingId)
+      }
     }
   }
 

@@ -32,18 +32,18 @@ jobs:
         shell: bash
         run: bash .github/scripts/generate-release-notes.sh "${GITHUB_REF_NAME:-${GITHUB_SHA}}" /tmp/release-notes.md
 
-      - name: Create or update release
+      - name: Create or update draft release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${GITHUB_REF_NAME:-${GITHUB_SHA}}"
-          echo "Preparing release for tag: ${TAG}"
+          echo "Preparing draft release for tag: ${TAG}"
           if gh release view "${TAG}" >/dev/null 2>&1; then
             echo "Release ${TAG} 已存在，更新 notes"
             gh release edit "${TAG}" --notes-file /tmp/release-notes.md
           else
-            echo "创建 Release ${TAG}"
-            gh release create "${TAG}" --title "${TAG}" --notes-file /tmp/release-notes.md || \
+            echo "创建 Draft Release ${TAG}"
+            gh release create "${TAG}" --title "${TAG}" --notes-file /tmp/release-notes.md --draft || \
               echo "release create 失败（可能并行冲突），继续尝试让构建 job 上传"
           fi
 
@@ -105,3 +105,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
+  publish:
+    name: Publish release
+    needs: build
+    if: ${{ needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Publish release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME:-${GITHUB_SHA}}"
+          echo "Publishing release ${TAG}"
+          gh release edit "${TAG}" --draft=false

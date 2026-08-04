@@ -34,6 +34,8 @@ interface PendingUpdate {
 
 let initialized = false
 let autoCheckTimer: ReturnType<typeof setInterval> | null = null
+let isCheckingUpdate = false
+let isDownloadingUpdate = false
 
 /** macOS 手动安装模式下已下载的 dmg 路径 */
 let macDmgPath: string | null = null
@@ -124,6 +126,8 @@ function downloadDmg(
  * @param auto 是否自动检查（自动检查时「已是最新」不发提示，避免打扰）
  */
 async function checkForUpdate(auto: boolean): Promise<{ success: boolean; error?: string }> {
+  isCheckingUpdate = true
+
   try {
     const result = await autoUpdater.checkForUpdates()
     if (!result || !result.isUpdateAvailable) {
@@ -163,8 +167,15 @@ async function checkForUpdate(auto: boolean): Promise<{ success: boolean; error?
     return { success: true }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
-    sendStatus({ state: 'error', message })
-    return { success: false, error: message }
+    if (!auto) {
+      sendStatus({ state: 'error', message })
+      return { success: false, error: message }
+    }
+
+    // 自动检查时可能正好遇到新版构建尚未完成导致的临时元数据不可用，静默忽略
+    return { success: true }
+  } finally {
+    isCheckingUpdate = false
   }
 }
 
@@ -176,6 +187,8 @@ async function downloadUpdate(): Promise<{ success: boolean; error?: string }> {
   if (!pendingUpdate) {
     return { success: false, error: '未发现可下载的更新' }
   }
+  isDownloadingUpdate = true
+
   try {
     if (isMacManualMode) {
       const { downloadUrl, destPath, expectedSha512 } = pendingUpdate
@@ -197,6 +210,8 @@ async function downloadUpdate(): Promise<{ success: boolean; error?: string }> {
     const message = err instanceof Error ? err.message : String(err)
     sendStatus({ state: 'error', message })
     return { success: false, error: message }
+  } finally {
+    isDownloadingUpdate = false
   }
 }
 
@@ -218,7 +233,12 @@ export function initUpdater(): void {
   // 注意：这里不监听 update-not-available，
   // 因为 checkForUpdate() 会在检查完按需手动发送 not-available（自动检查时不发），
   // 若两者都发会导致「已是最新版本」提示重复
-  autoUpdater.on('error', (err) => sendStatus({ state: 'error', message: err.message }))
+  autoUpdater.on('error', (err) => {
+    if (isCheckingUpdate || isDownloadingUpdate) {
+      return
+    }
+    sendStatus({ state: 'error', message: err.message })
+  })
 
   // Windows/Linux 的下载进度与完成事件
   if (!isMacManualMode) {
