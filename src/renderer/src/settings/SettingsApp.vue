@@ -207,7 +207,7 @@ onMounted(async () => {
       <div v-if="activeSection === 'general'">
         <!-- 外观 -->
         <section>
-          <h2 class="text-sm font-medium text-foreground mb-1">外观</h2>
+          <h2 class="text-sm font-semibold text-foreground mb-1">外观</h2>
           <div class="flex items-center justify-between gap-6 py-3">
             <span class="text-sm">主题</span>
             <div class="w-44 shrink-0">
@@ -227,7 +227,7 @@ onMounted(async () => {
 
         <!-- 内容 -->
         <section class="mt-8">
-          <h2 class="text-sm font-medium text-foreground mb-1">内容</h2>
+          <h2 class="text-sm font-semibold text-foreground mb-1">内容</h2>
           <div class="flex items-center justify-between gap-6 py-3">
             <div class="min-w-0">
               <div class="text-sm">自动刷新</div>
@@ -294,7 +294,7 @@ onMounted(async () => {
 
       <div v-else-if="activeSection === 'sync'">
         <section>
-          <h2 class="text-sm font-medium text-foreground mb-1">订阅源同步</h2>
+          <h2 class="text-sm font-semibold text-foreground mb-1">订阅源同步</h2>
           <div class="flex items-center justify-between gap-6 py-3">
             <div class="min-w-0">
               <div class="text-sm">同步方式</div>
@@ -396,7 +396,7 @@ onMounted(async () => {
 
       <div v-else>
         <section>
-          <h2 class="text-sm font-medium text-foreground mb-1">数据</h2>
+          <h2 class="text-sm font-semibold text-foreground mb-1">数据</h2>
           <div class="flex items-center justify-between gap-6 py-3">
             <div class="min-w-0">
               <div class="text-sm">OPML 导入导出</div>
