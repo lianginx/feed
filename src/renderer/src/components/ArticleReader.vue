@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { watch, ref } from 'vue'
-import { Star, ExternalLink, Rss, Clock, UserRound, ArrowUp } from '@lucide/vue'
+import { watch, ref, computed } from 'vue'
+import { Star, ExternalLink, Rss, ArrowUp } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { useArticles } from '../composables/useArticles'
 import { useTitleInToolbar } from '../composables/useTitleInToolbar'
 import { sanitizeHtml } from '../utils/sanitize'
 import { dayjs } from '../utils/dayjs'
+import { estimateReadingTime } from '../utils/readingTime'
 
 const { currentArticle, toggleStar } = useArticles()
 
@@ -56,6 +57,9 @@ function openInBrowser(url: string | null): void {
     window.open(url, '_blank')
   }
 }
+
+// 阅读时间：根据文章正文字数估算（中文按字、英文按词，分开计速）
+const readingTime = computed(() => estimateReadingTime(currentArticle.value?.content ?? null))
 </script>
 
 <template>
@@ -98,13 +102,10 @@ function openInBrowser(url: string | null): void {
           class="sticky top-0 z-10 p-3 flex items-center gap-2 min-h-9.5 bg-card"
           style="app-region: drag"
         >
-          <div class="flex-1 min-w-0 flex items-center">
+          <!-- 增加 ml-2 与右边图标视觉对齐 -->
+          <div class="flex-1 min-w-0 flex items-center ml-2">
             <Transition name="title-fade">
-              <span
-                v-if="titleInToolbar"
-                class="min-w-0 font-medium text-foreground truncate select-none cursor-default"
-                :title="currentArticle.url ? '在浏览器中打开' : undefined"
-              >
+              <span v-if="titleInToolbar" class="font-medium line-clamp-1">
                 {{ currentArticle.title }}
               </span>
             </Transition>
@@ -113,7 +114,7 @@ function openInBrowser(url: string | null): void {
             <Button
               variant="ghost"
               size="icon-sm"
-              class="text-muted-foreground"
+              class="size-8 text-muted-foreground"
               :class="currentArticle.is_starred ? 'text-starred' : ''"
               @click="toggleStar(currentArticle.id)"
             >
@@ -122,7 +123,7 @@ function openInBrowser(url: string | null): void {
             <Button
               variant="ghost"
               size="icon-sm"
-              class="text-muted-foreground"
+              class="size-8 text-muted-foreground"
               @click="openInBrowser(currentArticle.url)"
             >
               <ExternalLink />
@@ -131,10 +132,23 @@ function openInBrowser(url: string | null): void {
         </div>
 
         <article class="max-w-3xl mx-auto px-8" style="user-select: text">
-          <header class="mb-8">
+          <header class="mb-8 flex flex-col">
+            <div
+              class="flex items-center gap-1.5 mb-2 text-sm text-muted-foreground cursor-default"
+            >
+              <img
+                v-if="currentArticle.favicon_url"
+                :src="currentArticle.favicon_url"
+                class="size-4 rounded-sm"
+                alt=""
+                @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
+              />
+              <Rss v-else class="size-4 text-muted-foreground/50" />
+              {{ currentArticle.feed_title }}
+            </div>
             <h1
               ref="articleTitle"
-              class="text-3xl font-bold text-foreground leading-snug mb-4 text-balance cursor-default hover:underline transition-colors"
+              class="mb-4 text-3xl font-bold text-foreground leading-snug text-balance cursor-default hover:underline transition-colors"
               :title="currentArticle.url ? '在浏览器中打开' : undefined"
               @click="openInBrowser(currentArticle.url)"
             >
@@ -143,29 +157,19 @@ function openInBrowser(url: string | null): void {
             <div
               class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-muted-foreground cursor-default"
             >
-              <span class="flex items-center gap-1.5">
-                <img
-                  v-if="currentArticle.favicon_url"
-                  :src="currentArticle.favicon_url"
-                  class="size-4 rounded-sm"
-                  alt=""
-                  @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
-                />
-                <Rss v-else class="size-4 text-muted-foreground/50" />
-                {{ currentArticle.feed_title }}
-              </span>
-              <span v-if="currentArticle.author" class="flex items-center gap-1.5">
-                <UserRound class="size-4 text-muted-foreground/50" />
+              <span v-if="currentArticle.author" class="flex items-center transition-colors">
                 {{ currentArticle.author }}
               </span>
               <span
-                class="flex items-center gap-1.5 transition-colors"
+                class="flex items-center transition-colors"
                 title="点击切换时间格式"
                 role="button"
                 @click="toggleTimeFormat"
               >
-                <Clock class="size-4 text-muted-foreground/50" />
                 {{ formatTime(currentArticle.published_at) }}
+              </span>
+              <span v-if="readingTime" class="flex items-center">
+                阅读约 {{ readingTime }} 分钟
               </span>
             </div>
           </header>
