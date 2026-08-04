@@ -124,21 +124,17 @@ async function handleSyncConflictChoice(choice: 'local' | 'remote'): Promise<voi
 <template>
   <SidebarProvider
     :style="{ '--sidebar-width': '20rem' }"
-    class="h-screen overflow-hidden bg-canvas px-3 gap-3"
+    class="h-screen overflow-hidden bg-canvas"
   >
     <!-- 侧边栏不做卡片，透明化直接陈列在地面上 -->
     <Sidebar collapsible="none" class="bg-transparent">
       <SidebarNav />
     </Sidebar>
     <!-- 地面：承载卡片的画布，卡片之间留 gap；卡片用多层阴影浮起 -->
-    <div
-      class="my-3 flex-4 min-w-0 overflow-hidden rounded-xl bg-card shadow-card animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ease-out"
-    >
+    <div class="m-2 ml-0 flex-4 min-w-0 overflow-hidden rounded-xl bg-card">
       <ArticleList />
     </div>
-    <div
-      class="my-3 flex-8 min-w-0 overflow-hidden rounded-xl bg-card shadow-card animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ease-out [animation-delay:80ms]"
-    >
+    <div class="m-2 ml-0 flex-8 min-w-0 overflow-hidden rounded-xl bg-card">
       <ArticleReader />
     </div>
   </SidebarProvider>

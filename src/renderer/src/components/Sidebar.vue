@@ -414,7 +414,7 @@ function onCategoryDragEnd(): void {
 </script>
 
 <template>
-  <SidebarHeader class="p-0 pt-12 pb-2 gap-2" style="-webkit-app-region: drag">
+  <SidebarHeader class="px-3 pt-12 pb-2 gap-2" style="-webkit-app-region: drag">
     <SidebarMenuButton
       style="-webkit-app-region: no-drag"
       :is-active="filter === 'all'"
@@ -466,29 +466,29 @@ function onCategoryDragEnd(): void {
       <span class="flex items-center gap-1 text-xs text-sidebar-foreground/50">订阅源</span>
       <div class="flex items-center gap-1" style="-webkit-app-region: no-drag">
         <Button
-          class="size-6"
+          class="size-7 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground active:scale-[0.96] transition-[color,background-color,transform]"
           size="icon-sm"
-          variant="link"
+          variant="ghost"
           title="刷新全部"
           :disabled="refreshingFeedIds.size > 0"
           @click="refreshAllFeeds"
         >
-          <RefreshCw :class="{ 'animate-spin': refreshingFeedIds.size > 0 }" />
+          <RefreshCw class="size-4" :class="{ 'animate-spin': refreshingFeedIds.size > 0 }" />
         </Button>
         <Button
-          class="size-6 [&_svg]:size-5"
+          class="size-7 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground active:scale-[0.96] transition-[color,background-color,transform]"
           size="icon-sm"
-          variant="link"
+          variant="ghost"
           title="添加订阅源"
           @click="showAddFeed = true"
         >
-          <Plus />
+          <Plus class="size-4" />
         </Button>
       </div>
     </div>
   </SidebarHeader>
 
-  <SidebarContent>
+  <SidebarContent class="px-3">
     <ContextMenu>
       <ContextMenuTrigger class="block h-full">
         <div
@@ -559,7 +559,7 @@ function onCategoryDragEnd(): void {
                           class="absolute bottom-0 left-2 right-2 h-0.5 translate-y-1/2 rounded-full bg-sidebar-primary z-10 pointer-events-none"
                         />
                         <CollapsibleTrigger as-child>
-                          <button class="flex items-center justify-center size-5 shrink-0 -ml-0.5">
+                          <button class="flex items-center justify-center size-6 shrink-0 -ml-0.5">
                             <ChevronRight
                               class="w-3.5 h-3.5 transition-transform duration-200"
                               :class="{ 'rotate-90': !isCategoryCollapsed(cat.id) }"
@@ -740,7 +740,7 @@ function onCategoryDragEnd(): void {
                         "
                       >
                         <CollapsibleTrigger as-child>
-                          <button class="flex items-center justify-center size-5 shrink-0 -ml-0.5">
+                          <button class="flex items-center justify-center size-6 shrink-0 -ml-0.5">
                             <ChevronRight
                               class="w-3.5 h-3.5 transition-transform duration-200"
                               :class="{ 'rotate-90': !uncategorizedCollapsed }"

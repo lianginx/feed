@@ -42,9 +42,9 @@ const {
 const { runSync } = useSync()
 
 const themes: { value: Theme; label: string }[] = [
+  { value: 'system', label: '跟随系统' },
   { value: 'light', label: '浅色' },
-  { value: 'dark', label: '深色' },
-  { value: 'system', label: '跟随系统' }
+  { value: 'dark', label: '深色' }
 ]
 
 const intervalOptions = [
@@ -183,12 +183,12 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="relative flex gap-3 p-3 h-screen overflow-hidden bg-sidebar text-foreground">
+  <div class="relative flex gap-2 p-2 h-screen overflow-hidden bg-canvas text-foreground">
     <!-- 顶部可拖拽区域（macOS hiddenInset 透明标题栏需要它才能拖动窗口） -->
     <div class="absolute inset-x-0 top-0 z-10 h-10 shrink-0" style="-webkit-app-region: drag" />
 
     <!-- 左侧导航 -->
-    <nav class="flex w-44 shrink-0 flex-col gap-2 pt-8">
+    <nav class="flex w-44 shrink-0 flex-col gap-2 pt-8 px-1">
       <button
         v-for="item in navItems"
         :key="item.id"
@@ -203,7 +203,7 @@ onMounted(async () => {
     </nav>
 
     <!-- 内容区 -->
-    <main class="min-w-0 flex-1 overflow-y-auto p-8 bg-background rounded-xl">
+    <main class="min-w-0 flex-1 overflow-y-auto p-8 bg-card rounded-xl">
       <div v-if="activeSection === 'general'">
         <!-- 外观 -->
         <section>
