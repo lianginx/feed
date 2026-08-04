@@ -216,7 +216,7 @@ function openInBrowser(url: string | null): void {
                           </p>
                         </div>
                         <div
-                          class="flex items-center gap-1.5 mt-auto text-xs overflow-hidden"
+                          class="flex items-center gap-3 mt-auto text-xs overflow-hidden"
                           :class="
                             articles[row.index].is_read
                               ? 'text-muted-foreground/40'
@@ -226,7 +226,6 @@ function openInBrowser(url: string | null): void {
                           <span class="truncate min-w-0">
                             {{ articles[row.index].feed_title }}
                           </span>
-                          <span class="shrink-0 text-muted-foreground/40">·</span>
                           <span class="shrink-0">
                             {{ dayjs(articles[row.index].published_at! * 1000).fromNow() }}
                           </span>
