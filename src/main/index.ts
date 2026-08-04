@@ -13,10 +13,6 @@ import { startScheduler, stopScheduler } from './services/timer'
 import { setTrayRef, scheduleBadgeUpdate } from './services/badge'
 import { initUpdater, registerUpdaterHandlers } from './services/updater'
 
-// 跳过 macOS 钥匙串弹窗：让 Chromium 用基础加密代替 Keychain Safe Storage
-// 拒绝弹窗时 Chromium 也是回退到这个方案，这里直接指定避免每次启动都弹密码框
-app.commandLine.appendSwitch('password-store', 'basic')
-
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.lianginx.feed')
 
