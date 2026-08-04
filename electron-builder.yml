@@ -78,10 +78,16 @@ npmRebuild: false
 # electronFuses：打包时翻转 Electron Fuses（安全规则 #19），electron-builder 会在代码签名前自动应用
 # - runAsNode / nodeCliInspect / nodeOptions：关闭可被滥用的 Node 运行参数，收窄 RCE 提权面
 # - enableCookieEncryption：磁盘上的 Cookie 使用系统级密钥加密（单向过渡，启用后不可再关闭）
+# - resetAdHocDarwinSignature：翻转 fuses 会修改 Electron Framework 二进制，
+#   未签名构建（CI，CSC_IDENTITY_AUTO_DISCOVERY=false）只保留 linker-signed 的
+#   ad-hoc 签名，修改后即失效，启动即被内核以 "Code Signature Invalid" 杀死。
+#   开启后 flipFuses 会在翻转完成后自动对整个 .app 重新做 ad-hoc 签名修复此问题；
+#   有真实证书的构建不受影响（后续正式签名会覆盖 ad-hoc 签名）。
 # 可选（更激进、会改变加载语义，需打包回归验证后再开启）：
 #   enableEmbeddedAsarIntegrityValidation: true
 #   onlyLoadAppFromAsar: true
 electronFuses:
+  resetAdHocDarwinSignature: true
   runAsNode: false
   enableNodeCliInspectArguments: false
   enableNodeOptionsEnvironmentVariable: false
