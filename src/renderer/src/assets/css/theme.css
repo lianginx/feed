@@ -1,17 +1,10 @@
 :root {
   --unread-dot: oklch(0.623 0.214 259.815);
   --starred: oklch(0.795 0.184 86.047);
+
   /* 地面（canvas）：侧边栏与卡片陈列的背景 */
-  --canvas: oklch(0.98 0 0);
-  /* 卡片深度：用分层透明阴影代替生硬边框（1px ring + 抬升 + 环境光） */
-  --card-shadow:
-    0px 0px 0px 1px oklch(0 0 0 / 0.06),
-    0px 1px 2px -1px oklch(0 0 0 / 0.06),
-    0px 2px 4px 0px oklch(0 0 0 / 0.04);
-  --card-shadow-hover:
-    0px 0px 0px 1px oklch(0 0 0 / 0.08),
-    0px 1px 2px -1px oklch(0 0 0 / 0.08),
-    0px 2px 4px 0px oklch(0 0 0 / 0.06);
+  --canvas: oklch(0.96 0 0);
+
   /* 悬浮控件（返回顶部按钮）：抬升更高，浮于内容之上 */
   --fab-shadow:
     0px 0px 0px 1px oklch(0 0 0 / 0.07),
@@ -24,12 +17,11 @@
 }
 
 [data-theme='dark'] {
-  --unread-dot: oklch(0.623 0.214 259.815);
-  --starred: oklch(0.795 0.184 86.047);
-  --canvas: oklch(0.14 0 0);
-  /* 深色下简化为单层白环，分层深度阴影在暗背景上不可见 */
-  --card-shadow: 0 0 0 1px oklch(1 0 0 / 0.08);
-  --card-shadow-hover: 0 0 0 1px oklch(1 0 0 / 0.13);
+  --unread-dot: oklch(0.61 0.16 250);
+  --starred: oklch(0.75 0.2 85);
+
+  --canvas: oklch(0.12 0 0);
+
   /* 深色：白环 + 黑色环境光，保证在暗背景上可见 */
   --fab-shadow: 0 0 0 1px oklch(1 0 0 / 0.1), 0 2px 10px -2px oklch(0 0 0 / 0.5);
   --fab-shadow-hover: 0 0 0 1px oklch(1 0 0 / 0.16), 0 4px 16px -4px oklch(0 0 0 / 0.6);
@@ -39,8 +31,6 @@
   --color-unread-dot: var(--unread-dot);
   --color-starred: var(--starred);
   --color-canvas: var(--canvas);
-  --shadow-card: var(--card-shadow);
-  --shadow-card-hover: var(--card-shadow-hover);
   --shadow-fab: var(--fab-shadow);
   --shadow-fab-hover: var(--fab-shadow-hover);
 }
