@@ -24,6 +24,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
   <DialogPortal>
     <DialogOverlay
       class="fixed inset-0 z-50 bg-black/60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+      style="app-region: no-drag"
     />
     <DialogContent
       v-bind="forwarded"
@@ -33,6 +34,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
           props.class
         )
       "
+      style="app-region: no-drag"
     >
       <slot />
 
