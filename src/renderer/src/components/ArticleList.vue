@@ -113,8 +113,8 @@ function openInBrowser(url: string | null): void {
 
 <template>
   <div class="h-full flex flex-col">
-    <div class="p-3 flex items-center min-h-9.5" style="-webkit-app-region: drag">
-      <div class="relative flex-1 h-8" style="-webkit-app-region: no-drag">
+    <div class="p-3 flex items-center min-h-9.5" style="app-region: drag">
+      <div class="relative flex-1 h-8" style="app-region: no-drag">
         <Search
           class="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none"
         />

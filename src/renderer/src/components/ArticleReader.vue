@@ -48,7 +48,11 @@ function openInBrowser(url: string | null): void {
 <template>
   <div class="relative h-full flex flex-col overflow-hidden">
     <!-- 空状态 - 未选中文章 -->
-    <div v-if="!currentArticle" class="flex-1 flex items-center justify-center">
+    <div
+      v-if="!currentArticle"
+      class="flex-1 flex items-center justify-center"
+      style="app-region: drag"
+    >
       <div class="text-center">
         <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
           <svg
@@ -79,7 +83,7 @@ function openInBrowser(url: string | null): void {
         <div
           ref="toolbarRef"
           class="sticky top-0 z-10 p-3 flex items-center gap-2 min-h-9.5 bg-card"
-          style="-webkit-app-region: drag"
+          style="app-region: drag"
         >
           <div class="flex-1 min-w-0 flex items-center">
             <Transition name="title-fade">
@@ -92,7 +96,7 @@ function openInBrowser(url: string | null): void {
               </span>
             </Transition>
           </div>
-          <div style="-webkit-app-region: no-drag" class="flex items-center gap-1 shrink-0">
+          <div style="app-region: no-drag" class="flex items-center gap-1 shrink-0">
             <Button
               variant="ghost"
               size="icon-sm"

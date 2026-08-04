@@ -414,9 +414,9 @@ function onCategoryDragEnd(): void {
 </script>
 
 <template>
-  <SidebarHeader class="px-3 pt-12 pb-2 gap-2" style="-webkit-app-region: drag">
+  <SidebarHeader class="px-3 pt-12 pb-2 gap-2" style="app-region: drag">
     <SidebarMenuButton
-      style="-webkit-app-region: no-drag"
+      style="app-region: no-drag"
       :is-active="filter === 'all'"
       @click="handleSelectAll"
     >
@@ -430,7 +430,7 @@ function onCategoryDragEnd(): void {
     <ContextMenu>
       <ContextMenuTrigger as-child>
         <SidebarMenuButton
-          style="-webkit-app-region: no-drag"
+          style="app-region: no-drag"
           :is-active="filter === 'unread'"
           @click="handleSelectUnread"
         >
@@ -446,13 +446,13 @@ function onCategoryDragEnd(): void {
         </SidebarMenuButton>
       </ContextMenuTrigger>
       <ContextMenuContent>
-        <ContextMenuItem style="-webkit-app-region: no-drag" @select="handleMarkAllReadGlobal">
+        <ContextMenuItem style="app-region: no-drag" @select="handleMarkAllReadGlobal">
           全部标为已读
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
     <SidebarMenuButton
-      style="-webkit-app-region: no-drag"
+      style="app-region: no-drag"
       :is-active="filter === 'starred'"
       @click="handleSelectStarred"
     >
@@ -464,7 +464,7 @@ function onCategoryDragEnd(): void {
 
     <div class="flex items-center justify-between pl-2">
       <span class="flex items-center gap-1 text-xs text-sidebar-foreground/50">订阅源</span>
-      <div class="flex items-center gap-1" style="-webkit-app-region: no-drag">
+      <div class="flex items-center gap-1" style="app-region: no-drag">
         <Button
           class="size-7 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground active:scale-[0.96] transition-[color,background-color,transform]"
           size="icon-sm"

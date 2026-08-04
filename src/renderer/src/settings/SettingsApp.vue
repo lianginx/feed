@@ -185,7 +185,7 @@ onMounted(async () => {
 <template>
   <div class="relative flex gap-2 p-2 h-screen overflow-hidden bg-canvas text-foreground">
     <!-- 顶部可拖拽区域（macOS hiddenInset 透明标题栏需要它才能拖动窗口） -->
-    <div class="absolute inset-x-0 top-0 z-10 h-10 shrink-0" style="-webkit-app-region: drag" />
+    <div class="absolute inset-x-0 top-0 z-10 h-10 shrink-0" style="app-region: drag" />
 
     <!-- 左侧导航 -->
     <nav class="flex w-44 shrink-0 flex-col gap-2 pt-8 px-1">
