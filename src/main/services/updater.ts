@@ -52,6 +52,25 @@ function sendStatus(status: UpdaterStatus): void {
 }
 
 /**
+ * 将底层错误消息转换为用户友好的中文提示。
+ * - draft 窗口期（刚推 tag、构建未完成）latest-mac.yml 拉不到会 404
+ * - 网络类错误（断网/超时/连接重置）转成通用提示，避免暴露英文原文
+ */
+function toFriendlyError(message: string): string {
+  if (/404|latest-mac\.yml|not found/i.test(message)) {
+    return '新版正在发布中，请稍后再试'
+  }
+  if (
+    /ENOTFOUND|ERR_INTERNET_DISCONNECTED|ETIMEDOUT|ECONNRESET|socket hang up|network error/i.test(
+      message
+    )
+  ) {
+    return '网络连接异常，请检查网络后重试'
+  }
+  return message
+}
+
+/**
  * 计算文件的 SHA-512（base64 编码），用于与 latest-mac.yml 里的校验和比对。
  */
 function sha512File(filePath: string): Promise<string> {
@@ -126,6 +145,11 @@ function downloadDmg(
  * @param auto 是否自动检查（自动检查时「已是最新」不发提示，避免打扰）
  */
 async function checkForUpdate(auto: boolean): Promise<{ success: boolean; error?: string }> {
+  // 防重入兜底：手动检查与定时器检查并发时，后到者直接静默返回
+  // （正在执行的那次调用会在 finally 中复位标志，这里不能改动它）
+  if (isCheckingUpdate) {
+    return { success: true }
+  }
   isCheckingUpdate = true
 
   try {
@@ -168,8 +192,8 @@ async function checkForUpdate(auto: boolean): Promise<{ success: boolean; error?
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     if (!auto) {
-      sendStatus({ state: 'error', message })
-      return { success: false, error: message }
+      // 不 sendStatus：渲染端会基于返回的 error 统一弹提示，避免双重 toast
+      return { success: false, error: toFriendlyError(message) }
     }
 
     // 自动检查时可能正好遇到新版构建尚未完成导致的临时元数据不可用，静默忽略
@@ -184,6 +208,11 @@ async function checkForUpdate(auto: boolean): Promise<{ success: boolean; error?
  * macOS：下载 dmg 到下载目录；Windows/Linux：调用 electron-updater 下载。
  */
 async function downloadUpdate(): Promise<{ success: boolean; error?: string }> {
+  // 防重入：下载进行中忽略重复请求；静默返回成功，
+  // 避免渲染端把「正在下载中」当成错误弹红色提示
+  if (isDownloadingUpdate) {
+    return { success: true }
+  }
   if (!pendingUpdate) {
     return { success: false, error: '未发现可下载的更新' }
   }
@@ -208,8 +237,9 @@ async function downloadUpdate(): Promise<{ success: boolean; error?: string }> {
     return { success: true }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
-    sendStatus({ state: 'error', message })
-    return { success: false, error: message }
+    // 不 sendStatus：渲染端会基于返回的 error 统一弹提示，避免双重 toast
+    // （autoUpdater 的 error 事件在此期间的触发已被 isDownloadingUpdate 过滤）
+    return { success: false, error: toFriendlyError(message) }
   } finally {
     isDownloadingUpdate = false
   }
@@ -294,6 +324,7 @@ export function registerUpdaterHandlers(): void {
     if (!initialized) {
       return { success: true, data: { state: 'disabled' } }
     }
+    // 防重入由 checkForUpdate 内部统一处理（手动检查与定时器检查共用）
     return checkForUpdate(false)
   })
 
@@ -301,6 +332,7 @@ export function registerUpdaterHandlers(): void {
     if (!initialized) {
       return { success: false, error: '自动更新未启用' }
     }
+    // 防重入由 downloadUpdate 内部统一处理（与 checkForUpdate 模式一致）
     return downloadUpdate()
   })
 
