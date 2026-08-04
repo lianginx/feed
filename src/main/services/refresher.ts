@@ -1,5 +1,5 @@
 import { getConnection } from '../database/connection'
-import { parseFeed } from './rss'
+import { parseFeed, type ParsedFeed } from './rss'
 import { resolveAndCacheFavicon } from './favicon'
 import { scheduleBadgeUpdate } from './badge'
 import { getMainWindow } from '../app/window'
@@ -8,6 +8,36 @@ import { JSDOM } from 'jsdom'
 
 const purifyWindow = new JSDOM('').window
 const purify = DOMPurify(purifyWindow as unknown as Window & typeof globalThis)
+
+/** 最大请求次数（含首次），超过才判定失败 */
+const MAX_RETRIES = 3
+/** 重试间隔（毫秒） */
+const RETRY_DELAY_MS = 2000
+
+/** 暂停指定毫秒（基于 setTimeout，不阻塞主进程）。 */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * 拉取并解析订阅源，失败自动重试。
+ * 最多尝试 MAX_RETRIES 次，每次失败间隔 RETRY_DELAY_MS 后重试，
+ * 全部失败才抛出最后一次错误。
+ */
+async function fetchWithRetry(url: string): Promise<ParsedFeed> {
+  let lastError: unknown
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await parseFeed(url)
+    } catch (e) {
+      lastError = e
+      if (attempt < MAX_RETRIES) {
+        await sleep(RETRY_DELAY_MS)
+      }
+    }
+  }
+  throw lastError
+}
 
 export interface RefreshResult {
   feedId: number
@@ -52,7 +82,8 @@ export async function refreshSingleFeed(feedId: number): Promise<RefreshResult> 
   win?.webContents.send('feeds:refresh-progress', { feedId, status: 'fetching' })
 
   try {
-    const parsed = await parseFeed(feed.url)
+    // 拉取 RSS（失败自动重试，最多 3 次，全部失败才进入 catch）
+    const parsed = await fetchWithRetry(feed.url)
 
     // 更新 feed 信息（自定义标题时不覆盖 title）
     if (feed.custom_title) {
