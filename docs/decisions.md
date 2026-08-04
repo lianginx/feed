@@ -78,6 +78,8 @@
 | 拖拽排序         | vue-dnd-kit（首选），vue-draggable-plus（备选） | vue-dnd-kit 自研、零依赖、持续活跃；vue-draggable-plus 开箱即用       |
 | 图标             | @lucide/vue                                     | 与 shadcn-vue 原生集成，图标简洁现代                                  |
 | 架构设计         | 清晰的进程分层                                  | Renderer 负责 UI，Main 负责业务逻辑和数据存储                         |
+| macOS 启动崩溃修复 | fuses 翻转 + `resetAdHocDarwinSignature: true` | 未签名构建（CI）翻转 fuses 会破坏 ad-hoc 签名，启动被内核杀死；开启后 flipFuses 自动对整个 .app 重新 ad-hoc 签名，有真实证书的构建不受影响 |
+| macOS 钥匙串弹窗 | 关闭 `enableCookieEncryption`（fuse 置 false），不设 `--password-store` | v0.6.2 曾用 `--password-store=basic`，但它只影响 Chromium 密码存储、与 Cookie 加密（走 Keychain）无关，无法消除弹窗；v0.6.3 关闭 Cookie 加密才是根治。权衡：Cookie 磁盘加密降级为基础加密（安全清单 #4 主动回退），换取无弹窗启动体验 |
 | 应用名称         | Feed                                            | 简洁直接                                                              |
 | 关闭行为         | 最小化到系统托盘                                | 不退出应用，托盘右键菜单恢复/退出                                     |
 | 文章存储         | 存完整 HTML（DOMPurify 净化后）                 | 支持离线阅读                                                          |
