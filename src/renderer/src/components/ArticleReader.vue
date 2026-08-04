@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useArticles } from '../composables/useArticles'
 import { useTitleInToolbar } from '../composables/useTitleInToolbar'
 import { sanitizeHtml } from '../utils/sanitize'
+import { dayjs } from '../utils/dayjs'
 
 const { currentArticle, toggleStar } = useArticles()
 
@@ -33,9 +34,21 @@ watch(currentArticle, () => {
   }
 })
 
+// 时间显示：默认相对时间（如「3 小时前」），点击切换为绝对时间
+const useRelativeTime = ref(true)
+
 function formatDate(timestamp: number | null): string {
   if (!timestamp) return ''
   return new Date(timestamp * 1000).toLocaleString('zh-CN')
+}
+
+function formatTime(timestamp: number | null): string {
+  if (!timestamp) return ''
+  return useRelativeTime.value ? dayjs(timestamp * 1000).fromNow() : formatDate(timestamp)
+}
+
+function toggleTimeFormat(): void {
+  useRelativeTime.value = !useRelativeTime.value
 }
 
 function openInBrowser(url: string | null): void {
@@ -128,7 +141,7 @@ function openInBrowser(url: string | null): void {
               {{ currentArticle.title }}
             </h1>
             <div
-              class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-muted-foreground"
+              class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-muted-foreground cursor-default"
             >
               <span class="flex items-center gap-1.5">
                 <img
@@ -145,9 +158,14 @@ function openInBrowser(url: string | null): void {
                 <UserRound class="size-4 text-muted-foreground/50" />
                 {{ currentArticle.author }}
               </span>
-              <span class="flex items-center gap-1.5">
+              <span
+                class="flex items-center gap-1.5 transition-colors"
+                title="点击切换时间格式"
+                role="button"
+                @click="toggleTimeFormat"
+              >
                 <Clock class="size-4 text-muted-foreground/50" />
-                {{ formatDate(currentArticle.published_at) }}
+                {{ formatTime(currentArticle.published_at) }}
               </span>
             </div>
           </header>
