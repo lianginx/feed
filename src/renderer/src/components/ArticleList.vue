@@ -129,7 +129,7 @@ function openInBrowser(url: string | null): void {
         />
         <button
           v-if="searchQuery"
-          class="absolute right-1 top-1/2 -translate-y-1/2 size-6 flex items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
+          class="absolute right-1 top-1/2 -translate-y-1/2 size-7 flex items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
           title="清除"
           @click="clearSearch"
         >
@@ -196,7 +196,7 @@ function openInBrowser(url: string | null): void {
                               class="truncate text-sm"
                               :class="
                                 articles[row.index].is_read
-                                  ? 'font-medium text-foreground/60'
+                                  ? 'font-medium text-foreground/70'
                                   : 'font-semibold text-foreground'
                               "
                             >
@@ -208,7 +208,7 @@ function openInBrowser(url: string | null): void {
                             class="text-xs mt-1 line-clamp-2"
                             :class="
                               articles[row.index].is_read
-                                ? 'text-muted-foreground/60'
+                                ? 'text-muted-foreground/70'
                                 : 'text-muted-foreground'
                             "
                           >
