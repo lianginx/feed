@@ -8,6 +8,7 @@ import {
   Settings,
   Cloud,
   Database,
+  Rocket,
   Eye,
   EyeOff
 } from '@lucide/vue'
@@ -37,7 +38,11 @@ const {
   autoCheckUpdate,
   updateCheckInterval,
   setAutoCheckUpdate,
-  setUpdateCheckInterval
+  setUpdateCheckInterval,
+  autoLaunch,
+  launchHidden,
+  setAutoLaunch,
+  setLaunchHidden
 } = useApp()
 const { runSync } = useSync()
 
@@ -162,10 +167,11 @@ async function handleSaveSync(): Promise<void> {
 }
 
 // ---------- 左侧导航 ----------
-const activeSection = ref<'general' | 'sync' | 'data'>('general')
+const activeSection = ref<'general' | 'startup' | 'sync' | 'data'>('general')
 
 const navItems = [
   { id: 'general', label: '常规', icon: Settings },
+  { id: 'startup', label: '启动', icon: Rocket },
   { id: 'sync', label: '同步', icon: Cloud },
   { id: 'data', label: '数据', icon: Database }
 ] as const
@@ -256,6 +262,11 @@ onMounted(async () => {
               </Select>
             </div>
           </div>
+        </section>
+
+        <!-- 更新 -->
+        <section class="mt-8">
+          <h2 class="text-sm font-semibold text-foreground mb-1">更新</h2>
           <div class="flex items-center justify-between gap-6 py-3">
             <div class="min-w-0">
               <div class="text-sm">自动检查更新</div>
@@ -288,6 +299,33 @@ onMounted(async () => {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- 启动 -->
+      <div v-else-if="activeSection === 'startup'">
+        <section>
+          <h2 class="text-sm font-semibold text-foreground mb-1">启动</h2>
+          <div class="flex items-center justify-between gap-6 py-3">
+            <div class="min-w-0">
+              <div class="text-sm">开机自动启动</div>
+              <div class="mt-0.5 text-xs text-muted-foreground">登录系统后自动启动 Feed</div>
+            </div>
+            <Switch :model-value="autoLaunch" @update:model-value="(v) => setAutoLaunch(!!v)" />
+          </div>
+          <div class="flex items-center justify-between gap-6 py-3">
+            <div class="min-w-0">
+              <div class="text-sm">启动时隐藏窗口</div>
+              <div class="mt-0.5 text-xs text-muted-foreground">
+                仅开机自动启动时生效，可从托盘恢复窗口
+              </div>
+            </div>
+            <Switch
+              :model-value="launchHidden"
+              :disabled="!autoLaunch"
+              @update:model-value="(v) => setLaunchHidden(!!v)"
+            />
           </div>
         </section>
       </div>

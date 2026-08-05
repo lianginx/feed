@@ -12,6 +12,7 @@ import { registerAppProtocols } from './app/protocol'
 import { startScheduler, stopScheduler } from './services/timer'
 import { setTrayRef, scheduleBadgeUpdate } from './services/badge'
 import { initUpdater, registerUpdaterHandlers } from './services/updater'
+import { initAutoLaunch } from './services/autoLaunch'
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.lianginx.feed')
@@ -37,6 +38,9 @@ app.whenReady().then(() => {
 
   // 初始化自动更新（非开发模式）
   initUpdater()
+
+  // 初始化开机自动启动（非开发模式，按配置注册登录项）
+  initAutoLaunch()
 
   // 创建窗口和托盘
   createWindow()

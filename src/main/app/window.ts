@@ -2,6 +2,7 @@ import { BrowserWindow, nativeTheme, shell } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { getSettings, updateSettings } from '../config'
+import { shouldLaunchHidden } from '../services/autoLaunch'
 
 let mainWindow: BrowserWindow | null = null
 let quitting = false
@@ -60,7 +61,10 @@ export function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow?.show()
+    // 开机自动启动且开启「启动时隐藏窗口」时不显示主窗口（可从托盘/Dock 恢复）
+    if (!shouldLaunchHidden()) {
+      mainWindow?.show()
+    }
   })
 
   // 窗口状态记忆（防抖保存）

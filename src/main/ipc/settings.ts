@@ -3,6 +3,7 @@ import { getSettings, updateSettings, type AppSettings } from '../config'
 import { getMainWindow } from '../app/window'
 import { startScheduler } from '../services/timer'
 import { refreshAutoCheckTimer } from '../services/updater'
+import { applyAutoLaunch } from '../services/autoLaunch'
 import { success, error } from './util'
 
 export function registerSettingsHandlers(): void {
@@ -35,6 +36,11 @@ export function registerSettingsHandlers(): void {
       // 如果更新了自动检查更新相关设置，重建定时器
       if (settings.autoCheckUpdate !== undefined || settings.updateCheckInterval !== undefined) {
         refreshAutoCheckTimer()
+      }
+      // 如果更新了开机自动启动相关设置，立即应用登录项注册
+      if (settings.autoLaunch !== undefined || settings.launchHidden !== undefined) {
+        const { autoLaunch, launchHidden } = getSettings()
+        void applyAutoLaunch(autoLaunch, launchHidden)
       }
       // 通知主窗口重新加载配置（如主题变化即时生效）
       getMainWindow()?.webContents.send('config:changed')

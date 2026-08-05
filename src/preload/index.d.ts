@@ -62,6 +62,10 @@ interface AppSettings {
   autoCheckUpdate: boolean
   updateCheckInterval: number
   sync: SyncConfig
+  /** 开机自动启动 */
+  autoLaunch: boolean
+  /** 启动时隐藏窗口（仅登录自动启动时生效） */
+  launchHidden: boolean
 }
 
 /** 订阅源同步配置 */

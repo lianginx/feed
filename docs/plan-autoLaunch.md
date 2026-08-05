@@ -39,10 +39,11 @@
 
 ## 渲染层
 - `src/renderer/src/composables/useApp.ts`：autoLaunch/launchHidden ref + setter + loadSettings 回填
+- `src/preload/index.d.ts`：AppSettings 接口同步新增 autoLaunch/launchHidden 字段（与主进程 config.ts 保持一致）
 - `src/renderer/src/settings/SettingsApp.vue`：内容 section 后新增「启动」section：
-  - 「开机自动启动」Switch v-model="autoLaunch"
-  - 「启动时隐藏窗口」Switch v-model="launchHidden"，autoLaunch=false 时 disabled（复用检查间隔联动模式）
-  - **Switch 必须 v-model**（reka-ui 无 checked prop，已调研确认）
+  - 「开机自动启动」Switch
+  - 「启动时隐藏窗口」Switch，autoLaunch=false 时 disabled（复用检查间隔联动模式）
+  - **Switch 绑定：沿用项目现有 `:model-value` + `@update:model-value` 分拆写法**（与「自动检查更新」Switch 一致；reka-ui SwitchRoot 两种写法均支持，分拆写法与异步 setter 意图更显式）
 
 ## 不改动
 - 不做 dock.hide、不做 openAsHidden（废弃）
@@ -53,3 +54,11 @@
 2. 打包后手动：开关切换 → 系统设置登录项/注册表/autostart 目录确认；勾选隐藏后重启登录确认窗口不弹出、托盘可恢复
 3. dev 模式跳过注册是预期行为
 4. 完成后按 AGENTS.md 询问提交（feat: 增加开机自动启动设置）
+
+## 评审结论（2026-08-05，实施前确认）
+- **方案 A 已确认**：`initAutoLaunch()` 仅当 autoLaunch=true 时注册，不检测系统侧实际状态、不反向同步。接受「用户在系统设置手动关闭登录项后，下次启动会被应用配置重新打开」的权衡
+- **Switch 写法**：确认不用 `v-model`，改用项目现有 `:model-value` + `@update:model-value` 分拆写法（shadcn-vue + reka-ui 调研确认两种写法均支持）
+- **skill 调研**：Switch 组件已安装无需 add；新 section 沿用现有 section 结构（h2 + flex 行）
+- **shouldLaunchHidden 归属**：实现于 autoLaunch.ts 服务内（统一判断），window.ts 只调用
+- **额外改动**：`src/preload/index.d.ts` 的 AppSettings 需同步新增两字段（计划原稿遗漏，已补入渲染层小节）
+- **导航拆分**（2026-08-05，实施中确认）：常规页设置项过长，将左侧导航新增「启动」项（Rocket 图标），含「启动」section（开机自启 + 启动时隐藏）；「更新」留在常规页（外观 + 内容 + 更新），启动页只含启动相关设置

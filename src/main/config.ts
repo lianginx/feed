@@ -26,6 +26,10 @@ export interface AppSettings {
   syncLastDump?: string
   /** 同步内部状态：上次同步时间戳（不参与用户配置 UI） */
   syncLastSyncedAt?: number
+  /** 开机自动启动，默认 false */
+  autoLaunch: boolean
+  /** 启动时隐藏窗口（仅登录自动启动时生效），默认 false */
+  launchHidden: boolean
 }
 
 const defaults: AppSettings = {
@@ -34,7 +38,9 @@ const defaults: AppSettings = {
   windowBounds: { width: 1440, height: 870 },
   autoCheckUpdate: true,
   updateCheckInterval: 360,
-  sync: { provider: 'none' }
+  sync: { provider: 'none' },
+  autoLaunch: false,
+  launchHidden: false
 }
 
 const store = new Store<AppSettings>({

@@ -8,6 +8,8 @@ const updateInterval = ref(30)
 const autoCheckUpdate = ref(true)
 const updateCheckInterval = ref(360)
 const syncConfig = ref<SyncConfig>({ provider: 'none' })
+const autoLaunch = ref(false)
+const launchHidden = ref(false)
 
 function resolveTheme(t: Theme): 'light' | 'dark' {
   if (t === 'system') {
@@ -43,6 +45,8 @@ export function useApp() {
       autoCheckUpdate.value = result.data.autoCheckUpdate
       updateCheckInterval.value = result.data.updateCheckInterval
       syncConfig.value = result.data.sync ?? { provider: 'none' }
+      autoLaunch.value = result.data.autoLaunch
+      launchHidden.value = result.data.launchHidden
     }
   }
 
@@ -66,6 +70,16 @@ export function useApp() {
     await window.api.config.update({ updateCheckInterval: minutes })
   }
 
+  async function setAutoLaunch(enabled: boolean): Promise<void> {
+    autoLaunch.value = enabled
+    await window.api.config.update({ autoLaunch: enabled })
+  }
+
+  async function setLaunchHidden(enabled: boolean): Promise<void> {
+    launchHidden.value = enabled
+    await window.api.config.update({ launchHidden: enabled })
+  }
+
   async function setSyncConfig(partial: Partial<SyncConfig>): Promise<void> {
     // 空字符串视为未填写，存储时省略
     const next: SyncConfig = { ...syncConfig.value, ...partial }
@@ -84,11 +98,15 @@ export function useApp() {
     autoCheckUpdate,
     updateCheckInterval,
     syncConfig,
+    autoLaunch,
+    launchHidden,
     loadSettings,
     setTheme,
     setUpdateInterval,
     setAutoCheckUpdate,
     setUpdateCheckInterval,
-    setSyncConfig
+    setSyncConfig,
+    setAutoLaunch,
+    setLaunchHidden
   }
 }
