@@ -85,8 +85,12 @@ const api = {
   },
   menu: {
     /** 上报菜单可用状态（主进程据此置灰菜单项） */
-    updateState: (state: { hasArticle: boolean; hasFeedContext: boolean }): void =>
-      ipcRenderer.send('menu:updateState', state),
+    updateState: (state: {
+      hasArticle: boolean
+      hasFeedContext: boolean
+      isTranslated?: boolean
+      translateConfigured?: boolean
+    }): void => ipcRenderer.send('menu:updateState', state),
     onAddFeed: (callback: () => void): (() => void) => onChannel('menu:addFeed', callback),
     onRefreshFeed: (callback: () => void): (() => void) => onChannel('menu:refreshFeed', callback),
     onRefreshAllFeeds: (callback: () => void): (() => void) =>
@@ -98,6 +102,7 @@ const api = {
     onCheckForUpdates: (callback: () => void): (() => void) =>
       onChannel('menu:checkForUpdates', callback),
     onToggleStar: (callback: () => void): (() => void) => onChannel('menu:toggleStar', callback),
+    onTranslate: (callback: () => void): (() => void) => onChannel('menu:translate', callback),
     onFocusSearch: (callback: () => void): (() => void) => onChannel('menu:focusSearch', callback)
   },
   sync: {
@@ -106,6 +111,16 @@ const api = {
     status: () => ipcRenderer.invoke('sync:status'),
     onStatus: (callback: (result: unknown) => void): (() => void) =>
       onChannel('sync:status', callback)
+  },
+  translate: {
+    article: (id: number, targetLang?: string, forceRefresh?: boolean) =>
+      ipcRenderer.invoke('translate:article', id, targetLang, forceRefresh),
+    test: (config: {
+      provider: 'none' | 'baidu'
+      baiduAppid?: string
+      baiduSecretKey?: string
+      targetLang: string
+    }) => ipcRenderer.invoke('translate:test', config)
   },
   updater: {
     check: () => ipcRenderer.invoke('updater:check'),

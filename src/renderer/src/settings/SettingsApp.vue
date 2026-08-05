@@ -10,7 +10,8 @@ import {
   Database,
   Rocket,
   Eye,
-  EyeOff
+  EyeOff,
+  Languages
 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
@@ -25,7 +26,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { useApp, type Theme } from '../composables/useApp'
 import { useSync } from '../composables/useSync'
-import type { SyncConfig } from '../types'
+import type { SyncConfig, TranslateConfig } from '../types'
 
 const {
   theme,
@@ -34,6 +35,8 @@ const {
   setUpdateInterval,
   syncConfig,
   setSyncConfig,
+  translateConfig,
+  setTranslateConfig,
   loadSettings,
   autoCheckUpdate,
   updateCheckInterval,
@@ -166,13 +169,106 @@ async function handleSaveSync(): Promise<void> {
   }, 2000)
 }
 
+// ---------- 文章翻译（本地编辑态，点「保存翻译设置」后写入配置） ----------
+const translateProvider = ref<TranslateConfig['provider']>(translateConfig.value.provider)
+const translateAppidInput = ref(translateConfig.value.baiduAppid ?? '')
+const translateSecretKeyInput = ref(translateConfig.value.baiduSecretKey ?? '')
+const translateTargetLang = ref(translateConfig.value.targetLang)
+const showTranslateSecretKey = ref(false)
+const translateSaved = ref(false)
+const translateError = ref<string | null>(null)
+const translating = ref(false)
+const translateTestResult = ref<string | null>(null)
+
+const targetLanguageOptions = [
+  { value: 'zh', label: '简体中文' },
+  { value: 'zh-Hant', label: '繁体中文' },
+  { value: 'en', label: '英语' },
+  { value: 'ja', label: '日语' },
+  { value: 'ko', label: '韩语' },
+  { value: 'fr', label: '法语' },
+  { value: 'de', label: '德语' },
+  { value: 'ru', label: '俄语' },
+  { value: 'es', label: '西班牙语' }
+]
+
+function buildTranslateConfig(): TranslateConfig | null {
+  const config: TranslateConfig = {
+    provider: translateProvider.value,
+    targetLang: translateTargetLang.value
+  }
+  if (translateProvider.value === 'baidu') {
+    if (!translateAppidInput.value.trim() || !translateSecretKeyInput.value) {
+      translateError.value = '请先填写百度翻译 AppID 与密钥'
+      return null
+    }
+    config.baiduAppid = translateAppidInput.value.trim()
+    config.baiduSecretKey = translateSecretKeyInput.value
+  } else {
+    translateError.value = '请先选择翻译服务'
+    return null
+  }
+  return config
+}
+
+async function handleTestTranslate(): Promise<void> {
+  translateTestResult.value = null
+  translateError.value = null
+  // 用当前表单值调 translate:test，未保存也能测
+  const config = buildTranslateConfig()
+  if (!config) return
+  translating.value = true
+  try {
+    const result = await window.api.translate.test(config)
+    if (result.success) {
+      translateTestResult.value = '测试成功'
+    } else {
+      translateError.value = `测试失败：${result.error || '未知错误'}`
+    }
+  } finally {
+    translating.value = false
+  }
+}
+
+async function handleSaveTranslate(): Promise<void> {
+  translateError.value = null
+  if (translateProvider.value === 'baidu') {
+    if (!translateAppidInput.value.trim()) {
+      translateError.value = '请填写百度翻译 AppID'
+      return
+    }
+    if (!translateSecretKeyInput.value) {
+      translateError.value = '请填写百度翻译密钥'
+      return
+    }
+  }
+  const partial: Partial<TranslateConfig> = {
+    provider: translateProvider.value,
+    targetLang: translateTargetLang.value
+  }
+  if (translateProvider.value === 'baidu') {
+    partial.baiduAppid = translateAppidInput.value.trim()
+    partial.baiduSecretKey = translateSecretKeyInput.value
+  } else {
+    // 关闭翻译：清空凭据，避免敏感信息残留配置
+    partial.baiduAppid = ''
+    partial.baiduSecretKey = ''
+  }
+  await setTranslateConfig(partial)
+  translateSaved.value = true
+  setTimeout(() => {
+    translateSaved.value = false
+  }, 2000)
+}
+
 // ---------- 左侧导航 ----------
-const activeSection = ref<'general' | 'startup' | 'sync' | 'data'>('general')
+const activeSection = ref<'general' | 'startup' | 'sync' | 'translate' | 'data'>('general')
 
 const navItems = [
   { id: 'general', label: '常规', icon: Settings },
   { id: 'startup', label: '启动', icon: Rocket },
   { id: 'sync', label: '同步', icon: Cloud },
+  { id: 'translate', label: '翻译', icon: Languages },
   { id: 'data', label: '数据', icon: Database }
 ] as const
 
@@ -185,6 +281,13 @@ onMounted(async () => {
   syncWebdavUsernameInput.value = syncConfig.value.webdavUsername ?? ''
   syncWebdavPasswordInput.value = syncConfig.value.webdavPassword ?? ''
   syncSaved.value = false
+  // 用已保存的配置回填翻译编辑态
+  translateProvider.value = translateConfig.value.provider
+  translateAppidInput.value = translateConfig.value.baiduAppid ?? ''
+  translateSecretKeyInput.value = translateConfig.value.baiduSecretKey ?? ''
+  translateTargetLang.value = translateConfig.value.targetLang
+  translateSaved.value = false
+  translateTestResult.value = null
 })
 </script>
 
@@ -432,7 +535,125 @@ onMounted(async () => {
         </section>
       </div>
 
-      <div v-else>
+      <div v-else-if="activeSection === 'translate'">
+        <section>
+          <h2 class="text-sm font-semibold text-foreground mb-1">文章翻译</h2>
+          <div class="flex items-center justify-between gap-6 py-3">
+            <div class="min-w-0">
+              <div class="text-sm">翻译服务</div>
+              <div class="mt-0.5 text-xs text-muted-foreground">
+                一键翻译外文文章，译文在本地缓存（标题与正文，代码块不翻译）
+              </div>
+            </div>
+            <div class="w-44 shrink-0">
+              <Select
+                :model-value="translateProvider"
+                @update:model-value="(v) => (translateProvider = v as TranslateConfig['provider'])"
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">暂无翻译</SelectItem>
+                  <SelectItem value="baidu">百度翻译</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <template v-if="translateProvider === 'baidu'">
+            <div class="flex items-center justify-between gap-6 py-3">
+              <span class="text-sm shrink-0">AppID</span>
+              <Input
+                v-model="translateAppidInput"
+                placeholder="百度翻译开放平台 appid"
+                class="w-72"
+              />
+            </div>
+            <div class="flex items-center justify-between gap-6 py-3">
+              <span class="text-sm shrink-0">密钥</span>
+              <div class="relative w-72">
+                <Input
+                  v-model="translateSecretKeyInput"
+                  :type="showTranslateSecretKey ? 'text' : 'password'"
+                  placeholder="密钥"
+                  class="w-full pr-9"
+                />
+                <button
+                  type="button"
+                  class="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+                  :aria-label="showTranslateSecretKey ? '隐藏密钥' : '显示密钥'"
+                  @click="showTranslateSecretKey = !showTranslateSecretKey"
+                >
+                  <EyeOff v-if="showTranslateSecretKey" class="size-4" />
+                  <Eye v-else class="size-4" />
+                </button>
+              </div>
+            </div>
+          </template>
+
+          <div class="flex items-center justify-between gap-6 py-3">
+            <span class="text-sm shrink-0">目标语言</span>
+            <div class="w-44 shrink-0">
+              <Select
+                :model-value="translateTargetLang"
+                @update:model-value="(v) => (translateTargetLang = v as string)"
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="opt in targetLanguageOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div class="mt-5 flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              :disabled="translating"
+              @click="handleTestTranslate"
+            >
+              <Spinner v-if="translating" />
+              <CheckCircle2 v-else class="size-3.5" />
+              {{ translating ? '测试中…' : '测试翻译' }}
+            </Button>
+            <Button variant="outline" size="sm" @click="handleSaveTranslate">
+              <Save class="size-3.5" />
+              保存翻译设置
+            </Button>
+            <span v-if="translateSaved" class="text-xs text-primary flex items-center gap-1">
+              <CheckCircle2 class="size-3" />
+              已保存
+            </span>
+            <span
+              v-else-if="translateTestResult"
+              class="text-xs text-primary flex items-center gap-1"
+            >
+              <CheckCircle2 class="size-3" />
+              {{ translateTestResult }}
+            </span>
+            <span v-else-if="translateError" class="text-xs text-destructive">
+              {{ translateError }}
+            </span>
+          </div>
+          <p class="mt-4 text-xs text-muted-foreground leading-relaxed">
+            在百度翻译开放平台（fanyi-api.baidu.com）创建应用获取 AppID 与密钥。配置保存后，阅读区
+            工具栏会出现翻译按钮，也可用 Option+T
+            快速翻译当前文章。翻译会把文章正文发送至所选翻译服务商。
+          </p>
+        </section>
+      </div>
+
+      <div v-else-if="activeSection === 'data'">
         <section>
           <h2 class="text-sm font-semibold text-foreground mb-1">数据</h2>
           <div class="flex items-center justify-between gap-6 py-3">

@@ -5,6 +5,7 @@ import { useConfirmDialog } from './useConfirmDialog'
 import { useFeeds } from './useFeeds'
 import { useArticles } from './useArticles'
 import { useUpdater } from './useUpdater'
+import { useTranslate } from './useTranslate'
 
 export function useMenuCommands(): void {
   const { showAddFeed } = useAddFeedDialog()
@@ -20,11 +21,15 @@ export function useMenuCommands(): void {
     refreshAllFeeds
   } = useFeeds()
   const { currentArticle, toggleStar, toggleRead, markAllRead, markScopeRead } = useArticles()
+  const { shown, configured, toggle } = useTranslate()
 
-  // 同步菜单可用状态：无选中文章时禁用 ⌘E/⌘D；未选中订阅源/分类时禁用 ⌘R
+  // 同步菜单可用状态：无选中文章时禁用 ⌘E/⌘D；未选中订阅源/分类时禁用 ⌘R；
+  // 未配置翻译凭据时禁用翻译项，译文显示时菜单项变「显示原文」
   const menuState = computed(() => ({
     hasArticle: currentArticle.value !== null,
-    hasFeedContext: selectedFeedId.value !== null || selectedCategoryId.value !== undefined
+    hasFeedContext: selectedFeedId.value !== null || selectedCategoryId.value !== undefined,
+    isTranslated: shown.value,
+    translateConfigured: configured.value
   }))
   const stopStateSync = watch(
     menuState,
@@ -87,6 +92,9 @@ export function useMenuCommands(): void {
         if (currentArticle.value) {
           toggleStar(currentArticle.value.id)
         }
+      }),
+      window.api.menu.onTranslate(() => {
+        void toggle()
       }),
       window.api.menu.onFocusSearch(() => {
         requestSearchFocus()

@@ -1,6 +1,8 @@
 import { app, nativeTheme } from 'electron'
 import { electronApp } from '@electron-toolkit/utils'
 import { initializeDatabase, closeConnection } from './database'
+import { getConnection } from './database/connection'
+import { cleanupTranslations } from './services/translate/cache'
 import { registerAllHandlers } from './ipc/index'
 import { setupIpcLogger } from './ipc/logger'
 import { guardIpcHandlers } from './ipc/util'
@@ -25,6 +27,8 @@ app.whenReady().then(() => {
 
   // 初始化数据库
   initializeDatabase()
+  // 启动时兜底清理过期译文缓存（低频率；平时写入侧已节流）
+  cleanupTranslations(getConnection())
 
   // 开发环境 IPC 日志（必须在注册处理器之前）
   setupIpcLogger()

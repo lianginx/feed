@@ -1,14 +1,22 @@
 <script setup lang="ts">
 import { watch, ref, computed } from 'vue'
-import { Star, ExternalLink, Rss, ArrowUp } from '@lucide/vue'
+import { Star, ExternalLink, Rss, ArrowUp, Languages, RefreshCw } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import { useArticles } from '../composables/useArticles'
 import { useTitleInToolbar } from '../composables/useTitleInToolbar'
+import { useTranslate } from '../composables/useTranslate'
 import { sanitizeHtml } from '../utils/sanitize'
 import { dayjs } from '../utils/dayjs'
 import { estimateReadingTime } from '../utils/readingTime'
 
 const { currentArticle, toggleStar } = useArticles()
+const { translating, translated, shown, configured, toggle, refresh } = useTranslate()
+
+// 标题：译文显示时用译文标题（h1 与顶栏共用）
+const displayTitle = computed(() =>
+  shown.value && translated.value ? translated.value.title : (currentArticle.value?.title ?? '')
+)
 
 // 标题滚出视野后放进顶栏（类似 macOS 原生标题）
 const contentRef = ref<HTMLElement | null>(null)
@@ -106,11 +114,37 @@ const readingTime = computed(() => estimateReadingTime(currentArticle.value?.con
           <div class="flex-1 min-w-0 flex items-center ml-2">
             <Transition name="title-fade">
               <span v-if="titleInToolbar" class="font-medium line-clamp-1">
-                {{ currentArticle.title }}
+                {{ displayTitle }}
               </span>
             </Transition>
           </div>
           <div style="app-region: no-drag" class="flex items-center gap-1 shrink-0">
+            <Button
+              v-if="configured"
+              variant="ghost"
+              size="icon-sm"
+              class="size-8 text-muted-foreground"
+              :class="shown ? 'text-primary' : ''"
+              :disabled="translating"
+              :title="shown ? '显示原文' : '翻译'"
+              aria-label="翻译"
+              @click="toggle"
+            >
+              <Spinner v-if="translating" class="size-4" />
+              <Languages v-else class="size-4" />
+            </Button>
+            <Button
+              v-if="configured && shown"
+              variant="ghost"
+              size="icon-sm"
+              class="size-8 text-muted-foreground"
+              :disabled="translating"
+              title="重新翻译（忽略缓存）"
+              aria-label="重新翻译"
+              @click="refresh"
+            >
+              <RefreshCw class="size-4" />
+            </Button>
             <Button
               variant="ghost"
               size="icon-sm"
@@ -152,7 +186,7 @@ const readingTime = computed(() => estimateReadingTime(currentArticle.value?.con
               :title="currentArticle.url ? '在浏览器中打开' : undefined"
               @click="openInBrowser(currentArticle.url)"
             >
-              {{ currentArticle.title }}
+              {{ displayTitle }}
             </h1>
             <div
               class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-muted-foreground cursor-default"
@@ -179,7 +213,7 @@ const readingTime = computed(() => estimateReadingTime(currentArticle.value?.con
             v-if="currentArticle.content"
             v-highlight
             class="prose prose-neutral dark:prose-invert max-w-none pb-20"
-            v-html="sanitizeHtml(currentArticle.content)"
+            v-html="sanitizeHtml(shown && translated ? translated.content : currentArticle.content)"
           />
           <!-- eslint-enable vue/no-v-html -->
           <div v-else class="text-muted-foreground text-sm">暂无内容</div>

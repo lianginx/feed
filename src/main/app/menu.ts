@@ -122,6 +122,15 @@ export function buildAppMenu(): void {
           accelerator: 'CmdOrCtrl+D',
           enabled: false,
           click: () => getMainWindow()?.webContents.send('menu:toggleStar')
+        },
+        { type: 'separator' },
+        {
+          id: 'menu-translate',
+          label: '翻译当前文章',
+          // Electron accelerator 的 Alt 在 macOS 即 Option → Option+T
+          accelerator: 'Alt+T',
+          enabled: false,
+          click: () => getMainWindow()?.webContents.send('menu:translate')
         }
       ]
     },
@@ -146,14 +155,28 @@ export function buildAppMenu(): void {
   // 渲染进程同步菜单状态（如是否选中文章/订阅源）
   ipcMain.on(
     'menu:updateState',
-    (_event, state: { hasArticle: boolean; hasFeedContext: boolean }) => {
+    (
+      _event,
+      state: {
+        hasArticle: boolean
+        hasFeedContext: boolean
+        isTranslated?: boolean
+        translateConfigured?: boolean
+      }
+    ) => {
       const menu = Menu.getApplicationMenu()
       const read = menu?.getMenuItemById('menu-toggle-read')
       const star = menu?.getMenuItemById('menu-toggle-star')
       const refresh = menu?.getMenuItemById('menu-refresh-feed')
+      const translate = menu?.getMenuItemById('menu-translate')
       if (read) read.enabled = state.hasArticle
       if (star) star.enabled = state.hasArticle
       if (refresh) refresh.enabled = state.hasFeedContext
+      if (translate) {
+        // 未选中文章或未配置翻译凭据时禁用
+        translate.enabled = Boolean(state.hasArticle && state.translateConfigured)
+        translate.label = state.isTranslated ? '显示原文' : '翻译当前文章'
+      }
     }
   )
 }

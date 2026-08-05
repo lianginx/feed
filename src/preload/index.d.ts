@@ -64,10 +64,29 @@ interface AppSettings {
   autoCheckUpdate: boolean
   updateCheckInterval: number
   sync: SyncConfig
+  translate: TranslateConfig
   /** 开机自动启动 */
   autoLaunch: boolean
   /** 启动时隐藏窗口（仅登录自动启动时生效） */
   launchHidden: boolean
+}
+
+/** 文章翻译配置 */
+interface TranslateConfig {
+  provider: 'none' | 'baidu'
+  baiduAppid?: string
+  baiduSecretKey?: string
+  targetLang: string
+}
+
+/** 一次翻译的结果（由主进程翻译服务返回） */
+interface TranslateResult {
+  title: string
+  content: string
+  /** 部分段落翻译失败，已保留原文 */
+  degraded: boolean
+  /** 文章已为目标语言，未翻译 */
+  skipped: boolean
 }
 
 /** 订阅源同步配置 */
@@ -168,6 +187,16 @@ interface SyncApi {
   onStatus: (callback: (result: SyncResult) => void) => () => void
 }
 
+interface TranslateApi {
+  article: (
+    id: number,
+    targetLang?: string,
+    /** 为 true 时忽略缓存，强制重新翻译 */
+    forceRefresh?: boolean
+  ) => Promise<ApiResponse<TranslateResult>>
+  test: (config: TranslateConfig) => Promise<ApiResponse<{ ok: boolean }>>
+}
+
 interface UpdaterApi {
   check: () => Promise<ApiResponse<{ state?: string }>>
   download: () => Promise<ApiResponse<{ ok?: boolean }>>
@@ -191,6 +220,10 @@ export interface RefreshProgressEvent {
 interface MenuState {
   hasArticle: boolean
   hasFeedContext: boolean
+  /** 当前是否显示译文（菜单项变「显示原文」） */
+  isTranslated?: boolean
+  /** 是否已配置翻译凭据（未配置时禁用菜单项） */
+  translateConfigured?: boolean
 }
 
 interface MenuApi {
@@ -203,6 +236,7 @@ interface MenuApi {
   onToggleRead: (callback: () => void) => () => void
   onCheckForUpdates: (callback: () => void) => () => void
   onToggleStar: (callback: () => void) => () => void
+  onTranslate: (callback: () => void) => () => void
   onFocusSearch: (callback: () => void) => () => void
 }
 
@@ -218,6 +252,7 @@ interface AppApi {
   config: ConfigApi
   opml: OpmlApi
   sync: SyncApi
+  translate: TranslateApi
   updater: UpdaterApi
   menu: MenuApi
   system: SystemApi

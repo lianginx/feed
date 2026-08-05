@@ -1,5 +1,5 @@
 import { ref, computed, watch } from 'vue'
-import type { SyncConfig } from '../types'
+import type { SyncConfig, TranslateConfig } from '../types'
 
 export type Theme = 'light' | 'dark' | 'system'
 
@@ -8,6 +8,7 @@ const updateInterval = ref(30)
 const autoCheckUpdate = ref(true)
 const updateCheckInterval = ref(360)
 const syncConfig = ref<SyncConfig>({ provider: 'none' })
+const translateConfig = ref<TranslateConfig>({ provider: 'none', targetLang: 'zh' })
 const autoLaunch = ref(false)
 const launchHidden = ref(false)
 
@@ -45,6 +46,7 @@ export function useApp() {
       autoCheckUpdate.value = result.data.autoCheckUpdate
       updateCheckInterval.value = result.data.updateCheckInterval
       syncConfig.value = result.data.sync ?? { provider: 'none' }
+      translateConfig.value = result.data.translate ?? { provider: 'none', targetLang: 'zh' }
       autoLaunch.value = result.data.autoLaunch
       launchHidden.value = result.data.launchHidden
     }
@@ -91,6 +93,15 @@ export function useApp() {
     await window.api.config.update({ sync: next })
   }
 
+  async function setTranslateConfig(partial: Partial<TranslateConfig>): Promise<void> {
+    // 空字符串视为未填写，存储时省略（同 setSyncConfig 约定）
+    const next: TranslateConfig = { ...translateConfig.value, ...partial }
+    if (!next.baiduAppid) delete next.baiduAppid
+    if (!next.baiduSecretKey) delete next.baiduSecretKey
+    translateConfig.value = next
+    await window.api.config.update({ translate: next })
+  }
+
   return {
     theme,
     resolvedTheme,
@@ -98,6 +109,7 @@ export function useApp() {
     autoCheckUpdate,
     updateCheckInterval,
     syncConfig,
+    translateConfig,
     autoLaunch,
     launchHidden,
     loadSettings,
@@ -106,6 +118,7 @@ export function useApp() {
     setAutoCheckUpdate,
     setUpdateCheckInterval,
     setSyncConfig,
+    setTranslateConfig,
     setAutoLaunch,
     setLaunchHidden
   }

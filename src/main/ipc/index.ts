@@ -4,6 +4,7 @@ import { registerArticleHandlers } from './articles'
 import { registerSettingsHandlers } from './settings'
 import { registerOpmlHandlers } from './opml'
 import { registerSyncHandlers } from './sync'
+import { registerTranslateHandlers } from './translate'
 
 /**
  * 注册所有 IPC 处理器。
@@ -16,4 +17,5 @@ export function registerAllHandlers(): void {
   registerSettingsHandlers()
   registerOpmlHandlers()
   registerSyncHandlers()
+  registerTranslateHandlers()
 }

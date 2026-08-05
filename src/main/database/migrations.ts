@@ -200,5 +200,22 @@ CREATE TRIGGER IF NOT EXISTS articles_au AFTER UPDATE ON articles BEGIN
   VALUES (new.id, new.title, new.content, new.author);
 END;
 `
+  },
+  {
+    version: 7,
+    name: 'create-article-translations',
+    up: `
+CREATE TABLE IF NOT EXISTS article_translations (
+  article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+  provider TEXT NOT NULL,
+  target_lang TEXT NOT NULL,
+  source_hash TEXT NOT NULL,
+  translated_title TEXT,
+  translated_content TEXT,
+  created_at INTEGER,
+  updated_at INTEGER,
+  PRIMARY KEY (article_id, provider, target_lang)
+);
+`
   }
 ]
