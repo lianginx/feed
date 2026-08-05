@@ -179,6 +179,7 @@ async function checkForUpdate(auto: boolean): Promise<{ success: boolean; error?
   try {
     const result = await autoUpdater.checkForUpdates()
     if (!result || !result.isUpdateAvailable) {
+      // 已是最新：自动检查静默；手动检查发 not-available，由渲染端 toast 提示
       if (!auto) {
         sendStatus({
           state: 'not-available',
@@ -313,9 +314,6 @@ export function initUpdater(): void {
 
   // 检查/错误事件：全局统一监听（下载由 downloadUpdate 显式触发）
   autoUpdater.on('checking-for-update', () => sendStatus({ state: 'checking' }))
-  // 注意：这里不监听 update-not-available，
-  // 因为 checkForUpdate() 会在检查完按需手动发送 not-available（自动检查时不发），
-  // 若两者都发会导致「已是最新版本」提示重复
   autoUpdater.on('error', (err) => {
     if (isCheckingUpdate || isDownloadingUpdate) {
       return

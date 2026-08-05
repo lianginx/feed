@@ -8,11 +8,12 @@ import { useUpdateDialog } from './useUpdateDialog'
  * - 发现新版时弹出专用更新弹窗（含更新日志与版本信息）
  * - 下载中按钮内嵌进度与百分比
  * - 下载完成后弹窗询问是否立即安装
+ * - 已是最新版本时以 toast 提示
  * - 提供 checkForUpdates() 供菜单「检查更新」调用
  */
 export function useUpdater(): { checkForUpdates: () => Promise<void> } {
   const { showToast, showLoading, dismissToast } = useToast()
-  const { openAvailable, setDownloading, openDownloaded, openUpToDate } = useUpdateDialog()
+  const { openAvailable, setDownloading, openDownloaded } = useUpdateDialog()
 
   let stopStatus: (() => void) | undefined
 
@@ -58,14 +59,15 @@ export function useUpdater(): { checkForUpdates: () => Promise<void> } {
             alreadyDownloaded: status.alreadyDownloaded
           })
           break
-        case 'not-available':
-          openUpToDate(status.currentVersion, status.releasePageUrl)
-          break
         case 'downloading':
           setDownloading(status.percent)
           break
         case 'downloaded':
           openDownloaded()
+          break
+        case 'not-available':
+          // 已是最新：手动检查时以 toast 轻提示，不再弹窗打扰
+          showToast(`当前已是最新版本 v${status.currentVersion}`, 'info')
           break
         case 'error':
           showToast(status.message || '更新出错', 'error')

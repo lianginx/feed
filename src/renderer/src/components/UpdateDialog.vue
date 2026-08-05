@@ -42,8 +42,6 @@ const title = computed(() => {
       return '正在下载更新'
     case 'downloaded':
       return '更新已就绪'
-    case 'uptodate':
-      return '更新'
     default:
       return '发现新版本'
   }
@@ -51,8 +49,6 @@ const title = computed(() => {
 
 const description = computed(() => {
   switch (mode.value) {
-    case 'uptodate':
-      return `当前已是最新版本 v${info.value.currentVersion}。`
     case 'preparing':
       return `正在准备下载 v${info.value.newVersion}…`
     case 'downloading':
@@ -85,7 +81,7 @@ const installText = computed(() => (isMac ? '退出并打开安装包' : '重启
       <!-- 更新日志（GitHub Atom 源返回 HTML，已由 sanitizeHtml（DOMPurify）净化） -->
       <!-- eslint-disable vue/no-v-html -- 内容已由 sanitizeHtml（DOMPurify）净化 -->
       <div
-        v-if="hasNotes && mode !== 'uptodate'"
+        v-if="hasNotes"
         v-highlight
         class="release-notes max-h-75 overflow-y-auto rounded-md border bg-muted/40 p-3 prose prose-sm prose-neutral max-w-none dark:prose-invert"
         v-html="renderedNotes"
@@ -132,12 +128,6 @@ const installText = computed(() => (isMac ? '退出并打开安装包' : '重启
           <Button variant="outline" @click="close">取消</Button>
           <Button variant="outline" @click="openReleasePage">打开下载页</Button>
           <Button @click="install">{{ installText }}</Button>
-        </template>
-
-        <!-- 已是最新：取消 / 打开下载页 -->
-        <template v-else>
-          <Button variant="outline" @click="close">取消</Button>
-          <Button @click="openReleasePage">打开下载页</Button>
         </template>
       </DialogFooter>
     </DialogContent>

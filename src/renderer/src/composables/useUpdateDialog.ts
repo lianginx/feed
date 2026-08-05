@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { useToast } from './useToast'
 
 /** 更新弹窗展示形态 */
-export type UpdateDialogMode = 'available' | 'preparing' | 'downloading' | 'downloaded' | 'uptodate'
+export type UpdateDialogMode = 'available' | 'preparing' | 'downloading' | 'downloaded'
 
 /** 发现新版时主进程推送的附加信息 */
 export interface UpdateDialogInfo {
@@ -27,7 +27,7 @@ const info = ref<UpdateDialogInfo>({
 const percent = ref(0)
 
 /**
- * 更新弹窗状态管理：展示「发现新版本 / 准备中 / 下载中 / 更新已就绪 / 已是最新」五态，
+ * 更新弹窗状态管理：展示「发现新版本 / 准备中 / 下载中 / 更新已就绪」四态，
  * 并把下载、安装、打开发布页等动作封装为可复用方法。
  */
 export function useUpdateDialog(): {
@@ -38,7 +38,6 @@ export function useUpdateDialog(): {
   openAvailable: (data: UpdateDialogInfo) => void
   setDownloading: (p: number) => void
   openDownloaded: () => void
-  openUpToDate: (currentVersion: string, releasePageUrl: string) => void
   close: () => void
   startDownload: () => Promise<void>
   install: () => Promise<void>
@@ -65,14 +64,6 @@ export function useUpdateDialog(): {
   /** 下载完成：展示「更新已就绪」 */
   function openDownloaded(): void {
     mode.value = 'downloaded'
-    show.value = true
-  }
-
-  /** 已是最新版本（手动检查触发） */
-  function openUpToDate(currentVersion: string, releasePageUrl: string): void {
-    // 清空上一次检查残留的版本号/更新日志，保持状态语义干净，避免后续误读
-    info.value = { newVersion: '', currentVersion, releaseNotes: '', releasePageUrl }
-    mode.value = 'uptodate'
     show.value = true
   }
 
@@ -113,7 +104,6 @@ export function useUpdateDialog(): {
     openAvailable,
     setDownloading,
     openDownloaded,
-    openUpToDate,
     close,
     startDownload,
     install,
