@@ -4,25 +4,18 @@ import { ipcMain, app, shell, net } from 'electron'
 // 只能用默认导入拿到整个 module.exports（含 getter）后再解构。
 import electronUpdater from 'electron-updater'
 import { is } from '@electron-toolkit/utils'
-import { createWriteStream, createReadStream, existsSync } from 'fs'
+import { createWriteStream, createReadStream, existsSync, statSync } from 'fs'
 import { createHash } from 'crypto'
 import { join } from 'path'
 import { getMainWindow } from '../app/window'
 import { getSettings } from '../config'
+// UpdaterStatus 是主进程 / preload / 渲染进程的公共契约，统一在 src/shared/types 定义，
+// 供各进程 import type 引用（编译期擦除，无运行时泄漏）
+import type { UpdaterStatus } from '../../shared/types/updater'
 
 const { autoUpdater } = electronUpdater
 
-/**
- * 更新状态（通过 IPC 推送给渲染进程展示）
- */
-export type UpdaterStatus =
-  | { state: 'disabled' } // 自动更新未启用（开发模式）
-  | { state: 'checking' } // 正在检查更新
-  | { state: 'available'; version: string } // 发现新版本（尚未下载）
-  | { state: 'not-available' } // 已是最新版本
-  | { state: 'downloading'; percent: number } // 下载进度（0-100）
-  | { state: 'downloaded' } // 下载完成，可安装
-  | { state: 'error'; message: string } // 检查/下载出错
+export type { UpdaterStatus }
 
 /** 已发现的待下载版本信息（渲染层确认下载后使用） */
 interface PendingUpdate {
@@ -46,6 +39,9 @@ let pendingUpdate: PendingUpdate | null = null
 /** 是否走 macOS 手动安装模式 */
 const isMacManualMode = process.platform === 'darwin'
 
+/** GitHub Releases 发布页（「打开下载页」按钮打开） */
+const RELEASE_PAGE_URL = 'https://github.com/lianginx/feed/releases'
+
 /** 向渲染进程推送当前更新状态 */
 function sendStatus(status: UpdaterStatus): void {
   getMainWindow()?.webContents.send('updater:status', status)
@@ -68,6 +64,29 @@ function toFriendlyError(message: string): string {
     return '网络连接异常，请检查网络后重试'
   }
   return message
+}
+
+/**
+ * 提取 releaseNotes（electron-updater 返回可能是字符串，也可能是
+ * ReleaseNoteInfo[] 数组），统一归一化为 HTML 字符串交给渲染层展示。
+ */
+function extractReleaseNotes(releaseNotes: unknown): string {
+  if (typeof releaseNotes === 'string') return releaseNotes
+  if (Array.isArray(releaseNotes)) {
+    return releaseNotes
+      .map((item) => {
+        if (item && typeof item === 'object' && 'note' in item) {
+          const note = (item as { note: unknown }).note
+          // note 可能是 null（ReleaseNoteInfo.note: string | null），不能直接 String()，
+          // 否则会把 null 转成字符串 "null" 渲染出来
+          return typeof note === 'string' ? note : ''
+        }
+        return ''
+      })
+      .filter(Boolean)
+      .join('\n\n')
+  }
+  return ''
 }
 
 /**
@@ -150,19 +169,30 @@ async function checkForUpdate(auto: boolean): Promise<{ success: boolean; error?
   if (isCheckingUpdate) {
     return { success: true }
   }
+  // 下载进行中不发起新检查：发现新版本时会重置 pendingUpdate/macDmgPath，
+  // 覆盖正在下载的更新信息导致状态不一致（下载完成后安装时找不到安装包）
+  if (isDownloadingUpdate) {
+    return { success: true }
+  }
   isCheckingUpdate = true
 
   try {
     const result = await autoUpdater.checkForUpdates()
     if (!result || !result.isUpdateAvailable) {
       if (!auto) {
-        sendStatus({ state: 'not-available' })
+        sendStatus({
+          state: 'not-available',
+          currentVersion: app.getVersion(),
+          releasePageUrl: RELEASE_PAGE_URL
+        })
       }
       return { success: true }
     }
     const { updateInfo } = result
     pendingUpdate = null
     macDmgPath = null
+    // macOS 手动模式下安装包是否已存在且校验通过（发现新版时即预检）
+    let alreadyDownloaded = false
 
     // macOS 手动模式：自己解析 dmg 下载信息
     if (isMacManualMode) {
@@ -176,6 +206,22 @@ async function checkForUpdate(auto: boolean): Promise<{ success: boolean; error?
       // 下载到用户的「下载」目录（~/Downloads），方便用户找到并安装
       const destPath = join(app.getPath('downloads'), `Feed-${updateInfo.version}.dmg`)
       pendingUpdate = { version: updateInfo.version, downloadUrl, destPath, expectedSha512 }
+
+      // 预检：安装包已存在且与元数据一致 → 直接进入「已就绪」，无需再下载。
+      // 先比文件大小（元数据含 size 时）快速排除残缺/损坏文件，一致才全量算 SHA-512；
+      // 预检失败（文件被占用/无权限读取等）视为未下载，不应让可选的预检拖垮整个检查流程。
+      if (existsSync(destPath)) {
+        try {
+          const stat = statSync(destPath)
+          const sizeMatches = dmgFile.size == null || stat.size === dmgFile.size
+          alreadyDownloaded = sizeMatches && (await sha512File(destPath)) === expectedSha512
+          if (alreadyDownloaded) {
+            macDmgPath = destPath
+          }
+        } catch {
+          alreadyDownloaded = false
+        }
+      }
     } else {
       // Windows/Linux：让 electron-updater 管理下载信息，但关闭自动下载，
       // 由用户确认后手动触发下载
@@ -187,7 +233,14 @@ async function checkForUpdate(auto: boolean): Promise<{ success: boolean; error?
       }
     }
 
-    sendStatus({ state: 'available', version: updateInfo.version })
+    sendStatus({
+      state: 'available',
+      version: updateInfo.version,
+      currentVersion: app.getVersion(),
+      releaseNotes: extractReleaseNotes(updateInfo.releaseNotes),
+      releasePageUrl: RELEASE_PAGE_URL,
+      alreadyDownloaded
+    })
     return { success: true }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -354,5 +407,21 @@ export function registerUpdaterHandlers(): void {
     }
     setImmediate(() => autoUpdater.quitAndInstall())
     return { success: true }
+  })
+
+  ipcMain.handle('updater:openReleasePage', async () => {
+    if (!initialized) {
+      return { success: false, error: '自动更新未启用' }
+    }
+    // 与 window.ts 的 openExternalSafe 一致：仅放行 http/https 协议
+    if (!/^https?:\/\//i.test(RELEASE_PAGE_URL)) {
+      return { success: false, error: '非法链接' }
+    }
+    try {
+      await shell.openExternal(RELEASE_PAGE_URL)
+      return { success: true }
+    } catch {
+      return { success: false, error: '无法打开链接' }
+    }
   })
 }

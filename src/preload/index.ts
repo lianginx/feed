@@ -1,14 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-
-/** 自动更新状态（与主进程 updater.ts 保持一致） */
-type UpdaterStatus =
-  | { state: 'disabled' }
-  | { state: 'checking' }
-  | { state: 'available'; version: string }
-  | { state: 'not-available' }
-  | { state: 'downloading'; percent: number }
-  | { state: 'downloaded' }
-  | { state: 'error'; message: string }
+import type { UpdaterStatus } from '../shared/types/updater'
 
 /**
  * 订阅主进程事件：包裹回调并剥离 IpcRendererEvent，只透传业务数据，
@@ -120,6 +111,7 @@ const api = {
     check: () => ipcRenderer.invoke('updater:check'),
     download: () => ipcRenderer.invoke('updater:download'),
     install: () => ipcRenderer.invoke('updater:install'),
+    openReleasePage: () => ipcRenderer.invoke('updater:openReleasePage'),
     onStatus: (callback: (status: UpdaterStatus) => void): (() => void) =>
       onChannel('updater:status', callback)
   }

@@ -15,6 +15,7 @@ import ToastNotification from './components/ToastNotification.vue'
 import AddFeedDialog from './components/AddFeedDialog.vue'
 import AddCategoryDialog from './components/AddCategoryDialog.vue'
 import ConfirmDialog from './components/ConfirmDialog.vue'
+import UpdateDialog from './components/UpdateDialog.vue'
 import SyncConflictDialog from './components/SyncConflictDialog.vue'
 
 const { loadSettings } = useApp()
@@ -166,6 +167,8 @@ async function handleSyncConflictChoice(choice: 'local' | 'remote'): Promise<voi
       }
     "
   />
+
+  <UpdateDialog />
 
   <SyncConflictDialog
     :open="pendingConflict"

@@ -1,3 +1,5 @@
+import type { UpdaterStatus } from '../../shared/types/updater'
+
 interface ApiResponse<T = unknown> {
   success: boolean
   data?: T
@@ -166,20 +168,12 @@ interface SyncApi {
   onStatus: (callback: (result: SyncResult) => void) => () => void
 }
 
-/** 自动更新状态（由主进程推送） */
-type UpdaterStatus =
-  | { state: 'disabled' }
-  | { state: 'checking' }
-  | { state: 'available'; version: string }
-  | { state: 'not-available' }
-  | { state: 'downloading'; percent: number }
-  | { state: 'downloaded' }
-  | { state: 'error'; message: string }
-
 interface UpdaterApi {
   check: () => Promise<ApiResponse<{ state?: string }>>
   download: () => Promise<ApiResponse<{ ok?: boolean }>>
   install: () => Promise<ApiResponse<{ ok?: boolean }>>
+  /** 在系统浏览器打开 GitHub Releases 发布页 */
+  openReleasePage: () => Promise<ApiResponse<{ ok?: boolean }>>
   /** 订阅更新状态事件，返回取消订阅函数 */
   onStatus: (callback: (status: UpdaterStatus) => void) => () => void
 }
