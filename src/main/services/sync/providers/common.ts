@@ -39,15 +39,5 @@ export function authHeader(username: string, password: string): string {
   return `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`
 }
 
-/** 远端请求超时（毫秒），避免网络挂起时同步一直卡在「同步中」 */
-const FETCH_TIMEOUT_MS = 20000
-
-export async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
-  try {
-    return await fetch(url, { ...init, signal: controller.signal })
-  } finally {
-    clearTimeout(timer)
-  }
-}
+// fetchWithTimeout 提取到共享 http 模块（同步载体与翻译提供商复用）
+export { fetchWithTimeout } from '../../http'
