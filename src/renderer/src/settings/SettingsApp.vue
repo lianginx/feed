@@ -521,15 +521,27 @@ onMounted(async () => {
               启用后，订阅源与分类会自动同步到云端（未读/已读/星标、文章内容不参与同步）。
             </template>
             <template v-else-if="syncProvider === 'gist'">
-              在 GitHub Settings → Developer settings → Personal access tokens 创建 classic
-              token，勾选 gist 权限。
+              在
+              <a class="link" href="https://github.com/settings/tokens" target="_blank"
+                >GitHub Personal access tokens</a
+              >
+              创建 classic token，勾选 gist 权限。
             </template>
             <template v-else-if="syncProvider === 'gitee'">
-              在 Gitee 个人设置 → 私人令牌 创建 token（勾选 gists 权限）。
+              在
+              <a
+                class="link"
+                href="https://gitee.com/profile/personal_access_tokens"
+                target="_blank"
+                >Gitee 私人令牌</a
+              >
+              创建 token（勾选 gists 权限）。
             </template>
             <template v-else>
-              WebDAV 支持坚果云、Nextcloud 等；地址填写父目录 URL（如
-              https://dav.jianguoyun.com/dav），应用会自动创建 feed-sync 子目录存放同步数据。
+              WebDAV 支持
+              <a class="link" href="https://www.jianguoyun.com" target="_blank">坚果云</a
+              >、Nextcloud 等；地址填写父目录 URL（如 https://dav.jianguoyun.com/dav），应用会
+              自动创建 feed-sync 子目录存放同步数据。
             </template>
           </p>
         </section>
@@ -645,9 +657,14 @@ onMounted(async () => {
               {{ translateError }}
             </span>
           </div>
-          <p class="mt-4 text-xs text-muted-foreground leading-relaxed">
-            在百度翻译开放平台（fanyi-api.baidu.com）创建应用获取 AppID 与密钥。配置保存后，阅读区
-            工具栏会出现翻译按钮，也可用 Option+T
+
+          <p
+            v-if="translateProvider === 'baidu'"
+            class="mt-4 text-xs text-muted-foreground leading-relaxed"
+          >
+            在
+            <a class="link" href="https://fanyi-api.baidu.com" target="_blank">百度翻译开放平台</a>
+            创建应用获取 AppID 与密钥。配置保存后，阅读区 工具栏会出现翻译按钮，也可用 Option+T
             快速翻译当前文章。翻译会把文章正文发送至所选翻译服务商。
           </p>
         </section>
@@ -687,3 +704,26 @@ onMounted(async () => {
     </main>
   </div>
 </template>
+
+<style>
+@reference '../assets/css/main.css';
+
+.link {
+  cursor: default;
+  text-decoration-line: underline;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-blue-600);
+}
+
+.link:hover {
+  color: var(--color-blue-700);
+}
+
+[data-theme='dark'] .link {
+  color: var(--color-blue-500);
+}
+
+[data-theme='dark'] .link:hover {
+  color: var(--color-blue-600);
+}
+</style>
