@@ -2,6 +2,7 @@ import { BrowserWindow, nativeTheme } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { getSettings } from '../config'
+import { setupExternalNavigation } from './window'
 
 let settingsWindow: BrowserWindow | null = null
 
@@ -54,6 +55,9 @@ export function createSettingsWindow(): void {
   settingsWindow.on('closed', () => {
     settingsWindow = null
   })
+
+  // 外部链接统一在系统浏览器中打开，避免在 Electron 中新开窗体（与主窗口一致）
+  setupExternalNavigation(settingsWindow.webContents)
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     settingsWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/settings.html`)
