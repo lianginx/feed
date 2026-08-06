@@ -26,7 +26,6 @@ export interface TranslateResult {
 export interface SyncConfig {
   provider: SyncProvider
   token?: string
-  gistId?: string
   webdavUrl?: string
   webdavUsername?: string
   webdavPassword?: string

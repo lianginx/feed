@@ -20,8 +20,6 @@ export interface SyncConfig {
   provider: SyncProvider
   /** GitHub Gist / Gitee 的访问 token */
   token?: string
-  /** 远端 gist 的 id（Gist/Gitee 载体使用，创建后自动记住） */
-  gistId?: string
   /** WebDAV 服务器地址（目录 URL，末尾不含斜杠） */
   webdavUrl?: string
   webdavUsername?: string
@@ -40,6 +38,9 @@ export interface AppSettings {
   syncLastDump?: string
   /** 同步内部状态：上次同步时间戳（不参与用户配置 UI） */
   syncLastSyncedAt?: number
+  /** 同步内部状态：Gist/Gitee 载体记住的远端 gist id（不参与用户配置 UI） */
+  syncGistId?: string
+  syncGiteeId?: string
   /** 开机自动启动，默认 false */
   autoLaunch: boolean
   /** 启动时隐藏窗口（仅登录自动启动时生效），默认 false */

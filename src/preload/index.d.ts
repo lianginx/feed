@@ -93,7 +93,6 @@ interface TranslateResult {
 interface SyncConfig {
   provider: 'none' | 'gist' | 'gitee' | 'webdav'
   token?: string
-  gistId?: string
   webdavUrl?: string
   webdavUsername?: string
   webdavPassword?: string
