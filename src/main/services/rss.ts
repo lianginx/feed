@@ -1,26 +1,19 @@
-import Parser from 'rss-parser'
-import { extractCoverImage } from './cover'
+import FeedParser from 'feedparser'
+import * as cheerio from 'cheerio'
+import { fetchWithTimeout } from './http'
 
-type CustomItem = {
-  creator?: string
-  author?: string
-  enclosure?: { url?: string; type?: string }
-  'media:thumbnail'?: { $?: { url?: string } }
-  'media:content'?: { $?: { url?: string; medium?: string; type?: string } }
+/**
+ * feedparser 解析结果的部分命名空间字段（@types/feedparser 未覆盖，按需扩展）。
+ * - atom:content / content:encoded 结构为 { '@': 属性, '#': 文本 }
+ */
+type FeedparserItem = FeedParser.Item & {
+  'atom:content'?: { '#': string; '@'?: Record<string, string> }
+  'content:encoded'?: { '#': string }
 }
 
-const parser = new Parser<Record<string, unknown>, CustomItem>({
-  timeout: 15000,
-  headers: {
-    'User-Agent': 'Feed/1.0 (RSS Reader)'
-  },
-  customFields: {
-    item: [
-      ['media:thumbnail', 'media:thumbnail', { keepArray: false }],
-      ['media:content', 'media:content', { keepArray: false }]
-    ]
-  }
-})
+type FeedparserMeta = FeedParser.Meta & {
+  '#type'?: 'rss' | 'rdf' | 'atom'
+}
 
 export interface ParsedFeed {
   title: string
@@ -89,7 +82,7 @@ export function toFriendlyFeedError(error: unknown): string {
     return '订阅源地址可能已失效（' + status + '），请检查地址是否正确'
   }
   // XML/解析错误
-  if (/parse|XML|Feed not recognized|Unable to parse/i.test(message)) {
+  if (/Failed to parse|Unable to parse|Feed not recognized|Not a feed|XML/i.test(message)) {
     return '内容解析失败，可能不是有效的 RSS 订阅源'
   }
 
@@ -98,32 +91,155 @@ export function toFriendlyFeedError(error: unknown): string {
 }
 
 /**
+ * 单次解析 HTML，同时提取纯文本摘要与第一张图。
+ * cheerio.load 有解析开销，摘要与封面常同时需要，故合并为一次解析。
+ */
+function parseHtml(html: string): { text: string; firstImage: string | undefined } {
+  const $ = cheerio.load(html || '')
+  return {
+    text: $.text().replace(/\s+/g, ' ').trim(),
+    firstImage: $('img').first().attr('src')
+  }
+}
+
+/**
+ * 提取条目正文（HTML 全文）：
+ * 优先 Atom <content> / RSS <content:encoded>（feedparser 保留为 {@,#} 结构），
+ * 其次回退到 description。
+ */
+function extractContent(item: FeedparserItem): string {
+  return item['atom:content']?.['#'] || item['content:encoded']?.['#'] || item.description || ''
+}
+
+/**
+ * 过滤外部 URL，仅放行 http/https 协议（封面图/主页等外部内容入库前校验）。
+ * 非法协议（如 javascript:/data:）或无效 URL 返回 undefined。
+ */
+function sanitizeHttpUrl(url: string | undefined): string | undefined {
+  if (!url) return undefined
+  try {
+    const { protocol } = new URL(url)
+    return protocol === 'http:' || protocol === 'https:' ? url : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * 提取条目摘要（纯文本）：
+ * feedparser 对 RSS 给出纯文本 description；对 Atom 可能为 null 或含 HTML，
+ * 此时回退为正文纯文本。用标签结构检测而非单个 "<"（纯文本比较符如 "a < b" 不误判）。
+ */
+function extractSummary(item: FeedparserItem, fallbackText: string): string {
+  return item.summary && !/<[a-z][a-z0-9]*(\s|\/?>)/i.test(item.summary)
+    ? item.summary
+    : fallbackText
+}
+
+/**
+ * 提取条目封面图，优先级：
+ * 1. feedparser 已合并的 item.image（media:thumbnail / itunes:image / media:group 等）
+ * 2. image/ 类型的 enclosure
+ * 3. 正文 HTML 中的第一张图
+ * 结果仅放行 http/https 协议。
+ */
+function extractCoverImage(
+  item: FeedparserItem,
+  fallbackImage: string | undefined
+): string | undefined {
+  return sanitizeHttpUrl(
+    item.image?.url ||
+      item.enclosures?.find((e) => e.type?.startsWith('image/'))?.url ||
+      fallbackImage
+  )
+}
+
+/** 将 feedparser 的 item 映射为项目统一结构 ParsedArticle。 */
+function mapArticle(item: FeedparserItem): ParsedArticle {
+  const content = extractContent(item)
+  const { text, firstImage } = parseHtml(content)
+  const summary = extractSummary(item, text)
+  const coverImage = extractCoverImage(item, firstImage)
+
+  return {
+    guid: item.guid || item.link || item.title || '',
+    title: item.title || '(无标题)',
+    link: item.link || undefined,
+    content: content || undefined,
+    contentSnippet: summary,
+    summary,
+    pubDate: item.date ? item.date.toISOString() : undefined,
+    author: item.author || undefined,
+    coverImage
+  }
+}
+
+/** 将 feedparser 的 meta 映射为项目统一结构 ParsedFeed。 */
+function mapFeed(meta: FeedparserMeta, items: ParsedArticle[]): ParsedFeed {
+  const imageUrl = sanitizeHttpUrl(meta.image?.url)
+  return {
+    title: meta.title || '',
+    description: meta.description || undefined,
+    link: meta.link || undefined,
+    image: imageUrl ? { url: imageUrl, title: meta.image.title } : undefined,
+    items
+  }
+}
+
+/**
+ * 将订阅源 XML 字符串解析为结构化数据（feedparser 事件流封装为 Promise）。
+ * 解析结束但未识别出 feed 元信息（如纯文本/其他 XML）时抛错。
+ */
+export function parseFeedXml(xml: string): Promise<ParsedFeed> {
+  return new Promise((resolve, reject) => {
+    const parser = new FeedParser()
+    const items: ParsedArticle[] = []
+    let meta: FeedparserMeta | undefined
+
+    parser.on('meta', (m) => {
+      meta = m as FeedparserMeta
+    })
+    parser.on('readable', function () {
+      let item: FeedParser.Item | null
+      while ((item = this.read()) !== null) {
+        items.push(mapArticle(item as FeedparserItem))
+      }
+    })
+    parser.on('error', reject)
+    parser.on('end', () => {
+      if (!meta || !meta['#type']) {
+        reject(new Error('Feed not recognized as RSS or Atom'))
+        return
+      }
+      resolve(mapFeed(meta, items))
+    })
+    parser.end(xml)
+  })
+}
+
+/**
  * 解析 RSS/Atom 订阅源。
  */
 export async function parseFeed(url: string): Promise<ParsedFeed> {
-  const feed = await parser.parseURL(url)
-
-  return {
-    title: feed.title || url,
-    description: feed.description,
-    link: feed.link,
-    image: feed.image ? { url: feed.image.url, title: feed.image.title } : undefined,
-    items: (feed.items || []).map((item) => {
-      const parsedItem = {
-        guid: item.guid || item.link || item.title || '',
-        title: item.title || '(无标题)',
-        link: item.link,
-        content: item.content,
-        contentSnippet: item.contentSnippet,
-        summary: item.summary || item.contentSnippet,
-        pubDate: item.pubDate || item.isoDate,
-        author: item.creator || item.author,
-        coverImage: undefined as string | undefined
-      }
-      parsedItem.coverImage = extractCoverImage(item as CustomItem)
-      return parsedItem
+  let res: Response
+  try {
+    res = await fetchWithTimeout(url, {
+      headers: { 'User-Agent': 'Feed/1.0 (RSS Reader)' }
     })
+  } catch (error) {
+    // fetchWithTimeout 超时通过 AbortController 中止，抛 AbortError；
+    // 转成带超时语义的错误，让 toFriendlyFeedError 能识别为「请求超时」
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timed out')
+    }
+    throw error
   }
+  if (!res.ok) {
+    throw new Error('Status code ' + res.status)
+  }
+  const feed = await parseFeedXml(await res.text())
+  // 无标题时回退为订阅源地址（不可变，不修改 feed 对象）
+  return { ...feed, title: feed.title || url }
 }
 
 /**
