@@ -127,10 +127,16 @@ export function buildAppMenu(): void {
         {
           id: 'menu-translate',
           label: '翻译当前文章',
-          // Electron accelerator 的 Alt 在 macOS 即 Option → Option+T
           accelerator: 'Alt+T',
           enabled: false,
           click: () => getMainWindow()?.webContents.send('menu:translate')
+        },
+        {
+          id: 'menu-translate-refresh',
+          label: '强制刷新翻译',
+          accelerator: 'Alt+Shift+T',
+          enabled: false,
+          click: () => getMainWindow()?.webContents.send('menu:translateRefresh')
         }
       ]
     },
@@ -169,6 +175,7 @@ export function buildAppMenu(): void {
       const star = menu?.getMenuItemById('menu-toggle-star')
       const refresh = menu?.getMenuItemById('menu-refresh-feed')
       const translate = menu?.getMenuItemById('menu-translate')
+      const translateRefresh = menu?.getMenuItemById('menu-translate-refresh')
       if (read) read.enabled = state.hasArticle
       if (star) star.enabled = state.hasArticle
       if (refresh) refresh.enabled = state.hasFeedContext
@@ -176,6 +183,10 @@ export function buildAppMenu(): void {
         // 未选中文章或未配置翻译凭据时禁用
         translate.enabled = Boolean(state.hasArticle && state.translateConfigured)
         translate.label = state.isTranslated ? '显示原文' : '翻译当前文章'
+      }
+      if (translateRefresh) {
+        // 强制重译（忽略缓存），始终不切回原文 → label 固定；需已选中文章 + 已配置凭据
+        translateRefresh.enabled = Boolean(state.hasArticle && state.translateConfigured)
       }
     }
   )

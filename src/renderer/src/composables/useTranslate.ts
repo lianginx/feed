@@ -65,7 +65,7 @@ export function useTranslate() {
     }
   }
 
-  /** 切换译文 / 原文 */
+  /** 切换译文 / 原文（翻译命中缓存）：原文 → 译文；译文 → 原文 */
   async function toggle(): Promise<void> {
     // 译文显示中 → 切回原文
     if (shown.value) {
@@ -84,7 +84,7 @@ export function useTranslate() {
     }
   }
 
-  /** 忽略缓存，强制重新翻译当前文章 */
+  /** 忽略缓存，强制重新翻译当前文章（不切回原文：译文状态下执行重译并继续显示译文） */
   async function refresh(): Promise<void> {
     const article = currentArticle.value
     if (!article || translating.value) return

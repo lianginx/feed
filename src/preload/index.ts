@@ -103,6 +103,8 @@ const api = {
       onChannel('menu:checkForUpdates', callback),
     onToggleStar: (callback: () => void): (() => void) => onChannel('menu:toggleStar', callback),
     onTranslate: (callback: () => void): (() => void) => onChannel('menu:translate', callback),
+    onTranslateRefresh: (callback: () => void): (() => void) =>
+      onChannel('menu:translateRefresh', callback),
     onFocusSearch: (callback: () => void): (() => void) => onChannel('menu:focusSearch', callback)
   },
   sync: {

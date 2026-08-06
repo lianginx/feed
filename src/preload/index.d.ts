@@ -237,6 +237,7 @@ interface MenuApi {
   onCheckForUpdates: (callback: () => void) => () => void
   onToggleStar: (callback: () => void) => () => void
   onTranslate: (callback: () => void) => () => void
+  onTranslateRefresh: (callback: () => void) => () => void
   onFocusSearch: (callback: () => void) => () => void
 }
 

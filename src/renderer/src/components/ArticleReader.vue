@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { watch, ref, computed } from 'vue'
-import { Star, ExternalLink, Rss, ArrowUp, Languages, RefreshCw } from '@lucide/vue'
+import { Star, ExternalLink, Rss, ArrowUp, Languages } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { useArticles } from '../composables/useArticles'
@@ -12,6 +12,15 @@ import { estimateReadingTime } from '../utils/readingTime'
 
 const { currentArticle, toggleStar } = useArticles()
 const { translating, translated, shown, configured, toggle, refresh } = useTranslate()
+
+// 翻译按钮：Shift+左键点击 = 忽略缓存强制重译（等价于 Option+Shift+T），普通点击 = 切换
+function onTranslateClick(e: MouseEvent): void {
+  if (e.shiftKey) {
+    void refresh()
+  } else {
+    void toggle()
+  }
+}
 
 // 标题：译文显示时用译文标题（h1 与顶栏共用）
 const displayTitle = computed(() =>
@@ -126,24 +135,12 @@ const readingTime = computed(() => estimateReadingTime(currentArticle.value?.con
               class="size-8 text-muted-foreground"
               :class="shown ? 'text-primary' : ''"
               :disabled="translating"
-              :title="shown ? '显示原文' : '翻译'"
+              :title="shown ? '显示原文（Shift+点击强制重译）' : '翻译（Shift+点击强制重译）'"
               aria-label="翻译"
-              @click="toggle"
+              @click="onTranslateClick"
             >
               <Spinner v-if="translating" class="size-4" />
               <Languages v-else class="size-4" />
-            </Button>
-            <Button
-              v-if="configured && shown"
-              variant="ghost"
-              size="icon-sm"
-              class="size-8 text-muted-foreground"
-              :disabled="translating"
-              title="重新翻译（忽略缓存）"
-              aria-label="重新翻译"
-              @click="refresh"
-            >
-              <RefreshCw class="size-4" />
             </Button>
             <Button
               variant="ghost"
