@@ -616,6 +616,10 @@ onMounted(async () => {
           </div>
 
           <div class="mt-5 flex items-center gap-3">
+            <Button variant="outline" size="sm" @click="handleSaveTranslate">
+              <Save class="size-3.5" />
+              保存翻译设置
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -625,10 +629,6 @@ onMounted(async () => {
               <Spinner v-if="translating" />
               <CheckCircle2 v-else class="size-3.5" />
               {{ translating ? '测试中…' : '测试翻译' }}
-            </Button>
-            <Button variant="outline" size="sm" @click="handleSaveTranslate">
-              <Save class="size-3.5" />
-              保存翻译设置
             </Button>
             <span v-if="translateSaved" class="text-xs text-primary flex items-center gap-1">
               <CheckCircle2 class="size-3" />
