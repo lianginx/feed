@@ -36,6 +36,40 @@ export interface ParsedArticle {
 }
 
 /**
+ * 将 HTTP 状态码映射为语义准确的友好提示。
+ * 按常见状态码分类，避免 403/404 等语义不同但共用同一条文案误导用户。
+ */
+export function friendlyStatusText(status: number): string {
+  // 4xx 客户端错误
+  if (status === 401) {
+    return '401 网站要求登录或授权，请确认订阅源是否需要登录'
+  }
+  if (status === 403) {
+    return '403 网站拒绝了访问请求，可能触发了反爬或需要登录'
+  }
+  if (status === 404) {
+    return '404 订阅源地址可能已失效，请检查地址是否正确'
+  }
+  if (status === 410) {
+    return '410 订阅源已被移除，请检查地址是否正确'
+  }
+  if (status === 429) {
+    return '429 请求过于频繁被限流，请稍后重试'
+  }
+  if (status === 405 || status === 406) {
+    return status + ' 请求被服务器拒绝，可能不支持当前访问方式'
+  }
+  if (status >= 400 && status < 500) {
+    return status + ' 订阅源请求无效，请检查地址是否正确'
+  }
+  // 5xx 服务端错误
+  if (status >= 500) {
+    return status + ' 服务器暂时不可用，请稍后重试'
+  }
+  return status + ' 订阅源请求异常，请稍后重试'
+}
+
+/**
  * 将订阅源拉取/解析错误转换为友好提示文本。
  * 原始技术细节（错误 code/message）会记录到日志，供排查使用。
  */
@@ -76,10 +110,7 @@ export function toFriendlyFeedError(error: unknown): string {
   const statusMatch = message.match(/Status code (\d+)/)
   if (statusMatch) {
     const status = Number(statusMatch[1])
-    if (status >= 500) {
-      return '服务器暂时不可用（' + status + '），请稍后重试'
-    }
-    return '订阅源地址可能已失效（' + status + '），请检查地址是否正确'
+    return friendlyStatusText(status)
   }
   // XML/解析错误
   if (/Failed to parse|Unable to parse|Feed not recognized|Not a feed|XML/i.test(message)) {

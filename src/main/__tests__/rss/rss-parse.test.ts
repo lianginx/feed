@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
-import { parseFeedXml } from '../../services/rss'
+import { parseFeedXml, toFriendlyFeedError } from '../../services/rss'
 
 /** 读取本地 fixture 文件（真实源样本，不联网） */
 function loadFixture(name: string): string {
@@ -201,5 +201,20 @@ describe('parseFeedXml - 边界（review 修复）', () => {
     expect(item.summary).toBe('a < b')
     // content 首图为 javascript: 协议 → 封面过滤为 undefined
     expect(item.coverImage).toBeUndefined()
+  })
+})
+
+describe('toFriendlyFeedError - HTTP 状态码文案', () => {
+  it('401/403/404/410/429 有各自语义准确的提示', () => {
+    expect(toFriendlyFeedError(new Error('Status code 401'))).toContain('登录')
+    expect(toFriendlyFeedError(new Error('Status code 403'))).toContain('拒绝')
+    expect(toFriendlyFeedError(new Error('Status code 404'))).toContain('失效')
+    expect(toFriendlyFeedError(new Error('Status code 410'))).toContain('移除')
+    expect(toFriendlyFeedError(new Error('Status code 429'))).toContain('限流')
+  })
+
+  it('5xx 提示服务器不可用，其他 4xx 提示请求无效', () => {
+    expect(toFriendlyFeedError(new Error('Status code 500'))).toContain('服务器')
+    expect(toFriendlyFeedError(new Error('Status code 400'))).toContain('无效')
   })
 })

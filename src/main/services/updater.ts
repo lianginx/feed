@@ -116,6 +116,14 @@ function downloadDmg(
     const request = net.request(url)
     request.on('response', (response) => {
       if (response.statusCode !== 200) {
+        if (response.statusCode === 403) {
+          reject(new Error('下载被服务器拒绝（403），请检查网络或稍后重试'))
+          return
+        }
+        if (response.statusCode === 404) {
+          reject(new Error('下载地址已失效（404），请重新检查更新'))
+          return
+        }
         reject(new Error(`下载失败：HTTP ${response.statusCode}`))
         return
       }
