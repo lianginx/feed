@@ -158,7 +158,7 @@ export const bilibiliUserVideo: FeedAdapter = {
     const trimmed = raw.trim()
     if (trimmed.startsWith('{')) {
       // 页面内提取路径：raw 是 browserExtract 脚本返回的 JSON 对象 { upName, upSign, avatar, items }
-      const data = JSON.parse(trimmed) as {
+      let data: {
         upName?: string
         upSign?: string
         avatar?: string
@@ -171,16 +171,23 @@ export const bilibiliUserVideo: FeedAdapter = {
           duration?: string
         }>
       }
+      try {
+        data = JSON.parse(trimmed)
+      } catch {
+        // 提取脚本返回非 JSON（异常页面）：抛友好错误而非静默入库空订阅
+        throw new Error('B 站页面渲染异常，可能被风控')
+      }
       upName = (data.upName ?? '').trim()
       upSign = (data.upSign ?? '').trim()
       avatar = (data.avatar ?? '').trim()
       for (const it of data.items ?? []) {
         push((it.title ?? '').trim(), normalizeUrl(it.url ?? ''), it)
       }
-      // 页面已渲染（含 UP 主信息）却提取不到任何视频卡片：判定为视频列表接口被风控返回空，
-      // 抛错让上层提示（而非静默入库一个空订阅 / 静默刷新成功）。
-      if (items.length === 0 && !upName && !upSign) {
-        throw new Error('未能从 B 站空间页提取到视频列表（页面可能被风控或渲染失败），请重试')
+      // 拿不到任何视频卡片：要么视频列表接口被风控返回空，要么该 UP 主确实无视频。
+      // 两种情况入库空订阅都无意义，抛错提示（而非静默刷新成功）。
+      // 注意不能只看「upName/upSign 也为空」：反爬页面的 document.title 仍可能给出 upName。
+      if (items.length === 0) {
+        throw new Error('未提取到视频列表，可能被风控')
       }
     } else if (raw.length <= 100_000) {
       // 兼容兜底：解析 HTML（本地 fixture / 小片段）。
@@ -193,6 +200,10 @@ export const bilibiliUserVideo: FeedAdapter = {
         if (!href) return
         push(title, normalizeUrl(href))
       })
+      // 小片段兜底也拿不到任何视频卡片：抛错而非静默入库空订阅
+      if (items.length === 0) {
+        throw new Error('未提取到视频列表，可能被风控')
+      }
     }
 
     const uid = ctx.params.uid ?? ''

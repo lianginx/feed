@@ -18,6 +18,18 @@ function normalizeUrl(url: string): string {
   return url
 }
 
+/** B 站接口业务错误码 → 友好提示（风控/限流等常见场景，避免静默返回空订阅） */
+function bilibiliApiError(code: number, message?: string): Error {
+  const reasons: Record<number, string> = {
+    [-101]: '账号未登录',
+    [-352]: '触发风控校验',
+    [-412]: '请求被拦截',
+    [-799]: '请求过于频繁'
+  }
+  const reason = reasons[code] ?? (message || `错误码 ${code}`)
+  return new Error(`B 站接口异常：${reason}`)
+}
+
 /** 取 content 第一行作为标题（专栏列表接口无 title 字段） */
 function extractTitle(content: string): string {
   const firstLine = content.split('\n').find((line) => line.trim())
@@ -103,7 +115,21 @@ export const bilibiliUserArticle: FeedAdapter = {
     }
   },
   async parse(raw: string, ctx: AdapterParseContext): Promise<ParsedFeed> {
-    const json = JSON.parse(raw) as { data?: { items?: BiliOpusItem[] } }
+    let json: { code?: number; message?: string; data?: { items?: BiliOpusItem[] } }
+    try {
+      json = JSON.parse(raw) as {
+        code?: number
+        message?: string
+        data?: { items?: BiliOpusItem[] }
+      }
+    } catch {
+      // 被反爬/风控拦截时接口常返回 HTML 或空内容，JSON.parse 抛错
+      throw new Error('B 站接口返回异常，可能被风控')
+    }
+    // B 站接口业务错误码（风控 -412 / 限流 -799 等）：抛友好错误而非静默返回空订阅
+    if (typeof json.code === 'number' && json.code !== 0) {
+      throw bilibiliApiError(json.code, json.message)
+    }
     const items: ParsedArticle[] = []
     for (const item of json?.data?.items ?? []) {
       const content = (item.content ?? '').trim()

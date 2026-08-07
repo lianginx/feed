@@ -76,6 +76,31 @@ describe('bilibili 用户专栏适配器', () => {
     expect(first.pubDate).toBe(new Date('2026-08-06T19:07:00+08:00').toISOString())
   })
 
+  it('parse 接口返回风控/限流错误码时抛友好错误（不静默入库空订阅）', async () => {
+    await expect(
+      bilibiliUserArticle.parse(JSON.stringify({ code: -412, message: '请求被拦截' }), {
+        params: { uid: '928915' },
+        url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/opus/feed/space?host_mid=928915'
+      })
+    ).rejects.toThrow('请求被拦截')
+
+    await expect(
+      bilibiliUserArticle.parse(JSON.stringify({ code: -799, message: '请求被拦截' }), {
+        params: { uid: '928915' },
+        url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/opus/feed/space?host_mid=928915'
+      })
+    ).rejects.toThrow('过于频繁')
+  })
+
+  it('parse 接口返回非 JSON（反爬 HTML）时抛友好错误', async () => {
+    await expect(
+      bilibiliUserArticle.parse('<html>验证页面</html>', {
+        params: { uid: '928915' },
+        url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/opus/feed/space?host_mid=928915'
+      })
+    ).rejects.toThrow('B 站接口返回异常')
+  })
+
   it('声明 fetchMeta（补 UP 主名/头像）', () => {
     expect(typeof bilibiliUserArticle.fetchMeta).toBe('function')
   })
@@ -98,7 +123,39 @@ describe('bilibili 用户视频适配器', () => {
         params: { uid: '928915' },
         url: 'https://space.bilibili.com/928915/video'
       })
-    ).rejects.toThrow('未能从 B 站空间页提取到视频列表')
+    ).rejects.toThrow('未提取到视频列表')
+  })
+
+  it('parse 反爬场景：有 UP 主信息但视频卡片为空时同样抛错', async () => {
+    // 反爬时页面仍渲染出 UP 主名（document.title），但视频列表接口被风控返回空。
+    // 不能只看「upName/upSign 为空」才抛错，否则会静默入库空订阅、无任何警告。
+    await expect(
+      bilibiliUserVideo.parse(
+        JSON.stringify({ upName: '卢诗翰', upSign: '测试签名', avatar: '', items: [] }),
+        {
+          params: { uid: '928915' },
+          url: 'https://space.bilibili.com/928915/video'
+        }
+      )
+    ).rejects.toThrow('未提取到视频列表')
+  })
+
+  it('parse 小片段 HTML 无视频卡片时抛错（不静默入库空订阅）', async () => {
+    await expect(
+      bilibiliUserVideo.parse('<html><body>没有视频</body></html>', {
+        params: { uid: '928915' },
+        url: 'https://space.bilibili.com/928915/video'
+      })
+    ).rejects.toThrow('未提取到视频列表')
+  })
+
+  it('parse 页面提取返回非 JSON（渲染异常）时抛友好错误', async () => {
+    await expect(
+      bilibiliUserVideo.parse('{invalid json', {
+        params: { uid: '928915' },
+        url: 'https://space.bilibili.com/928915/video'
+      })
+    ).rejects.toThrow('B 站页面渲染异常')
   })
 
   it('声明 browserExtract（渲染进程内提取，主进程不解析整页大 HTML）', () => {

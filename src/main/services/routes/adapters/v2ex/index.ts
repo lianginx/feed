@@ -51,12 +51,21 @@ export const v2exAdapter: FeedAdapter = {
   buildUrl: () => 'https://www.v2ex.com/api/topics/hot.json',
   // V2EX 无需上下文（无参数/无分页），只消费 raw 即可
   async parse(raw: string): Promise<ParsedFeed> {
-    const topics = JSON.parse(raw) as V2exTopic[]
+    let topics: unknown
+    try {
+      topics = JSON.parse(raw)
+    } catch {
+      // 被反爬/限流拦截时 API 常返回 HTML 或空内容，JSON.parse 抛错
+      throw new Error('V2EX 接口返回异常，可能被风控')
+    }
+    if (!Array.isArray(topics)) {
+      throw new Error('V2EX 接口数据异常，可能被限流')
+    }
     return {
       title: 'V2EX - 最热主题',
       description: 'V2EX - 最热主题',
       link: 'https://www.v2ex.com',
-      items: topics.map(mapArticle)
+      items: (topics as V2exTopic[]).map(mapArticle)
     }
   }
 }

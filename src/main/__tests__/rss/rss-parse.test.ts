@@ -217,4 +217,15 @@ describe('toFriendlyFeedError - HTTP 状态码文案', () => {
     expect(toFriendlyFeedError(new Error('Status code 500'))).toContain('服务器')
     expect(toFriendlyFeedError(new Error('Status code 400'))).toContain('无效')
   })
+
+  it('JSON 解析错误提示可能被风控', () => {
+    expect(
+      toFriendlyFeedError(new Error('Unexpected token \'<\', "..." is not valid JSON'))
+    ).toContain('风控')
+  })
+
+  it('适配器抛出的中文错误直接透传，不加前缀', () => {
+    const msg = 'B 站接口异常：请求被拦截（风控），请稍后重试'
+    expect(toFriendlyFeedError(new Error(msg))).toBe(msg)
+  })
 })

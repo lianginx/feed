@@ -7,6 +7,46 @@ import { v2exAdapter } from '../../services/routes/adapters/v2ex'
  * 真实抓取 V2EX 官方 API，验证基础层全链路：runner → http fetcher → parse → ParsedFeed。
  * 可作为 P0 框架的骨架验证（联网，需网络）。
  */
+describe('V2EX 适配器（离线 parse）', () => {
+  it('parse 返回非 JSON（反爬 HTML）时抛友好错误', async () => {
+    await expect(
+      v2exAdapter.parse('<html>验证页面</html>', {
+        params: {},
+        url: 'https://www.v2ex.com/api/topics/hot.json'
+      })
+    ).rejects.toThrow('V2EX 接口返回异常')
+  })
+
+  it('parse 返回非数组（限流 JSON）时抛友好错误', async () => {
+    await expect(
+      v2exAdapter.parse(JSON.stringify({ error: 'rate limited' }), {
+        params: {},
+        url: 'https://www.v2ex.com/api/topics/hot.json'
+      })
+    ).rejects.toThrow('数据异常')
+  })
+
+  it('parse 解析有效数组为 ParsedFeed', async () => {
+    const feed = await v2exAdapter.parse(
+      JSON.stringify([
+        {
+          id: 1,
+          title: '测试主题',
+          url: 'https://www.v2ex.com/t/1',
+          content: '正文内容',
+          content_rendered: '<p>正文内容</p>',
+          created: 1700000000,
+          member: { username: 'alice' }
+        }
+      ]),
+      { params: {}, url: 'https://www.v2ex.com/api/topics/hot.json' }
+    )
+    expect(feed.items).toHaveLength(1)
+    expect(feed.items[0].guid).toBe('v2ex-1')
+    expect(feed.items[0].author).toBe('alice')
+  })
+})
+
 describe('V2EX 适配器 demo（联网）', () => {
   it('runAdapter 抓取最热主题并映射为 ParsedFeed', async () => {
     const { adapterId, url, feed } = await runAdapter(v2exAdapter, {})

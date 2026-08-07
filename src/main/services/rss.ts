@@ -78,6 +78,11 @@ export function toFriendlyFeedError(error: unknown): string {
   const code =
     error instanceof Error && 'code' in error ? (error as NodeJS.ErrnoException).code : undefined
 
+  // 适配器主动抛出的中文友好错误（如 B 站风控/限流）直接透传，不加前缀
+  if (/[\u4e00-\u9fa5]/.test(message)) {
+    return message
+  }
+
   // 域名解析失败
   if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
     return '域名解析失败，请检查订阅源地址是否正确'
@@ -115,6 +120,10 @@ export function toFriendlyFeedError(error: unknown): string {
   // XML/解析错误
   if (/Failed to parse|Unable to parse|Feed not recognized|Not a feed|XML/i.test(message)) {
     return '内容解析失败，可能不是有效的 RSS 订阅源'
+  }
+  // JSON 解析错误（适配器接口被反爬/风控拦截时返回 HTML 或空内容）
+  if (/Unexpected token|Unexpected end of JSON|JSON\.parse/i.test(message)) {
+    return '接口返回异常，可能被风控'
   }
 
   // 兜底：保留原始信息（含 code）以便定位问题
