@@ -11,6 +11,7 @@ const syncConfig = ref<SyncConfig>({ provider: 'none' })
 const translateConfig = ref<TranslateConfig>({ provider: 'none', targetLang: 'zh' })
 const autoLaunch = ref(false)
 const launchHidden = ref(false)
+const siteCookies = ref<Record<string, string>>({})
 
 function resolveTheme(t: Theme): 'light' | 'dark' {
   if (t === 'system') {
@@ -49,6 +50,7 @@ export function useApp() {
       translateConfig.value = result.data.translate ?? { provider: 'none', targetLang: 'zh' }
       autoLaunch.value = result.data.autoLaunch
       launchHidden.value = result.data.launchHidden
+      siteCookies.value = result.data.siteCookies ?? {}
     }
   }
 
@@ -102,6 +104,18 @@ export function useApp() {
     await window.api.config.update({ translate: next })
   }
 
+  /** 保存站点登录 Cookie（域名 → 整段 cookie），空值省略 */
+  async function setSiteCookies(next: Record<string, string>): Promise<void> {
+    const cleaned: Record<string, string> = {}
+    for (const [domain, cookie] of Object.entries(next)) {
+      if (domain.trim() && cookie.trim()) {
+        cleaned[domain.trim()] = cookie.trim()
+      }
+    }
+    siteCookies.value = cleaned
+    await window.api.config.update({ siteCookies: cleaned })
+  }
+
   return {
     theme,
     resolvedTheme,
@@ -112,6 +126,7 @@ export function useApp() {
     translateConfig,
     autoLaunch,
     launchHidden,
+    siteCookies,
     loadSettings,
     setTheme,
     setUpdateInterval,
@@ -119,6 +134,7 @@ export function useApp() {
     setUpdateCheckInterval,
     setSyncConfig,
     setTranslateConfig,
+    setSiteCookies,
     setAutoLaunch,
     setLaunchHidden
   }

@@ -118,7 +118,16 @@ flowchart LR
 - **依赖注入**：`runAdapter` 的 fetchers 可注入（单测 mock，避免真实网络 / Electron）
 - **browser 安全**：sandbox / contextIsolation=true、nodeIntegration=false；独立 session；用完销毁
 - **cookie 注入**：`session.cookies.set` 必须显式 `domain: '.bilibili.com'`（否则数据接口收不到，见「B 站 PoC 验证」）
+- **并发调度（limit.ts，已实现）**：HTTP 与浏览器各配独立 FIFO 信号量上限（默认 http=6 / browser=2，`setConcurrency` 可运行时调整）。浏览器一个页面 = 一个渲染进程，并发收紧是性能篇约束
+- **页面内提取（browserExtract，已实现）**：needsBrowser 适配器可声明 `browserExtract`（一段在渲染进程执行的 JS），渲染完成后直接用 `querySelectorAll` 提取结构化数据，主进程 parse 收到的是紧凑 JSON 而非整页大 HTML
 - **不接触主流程**：本层不涉及数据库 / IPC / refreshSingleFeed，是独立可用的基础层
+
+### ⚠️ 崩溃教训：主进程 cheerio 解析真实大 HTML 会 SIGSEGV（2026-08-07 实测）
+- **现象**：`bilibiliUserVideo.parse` 里 `cheerio.load(真实 B 站空间页 240KB HTML)` 直接让 Electron 主进程段错误退出
+- **根因**：B 站空间页 HTML 深度嵌套（script 内嵌大 JSON、多层 div），cheerio/parse5 递归解析深度超过主进程 V8 栈上限 → 原生栈溢出 → 崩溃报告栈顶 `v8::ObjectTemplate::NewInstance` + 大量 `RECURSION LEVEL`，`KERN_INVALID_ADDRESS at 0x0`。**这是原生崩溃，JS 的 try/catch 拦不住**
+- **为什么昨晚 demo 正常**：demo 只跑到 `fetchBrowserPage`（抓 HTML）就结束，没把真实大 HTML 喂给 cheerio；`bilibiliUserVideo.parse` 的单测 fixture 只有几十字节，永远触发不了
+- **修复**：改走「页面内提取」——浏览器渲染进程里用 `document.querySelectorAll('a[href*="/video/BV"]')` 直接收集 title/url 返回 JSON，主进程不再解析整页。`parse` 保留 HTML 兜底但加了 `raw.length <= 100_000` 长度保护
+- **B 站页面不稳定**：空间页视频列表是滚动懒加载（滚动后才有 80+ 链接），且偶发被反爬/只渲染空壳（实测 0/1/81 条波动）→ 提取脚本要「等待渲染 + 模拟滚动 + 数量稳定」才可靠，能拿到多少取决于站点正常渲染
 
 ## 与现有代码对接
 - **接入点**：`src/main/services/rss.ts` 的 `parseFeed` / `refresher.ts` 的 `refreshSingleFeed`——feed 记录带 `adapter_id` 时走 runner，否则走原 XML 解析

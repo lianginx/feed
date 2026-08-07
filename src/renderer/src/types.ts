@@ -37,3 +37,26 @@ export interface SyncResult {
   error?: string
   lastSyncedAt?: number
 }
+
+/** 适配器参数声明（添加适配站点时填写，与主进程 AdapterParam 一致） */
+export interface AdapterParam {
+  key: string
+  label: string
+  required?: boolean
+  placeholder?: string
+}
+
+/** 内置站点适配器元信息（feeds:listAdapters 返回） */
+export interface AdapterInfo {
+  id: string
+  name: string
+  description?: string
+  domains: string[]
+  params: AdapterParam[]
+  needsBrowser: boolean
+  cookieDomain?: string
+  /** 登录页 URL（「用浏览器登录」用） */
+  loginUrl?: string
+  /** 登录态 cookie 名（全部出现即视为已登录） */
+  loginCookieNames?: string[]
+}

@@ -1,8 +1,10 @@
 import { ipcMain } from 'electron'
 import { getConnection } from '../database/connection'
-import { parseFeed, validateFeed } from '../services/rss'
+import { parseFeed, validateFeed, toFriendlyFeedError } from '../services/rss'
 import { resolveAndCacheFavicon, refreshFeedFavicon } from '../services/favicon'
-import { refreshSingleFeed } from '../services/refresher'
+import { refreshSingleFeed, persistParsedFeed } from '../services/refresher'
+import { getAdapter, listAdapters, runAdapter } from '../services/routes'
+import { getCookiesForAdapter } from '../services/siteCookies'
 import { scheduleSync } from '../services/sync'
 import { success, error } from './util'
 
@@ -68,6 +70,96 @@ export function registerFeedHandlers(): void {
         return success({ id: feedId })
       } catch (e) {
         return error((e as Error).message)
+      }
+    }
+  )
+
+  // 内置站点适配器列表（供前端「适配站点」入口选择）
+  ipcMain.handle('feeds:listAdapters', async () => {
+    try {
+      const adapters = listAdapters().map((a) => ({
+        id: a.id,
+        name: a.name,
+        description: a.description,
+        domains: a.domains,
+        params: a.params,
+        needsBrowser: a.needsBrowser ?? false,
+        cookieDomain: a.cookieDomain,
+        loginUrl: a.loginUrl,
+        loginCookieNames: a.loginCookieNames
+      }))
+      return success(adapters)
+    } catch (e) {
+      return error((e as Error).message)
+    }
+  })
+
+  // 添加适配站点：真实验证抓取后入库（adapter_id + adapter_params）
+  ipcMain.handle(
+    'feeds:addAdapter',
+    async (
+      _event,
+      input: {
+        adapterId: string
+        params: Record<string, string>
+        title?: string
+        categoryId?: number
+      }
+    ) => {
+      try {
+        const adapter = getAdapter(input.adapterId)
+        if (!adapter) {
+          return error('适配器不存在')
+        }
+        // 必填参数校验
+        for (const p of adapter.params) {
+          if (p.required && !(input.params[p.key] ?? '').trim()) {
+            return error(`请填写「${p.label}」`)
+          }
+        }
+
+        // 真实验证：构建 URL → 抓取 → 解析为 ParsedFeed（只抓这一次）
+        const cookies = getCookiesForAdapter(adapter)
+        const result = await runAdapter(adapter, input.params, { cookies })
+        // 适配器可补充 UP 主等 feed 级元信息（如专栏的 UP 主名/头像）
+        let parsed = result.feed
+        const meta = await adapter.fetchMeta?.(input.params, parsed)
+        if (meta) {
+          parsed = {
+            ...parsed,
+            title: meta.title ?? parsed.title,
+            description: meta.description ?? parsed.description,
+            image: meta.imageUrl ? { url: meta.imageUrl } : parsed.image
+          }
+        }
+
+        const db = getConnection()
+        const title = input.title || parsed.title || adapter.name
+        const feedId = db
+          .prepare(
+            `INSERT INTO feeds (url, title, site_url, category_id, adapter_id, adapter_params)
+             VALUES (?, ?, ?, ?, ?, ?)`
+          )
+          .run(
+            result.url,
+            title,
+            parsed.link || null,
+            input.categoryId || null,
+            adapter.id,
+            JSON.stringify(input.params)
+          ).lastInsertRowid as number
+
+        // 直接用本次抓取结果更新元信息 + favicon + 入库（不再二次抓取，减风控风险）
+        await persistParsedFeed(
+          feedId,
+          { url: result.url, custom_title: 0, favicon_url: null },
+          parsed
+        )
+
+        scheduleSync()
+        return success({ id: feedId })
+      } catch (e) {
+        return error(toFriendlyFeedError(e))
       }
     }
   )

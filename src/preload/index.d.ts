@@ -69,6 +69,8 @@ interface AppSettings {
   autoLaunch: boolean
   /** 启动时隐藏窗口（仅登录自动启动时生效） */
   launchHidden: boolean
+  /** 站点适配器登录 Cookie：域名 → 整段 cookie 字符串（如 'SESSDATA=xxx; bili_jct=yyy'） */
+  siteCookies: Record<string, string>
 }
 
 /** 文章翻译配置 */
@@ -113,10 +115,38 @@ interface RefreshResult {
   updated: number
 }
 
+/** 适配器参数声明（用户在添加适配站点时填写） */
+interface AdapterParam {
+  key: string
+  label: string
+  required?: boolean
+  placeholder?: string
+}
+
+/** 内置站点适配器元信息（feeds:listAdapters 返回） */
+interface AdapterInfo {
+  id: string
+  name: string
+  description?: string
+  domains: string[]
+  params: AdapterParam[]
+  needsBrowser: boolean
+  cookieDomain?: string
+}
+
 interface FeedApi {
   list: () => Promise<ApiResponse<Feed[]>>
   add: (params: {
     url: string
+    title?: string
+    categoryId?: number
+  }) => Promise<ApiResponse<{ id: number }>>
+  /** 内置站点适配器列表（适配站点入口用） */
+  listAdapters: () => Promise<ApiResponse<AdapterInfo[]>>
+  /** 添加适配站点：真实验证抓取后入库 */
+  addAdapter: (input: {
+    adapterId: string
+    params: Record<string, string>
     title?: string
     categoryId?: number
   }) => Promise<ApiResponse<{ id: number }>>
@@ -163,6 +193,12 @@ interface ArticleApi {
 interface ConfigApi {
   get: () => Promise<ApiResponse<AppSettings>>
   update: (settings: Record<string, unknown>) => Promise<ApiResponse<AppSettings>>
+  /** 用内置浏览器登录站点：弹登录窗口，成功后自动保存该域 cookie */
+  loginSite: (input: {
+    domain: string
+    loginUrl: string
+    loginCookieNames?: string[]
+  }) => Promise<ApiResponse<{ domain: string; cookie: string } | { cancelled: boolean }>>
   /** 订阅配置变更事件，返回取消订阅函数 */
   onChanged: (callback: () => void) => () => void
 }

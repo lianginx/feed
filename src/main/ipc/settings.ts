@@ -4,6 +4,7 @@ import { getMainWindow } from '../app/window'
 import { startScheduler } from '../services/timer'
 import { refreshAutoCheckTimer } from '../services/updater'
 import { applyAutoLaunch } from '../services/autoLaunch'
+import { loginToSite } from '../services/siteLogin'
 import { success, error } from './util'
 
 export function registerSettingsHandlers(): void {
@@ -14,6 +15,32 @@ export function registerSettingsHandlers(): void {
       return error((e as Error).message)
     }
   })
+
+  // 用内置浏览器登录站点：弹真实登录窗口，登录成功后自动保存该域 cookie
+  ipcMain.handle(
+    'settings:loginSite',
+    async (_event, input: { domain: string; loginUrl: string; loginCookieNames?: string[] }) => {
+      try {
+        const cookieMap = await loginToSite(
+          input.loginUrl,
+          input.domain,
+          input.loginCookieNames ?? []
+        )
+        if (!cookieMap) {
+          return success({ cancelled: true })
+        }
+        const cookieStr = Object.entries(cookieMap)
+          .map(([k, v]) => `${k}=${v}`)
+          .join('; ')
+        const key = input.domain.replace(/^\./, '')
+        const settings = getSettings()
+        updateSettings({ siteCookies: { ...(settings.siteCookies ?? {}), [key]: cookieStr } })
+        return success({ domain: key, cookie: cookieStr })
+      } catch (e) {
+        return error((e as Error).message)
+      }
+    }
+  )
 
   ipcMain.handle('config:update', async (_event, settings: Partial<AppSettings>) => {
     try {

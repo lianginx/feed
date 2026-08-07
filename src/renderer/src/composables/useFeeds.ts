@@ -1,6 +1,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 import { useArticles } from './useArticles'
+import type { AdapterInfo } from '../types'
 
 export type FilterType = 'all' | 'unread' | 'starred'
 
@@ -80,6 +81,33 @@ export function useFeeds() {
       // 刷新订阅源列表
       await loadFeeds()
       // 选中新添加的订阅源
+      selectFeed(feedId)
+      return feedId
+    }
+    return false
+  }
+
+  /** 内置站点适配器列表（适配站点入口用） */
+  async function listAdapters(): Promise<AdapterInfo[]> {
+    const result = await window.api.feeds.listAdapters()
+    return result.success && result.data ? result.data : []
+  }
+
+  /** 添加适配站点：主进程一次抓取即验证+入库，这里只需刷新列表并选中 */
+  async function addAdapter(
+    adapterId: string,
+    params: Record<string, string>,
+    categoryId?: number
+  ): Promise<number | false> {
+    // Vue ref 的 value 是 reactive Proxy，IPC 结构化克隆无法克隆 Proxy，需展开成普通对象
+    const result = await window.api.feeds.addAdapter({
+      adapterId,
+      params: { ...params },
+      categoryId
+    })
+    if (result.success && result.data) {
+      const feedId = result.data.id
+      await loadFeeds()
       selectFeed(feedId)
       return feedId
     }
@@ -190,6 +218,8 @@ export function useFeeds() {
     refreshingFeedIds,
     loadFeeds,
     addFeed,
+    listAdapters,
+    addAdapter,
     deleteFeed,
     updateFeed,
     updateSortOrder,

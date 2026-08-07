@@ -1,5 +1,8 @@
 import { getConnection } from '../database/connection'
 import { parseFeed, toFriendlyFeedError, type ParsedFeed } from './rss'
+import { normalizeContentImages } from './contentImages'
+import { getAdapter, runAdapter } from './routes'
+import { getCookiesForAdapter } from './siteCookies'
 import { resolveAndCacheFavicon } from './favicon'
 import { scheduleBadgeUpdate } from './badge'
 import { getMainWindow } from '../app/window'
@@ -47,6 +50,111 @@ export interface RefreshResult {
   updated: number
 }
 
+/** 持久化所需的最小 feed 字段（refreshSingleFeed 的 feed 记录与 addAdapter 的 INSERT 结果都满足） */
+export interface ParsedFeedPersistContext {
+  url: string
+  custom_title: number
+  favicon_url: string | null
+}
+
+/**
+ * 用解析结果更新 feed 元信息 + 缓存 favicon + 同步文章入库。
+ * refreshSingleFeed 与 feeds:addAdapter 共用：添加适配站点时直接用验证抓取的结果入库，避免二次抓取（减风控风险）。
+ */
+export async function persistParsedFeed(
+  feedId: number,
+  feed: ParsedFeedPersistContext,
+  parsed: ParsedFeed
+): Promise<{ inserted: number; updated: number }> {
+  const db = getConnection()
+
+  // 更新 feed 信息（自定义标题时不覆盖 title）
+  if (feed.custom_title) {
+    db.prepare(
+      `UPDATE feeds SET description = ?, site_url = ?, last_updated = strftime('%s','now'), last_error = NULL, error_count = 0
+       WHERE id = ?`
+    ).run(parsed.description || null, parsed.link || null, feedId)
+  } else {
+    db.prepare(
+      `UPDATE feeds SET title = ?, description = ?, site_url = ?, last_updated = strftime('%s','now'), last_error = NULL, error_count = 0
+       WHERE id = ?`
+    ).run(parsed.title, parsed.description || null, parsed.link || null, feedId)
+  }
+
+  // 缓存 favicon：已有则跳过，避免每次定时刷新都重复拉取站点首页/图标
+  if (!feed.favicon_url) {
+    try {
+      const siteUrl = parsed.link || feed.url
+      const localUrl = await resolveAndCacheFavicon(feedId, siteUrl, parsed.image?.url)
+      if (localUrl) {
+        db.prepare('UPDATE feeds SET favicon_url = ? WHERE id = ?').run(localUrl, feedId)
+      }
+    } catch {
+      // favicon 刷新失败不影响同步
+    }
+  }
+
+  // 同步文章（去重 + 更新已有）
+  const insertStmt = db.prepare(`
+    INSERT OR IGNORE INTO articles (feed_id, guid, title, url, author, content, summary, published_at, cover_image)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `)
+  const updateStmt = db.prepare(`
+    UPDATE articles SET title = ?, content = ?, author = ?, published_at = ?, cover_image = ?
+    WHERE feed_id = ? AND guid = ?
+  `)
+  const selectStmt = db.prepare('SELECT id FROM articles WHERE feed_id = ? AND guid = ?')
+
+  let inserted = 0
+  let updated = 0
+
+  db.transaction(() => {
+    for (const item of parsed.items) {
+      if (!item.guid) continue
+
+      const content = item.content || item.contentSnippet || ''
+      const sanitizedContent = normalizeContentImages(purify.sanitize(content))
+      // 无效（无法解析）的发布时间回退为当前时间，避免 NaN 落库导致按时间排序异常
+      const parsedTime = item.pubDate ? new Date(item.pubDate).getTime() : NaN
+      const publishedAt = Number.isFinite(parsedTime)
+        ? Math.floor(parsedTime / 1000)
+        : Math.floor(Date.now() / 1000)
+
+      const existing = selectStmt.get(feedId, item.guid)
+
+      if (existing) {
+        updateStmt.run(
+          item.title,
+          sanitizedContent,
+          item.author || null,
+          publishedAt,
+          item.coverImage || null,
+          feedId,
+          item.guid
+        )
+        updated++
+      } else {
+        insertStmt.run(
+          feedId,
+          item.guid,
+          item.title,
+          item.link || null,
+          item.author || null,
+          sanitizedContent,
+          item.summary || null,
+          publishedAt,
+          item.coverImage || null
+        )
+        inserted++
+      }
+    }
+  })()
+
+  // 触发徽标更新
+  scheduleBadgeUpdate()
+  return { inserted, updated }
+}
+
 /**
  * 刷新所有订阅源（并发执行，通知逻辑在 refreshSingleFeed 内部）。
  */
@@ -70,6 +178,8 @@ export async function refreshSingleFeed(feedId: number): Promise<RefreshResult> 
         custom_title: number
         error_count: number
         favicon_url: string | null
+        adapter_id: string | null
+        adapter_params: string | null
       }
     | undefined
 
@@ -82,95 +192,34 @@ export async function refreshSingleFeed(feedId: number): Promise<RefreshResult> 
   win?.webContents.send('feeds:refresh-progress', { feedId, status: 'fetching' })
 
   try {
-    // 拉取 RSS（失败自动重试，最多 3 次，全部失败才进入 catch）
-    const parsed = await fetchWithRetry(feed.url)
-
-    // 更新 feed 信息（自定义标题时不覆盖 title）
-    if (feed.custom_title) {
-      db.prepare(
-        `UPDATE feeds SET description = ?, site_url = ?, last_updated = strftime('%s','now'), last_error = NULL, error_count = 0
-         WHERE id = ?`
-      ).run(parsed.description || null, parsed.link || null, feedId)
+    // 适配器源：走 runAdapter（注入站点登录 cookie）；RSS 源：XML 解析（失败自动重试）
+    let parsed: ParsedFeed
+    if (feed.adapter_id) {
+      const adapter = getAdapter(feed.adapter_id)
+      if (!adapter) {
+        throw new Error('适配器不存在或已失效')
+      }
+      const params = (JSON.parse(feed.adapter_params ?? '{}') as Record<string, string>) || {}
+      const cookies = getCookiesForAdapter(adapter)
+      // 专栏等适配器会在 parse 内逐篇抓详情页补发布时间/完整正文（与添加时一致）
+      const result = await runAdapter(adapter, params, { cookies })
+      parsed = result.feed
+      // 适配器补充 UP 主等 feed 级元信息（标题/简介/头像）
+      const meta = await adapter.fetchMeta?.(params, parsed)
+      if (meta) {
+        parsed = {
+          ...parsed,
+          title: meta.title ?? parsed.title,
+          description: meta.description ?? parsed.description,
+          image: meta.imageUrl ? { url: meta.imageUrl } : parsed.image
+        }
+      }
     } else {
-      db.prepare(
-        `UPDATE feeds SET title = ?, description = ?, site_url = ?, last_updated = strftime('%s','now'), last_error = NULL, error_count = 0
-         WHERE id = ?`
-      ).run(parsed.title, parsed.description || null, parsed.link || null, feedId)
+      parsed = await fetchWithRetry(feed.url)
     }
 
-    // 缓存 favicon：已有则跳过，避免每次定时刷新都重复拉取站点首页/图标；
-    // 手动「刷新图标」（feeds:refreshFavicon）仍会强制重新下载
-    if (!feed.favicon_url) {
-      try {
-        const siteUrl = parsed.link || feed.url
-        const localUrl = await resolveAndCacheFavicon(feedId, siteUrl, parsed.image?.url)
-        if (localUrl) {
-          db.prepare('UPDATE feeds SET favicon_url = ? WHERE id = ?').run(localUrl, feedId)
-        }
-      } catch {
-        // favicon 刷新失败不影响同步
-      }
-    }
-
-    // 同步文章（去重 + 更新已有）
-    const insertStmt = db.prepare(`
-      INSERT OR IGNORE INTO articles (feed_id, guid, title, url, author, content, summary, published_at, cover_image)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
-    const updateStmt = db.prepare(`
-      UPDATE articles SET title = ?, content = ?, author = ?, published_at = ?, cover_image = ?
-      WHERE feed_id = ? AND guid = ?
-    `)
-
-    let inserted = 0
-    let updated = 0
-
-    db.transaction(() => {
-      for (const item of parsed.items) {
-        if (!item.guid) continue
-
-        const content = item.content || item.contentSnippet || ''
-        const sanitizedContent = purify.sanitize(content)
-        // 无效（无法解析）的发布时间回退为当前时间，避免 NaN 落库导致按时间排序异常
-        const parsedTime = item.pubDate ? new Date(item.pubDate).getTime() : NaN
-        const publishedAt = Number.isFinite(parsedTime)
-          ? Math.floor(parsedTime / 1000)
-          : Math.floor(Date.now() / 1000)
-
-        const existing = db
-          .prepare('SELECT id FROM articles WHERE feed_id = ? AND guid = ?')
-          .get(feedId, item.guid)
-
-        if (existing) {
-          updateStmt.run(
-            item.title,
-            sanitizedContent,
-            item.author || null,
-            publishedAt,
-            item.coverImage || null,
-            feedId,
-            item.guid
-          )
-          updated++
-        } else {
-          insertStmt.run(
-            feedId,
-            item.guid,
-            item.title,
-            item.link || null,
-            item.author || null,
-            sanitizedContent,
-            item.summary || null,
-            publishedAt,
-            item.coverImage || null
-          )
-          inserted++
-        }
-      }
-    })()
-
-    // 触发徽标更新
-    scheduleBadgeUpdate()
+    // 更新 feed 元信息 + favicon + 入库（与 addAdapter 共用，避免重复抓取）
+    const { inserted, updated } = await persistParsedFeed(feedId, feed, parsed)
 
     // 通知前端：刷新完成
     win?.webContents.send('feeds:refresh-progress', {

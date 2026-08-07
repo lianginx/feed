@@ -37,6 +37,13 @@ const api = {
     refreshFavicon: (id: number) => ipcRenderer.invoke('feeds:refreshFavicon', id),
     refresh: (feedId: number) => ipcRenderer.invoke('feeds:refresh', feedId),
     parseUrl: (url: string) => ipcRenderer.invoke('feeds:parseUrl', url),
+    listAdapters: () => ipcRenderer.invoke('feeds:listAdapters'),
+    addAdapter: (input: {
+      adapterId: string
+      params: Record<string, string>
+      title?: string
+      categoryId?: number
+    }) => ipcRenderer.invoke('feeds:addAdapter', input),
     /** 订阅单个订阅源刷新进度事件，返回取消订阅函数 */
     onRefreshProgress: (
       callback: (data: {
@@ -74,6 +81,9 @@ const api = {
   config: {
     get: () => ipcRenderer.invoke('config:get'),
     update: (settings: Record<string, unknown>) => ipcRenderer.invoke('config:update', settings),
+    /** 用内置浏览器登录站点：弹登录窗口，成功后自动保存该域 cookie */
+    loginSite: (input: { domain: string; loginUrl: string; loginCookieNames?: string[] }) =>
+      ipcRenderer.invoke('settings:loginSite', input),
     /** 订阅配置变更事件，返回取消订阅函数 */
     onChanged: (callback: () => void): (() => void) => onChannel('config:changed', callback)
   },

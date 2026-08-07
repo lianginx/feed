@@ -217,5 +217,13 @@ CREATE TABLE IF NOT EXISTS article_translations (
   PRIMARY KEY (article_id, provider, target_lang)
 );
 `
+  },
+  {
+    version: 8,
+    name: 'add-feed-adapter-fields',
+    up: `
+ALTER TABLE feeds ADD COLUMN adapter_id TEXT;
+ALTER TABLE feeds ADD COLUMN adapter_params TEXT;
+`
   }
 ]

@@ -11,7 +11,8 @@ import {
   Rocket,
   Eye,
   EyeOff,
-  Languages
+  Languages,
+  Globe
 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
@@ -26,7 +27,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { useApp, type Theme } from '../composables/useApp'
 import { useSync } from '../composables/useSync'
-import type { SyncConfig, TranslateConfig } from '../types'
+import type { SyncConfig, TranslateConfig, AdapterInfo } from '../types'
 
 const {
   theme,
@@ -45,7 +46,9 @@ const {
   autoLaunch,
   launchHidden,
   setAutoLaunch,
-  setLaunchHidden
+  setLaunchHidden,
+  siteCookies,
+  setSiteCookies
 } = useApp()
 const { runSync } = useSync()
 
@@ -180,6 +183,11 @@ const translateError = ref<string | null>(null)
 const translating = ref(false)
 const translateTestResult = ref<string | null>(null)
 
+// ---------- 站点登录 Cookie（本地编辑态，点「保存站点设置」后写入配置） ----------
+const siteCookieInputs = ref<Record<string, string>>({})
+const siteCookieAdapters = ref<AdapterInfo[]>([])
+const siteCookiesSaved = ref(false)
+
 const targetLanguageOptions = [
   { value: 'zh', label: '简体中文' },
   { value: 'zh-Hant', label: '繁体中文' },
@@ -262,15 +270,55 @@ async function handleSaveTranslate(): Promise<void> {
 }
 
 // ---------- 左侧导航 ----------
-const activeSection = ref<'general' | 'startup' | 'sync' | 'translate' | 'data'>('general')
+const activeSection = ref<'general' | 'startup' | 'sync' | 'translate' | 'data' | 'sites'>(
+  'general'
+)
 
 const navItems = [
   { id: 'general', label: '常规', icon: Settings },
   { id: 'startup', label: '启动', icon: Rocket },
   { id: 'sync', label: '同步', icon: Cloud },
   { id: 'translate', label: '翻译', icon: Languages },
+  { id: 'sites', label: '站点', icon: Globe },
   { id: 'data', label: '数据', icon: Database }
 ] as const
+
+async function handleSaveSiteCookies(): Promise<void> {
+  await setSiteCookies(siteCookieInputs.value)
+  siteCookiesSaved.value = true
+  setTimeout(() => {
+    siteCookiesSaved.value = false
+  }, 2000)
+}
+
+const siteLoggingIn = ref(false)
+const siteLoginMsg = ref('')
+
+/** 用内置浏览器登录站点：弹登录窗口，成功后回填 cookie 输入框 */
+async function handleLoginSite(adapter: AdapterInfo): Promise<void> {
+  if (!adapter.cookieDomain || !adapter.loginUrl) return
+  siteLoggingIn.value = true
+  siteLoginMsg.value = ''
+  try {
+    const result = await window.api.config.loginSite({
+      domain: adapter.cookieDomain,
+      loginUrl: adapter.loginUrl,
+      // Vue reactive 数组是 Proxy，IPC 无法克隆，需展开成普通数组
+      loginCookieNames: [...(adapter.loginCookieNames ?? [])]
+    })
+    if (result.success && result.data && !('cancelled' in result.data)) {
+      const domain = (adapter.cookieDomain ?? '').replace(/^\./, '')
+      siteCookieInputs.value = { ...siteCookieInputs.value, [domain]: result.data.cookie }
+      siteLoginMsg.value = '已获取登录态，请点「保存站点设置」生效'
+    } else {
+      siteLoginMsg.value = '未完成登录，已取消'
+    }
+  } catch (e) {
+    siteLoginMsg.value = `登录失败：${(e as Error).message}`
+  } finally {
+    siteLoggingIn.value = false
+  }
+}
 
 onMounted(async () => {
   await loadSettings()
@@ -288,6 +336,19 @@ onMounted(async () => {
   translateTargetLang.value = translateConfig.value.targetLang
   translateSaved.value = false
   translateTestResult.value = null
+
+  // 加载站点 Cookie 配置：只展示需要登录 cookie 的适配器
+  const adapterResult = await window.api.feeds.listAdapters()
+  if (adapterResult.success && adapterResult.data) {
+    siteCookieAdapters.value = adapterResult.data.filter((a) => a.cookieDomain)
+    const next: Record<string, string> = {}
+    for (const a of siteCookieAdapters.value) {
+      const domain = (a.cookieDomain ?? '').replace(/^\./, '')
+      if (domain) next[domain] = siteCookies.value[domain] ?? ''
+    }
+    siteCookieInputs.value = next
+  }
+  siteCookiesSaved.value = false
 })
 </script>
 
@@ -699,6 +760,62 @@ onMounted(async () => {
             <CheckCircle2 class="size-3" />
             {{ importResult }}
           </div>
+        </section>
+      </div>
+
+      <div v-else-if="activeSection === 'sites'">
+        <section>
+          <h2 class="text-sm font-semibold text-foreground mb-1">站点</h2>
+          <div class="py-3">
+            <div class="text-sm">站点登录 Cookie</div>
+            <div class="mt-0.5 text-xs text-muted-foreground">
+              部分内置站点（如 B 站）需要登录 Cookie 才能抓取完整内容。从浏览器复制整段 Cookie
+              粘贴到对应站点即可；未配置也能抓公开内容。
+            </div>
+          </div>
+
+          <template v-if="siteCookieAdapters.length">
+            <div
+              v-for="a in siteCookieAdapters"
+              :key="a.id"
+              class="flex items-center justify-between gap-6 py-3"
+            >
+              <div class="min-w-0">
+                <div class="text-sm">{{ a.name }}</div>
+                <div class="mt-0.5 text-xs text-muted-foreground">{{ a.cookieDomain }}</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <Input
+                  v-model="siteCookieInputs[(a.cookieDomain ?? '').replace(/^\./, '')]"
+                  :placeholder="`${(a.cookieDomain ?? '').replace(/^\./, '')} 的 Cookie`"
+                  class="w-64"
+                />
+                <Button
+                  v-if="a.loginUrl"
+                  variant="outline"
+                  size="sm"
+                  :disabled="siteLoggingIn"
+                  @click="handleLoginSite(a)"
+                >
+                  <Spinner v-if="siteLoggingIn" />
+                  {{ siteLoggingIn ? '登录中…' : '浏览器登录' }}
+                </Button>
+              </div>
+            </div>
+          </template>
+          <p v-else class="py-2 text-xs text-muted-foreground">暂无需要登录 Cookie 的站点。</p>
+
+          <div class="mt-5 flex items-center gap-3">
+            <Button variant="outline" size="sm" @click="handleSaveSiteCookies">
+              <Save class="size-3.5" />
+              保存站点设置
+            </Button>
+            <span v-if="siteCookiesSaved" class="text-xs text-primary flex items-center gap-1">
+              <CheckCircle2 class="size-3" />
+              已保存
+            </span>
+          </div>
+          <p v-if="siteLoginMsg" class="mt-4 text-xs text-muted-foreground">{{ siteLoginMsg }}</p>
         </section>
       </div>
     </main>
