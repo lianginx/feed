@@ -65,7 +65,7 @@ const virtualizer = useVirtualizer(
   computed(() => ({
     count: articles.value.length,
     getScrollElement: () => parentRef.value,
-    estimateSize: () => 115,
+    estimateSize: () => 128,
     overscan: 10
   }))
 )
@@ -184,20 +184,16 @@ function openInBrowser(url: string | null): void {
                       <div class="flex-1 min-w-0 h-full flex flex-col">
                         <div>
                           <div class="flex items-center gap-1.5">
-                            <span
-                              v-if="!articles[row.index].is_read"
-                              class="w-2 h-2 rounded-full bg-unread-dot shrink-0"
-                            />
                             <Star
                               v-if="articles[row.index].is_starred"
                               class="w-3 h-3 text-starred shrink-0 fill-starred"
                             />
                             <h3
-                              class="truncate text-sm"
+                              class="line-clamp-2 text-sm font-semibold"
                               :class="
                                 articles[row.index].is_read
-                                  ? 'font-medium text-foreground/70'
-                                  : 'font-semibold text-foreground'
+                                  ? 'text-muted-foreground/80'
+                                  : 'text-foreground'
                               "
                             >
                               {{ articles[row.index].title }}
@@ -205,10 +201,10 @@ function openInBrowser(url: string | null): void {
                           </div>
                           <p
                             v-if="articles[row.index].summary"
-                            class="text-xs mt-1 line-clamp-2"
+                            class="text-xs mt-1 truncate"
                             :class="
                               articles[row.index].is_read
-                                ? 'text-muted-foreground/70'
+                                ? 'text-muted-foreground/80'
                                 : 'text-muted-foreground'
                             "
                           >
