@@ -18,6 +18,9 @@ export interface SyncFeed {
   category: string | null // 分类名（跨设备用名称关联，而非本地自增 id）
   sortOrder: number
   customTitle: number
+  // 可选字段：兼容旧版本快照（升级后首次同步时旧快照没有这两个字段）
+  adapterId?: string | null
+  adapterParams?: string | null
 }
 
 /** 一次同步的结果 */
@@ -69,6 +72,8 @@ interface FeedRow {
   category_id: number | null
   sort_order: number
   custom_title: number
+  adapter_id: string | null
+  adapter_params: string | null
 }
 
 /** 把当前本地订阅列表序列化为规范化快照字符串 */
@@ -80,7 +85,7 @@ function serializeSnapshot(): string {
   const catNameById = new Map<number, string>(cats.map((c) => [c.id, c.name]))
   const feeds = db
     .prepare(
-      'SELECT url, title, site_url, category_id, sort_order, custom_title FROM feeds ORDER BY sort_order ASC, id ASC'
+      'SELECT url, title, site_url, category_id, sort_order, custom_title, adapter_id, adapter_params FROM feeds ORDER BY sort_order ASC, id ASC'
     )
     .all() as FeedRow[]
 
@@ -94,7 +99,9 @@ function serializeSnapshot(): string {
       siteUrl: f.site_url,
       category: f.category_id != null ? (catNameById.get(f.category_id) ?? null) : null,
       sortOrder: f.sort_order,
-      customTitle: f.custom_title
+      customTitle: f.custom_title,
+      adapterId: f.adapter_id,
+      adapterParams: f.adapter_params
     }))
   }
   return JSON.stringify(snapshot)
@@ -155,20 +162,37 @@ function applySnapshot(snapshot: SyncSnapshot): void {
         db.prepare('DELETE FROM feeds WHERE id = ?').run(local.id)
       } else {
         db.prepare(
-          'UPDATE feeds SET title = ?, site_url = ?, sort_order = ?, custom_title = ? WHERE id = ?'
-        ).run(target.title, target.siteUrl, target.sortOrder, target.customTitle, local.id)
+          'UPDATE feeds SET title = ?, site_url = ?, sort_order = ?, custom_title = ?, adapter_id = ?, adapter_params = ? WHERE id = ?'
+        ).run(
+          target.title,
+          target.siteUrl,
+          target.sortOrder,
+          target.customTitle,
+          target.adapterId !== undefined ? target.adapterId : local.adapter_id,
+          target.adapterParams !== undefined ? target.adapterParams : local.adapter_params,
+          local.id
+        )
       }
     }
 
     // 3. 插入远端有而本地没有的订阅
     const localUrlSet = new Set(localFeeds.map((f) => f.url))
     const insertFeed = db.prepare(
-      'INSERT INTO feeds (url, title, site_url, category_id, sort_order, custom_title) VALUES (?, ?, ?, ?, ?, ?)'
+      'INSERT INTO feeds (url, title, site_url, category_id, sort_order, custom_title, adapter_id, adapter_params) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     )
     for (const f of snapshot.feeds) {
       if (localUrlSet.has(f.url)) continue
       const catId = f.category ? (catNameToId.get(f.category) ?? null) : null
-      insertFeed.run(f.url, f.title, f.siteUrl, catId, f.sortOrder, f.customTitle)
+      insertFeed.run(
+        f.url,
+        f.title,
+        f.siteUrl,
+        catId,
+        f.sortOrder,
+        f.customTitle,
+        f.adapterId ?? null,
+        f.adapterParams ?? null
+      )
     }
 
     // 4. 更新已有订阅的分类归属（可能有跨设备分类变动）
