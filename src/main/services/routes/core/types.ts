@@ -48,6 +48,12 @@ export interface FeedAdapter {
   /** 声明登录态 cookie 名（全部出现即视为已登录，如 ['SESSDATA']） */
   loginCookieNames?: string[]
   /**
+   * 声明浏览器抓取时注入的 cookie 白名单（只注入这些；缺省注入全部）。
+   * 用于过滤浏览器指纹类 cookie（如 B 站 buvid3/buvid_fp）：这些 cookie 与环境
+   * 真实指纹不匹配时会被站点风控识别，导致数据接口返回空。让页面 JS 自行生成更稳。
+   */
+  injectCookieNames?: string[]
+  /**
    * 页面内提取脚本（needsBrowser 适配器可选）：一段在渲染进程执行的 JS，
    * 返回「可 JSON 序列化」的结构化数据（如条目数组）。声明后浏览器抓取会在渲染进程
    * 直接提取数据，parse 收到的是 JSON 文本而非整页大 HTML——避免主进程 cheerio 解析

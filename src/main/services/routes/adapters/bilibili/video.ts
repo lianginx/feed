@@ -124,6 +124,9 @@ export const bilibiliUserVideo: FeedAdapter = {
   cookieDomain: '.bilibili.com',
   loginUrl: 'https://passport.bilibili.com/login',
   loginCookieNames: ['SESSDATA'],
+  // 只注入登录态 cookie：buvid3/buvid_fp 等浏览器指纹 cookie 与抓取环境指纹不匹配，
+  // 会被 B 站风控导致视频列表接口返回空；让页面 JS 自行通过 /x/frontend/finger/spi_v2 生成更稳。
+  injectCookieNames: ['SESSDATA', 'bili_jct', 'DedeUserID'],
   browserExtract: EXTRACT_VIDEO_CARDS,
   buildUrl: (params) => `https://space.bilibili.com/${params.uid ?? ''}/video`,
   async parse(raw: string, ctx: AdapterParseContext): Promise<ParsedFeed> {
@@ -173,6 +176,11 @@ export const bilibiliUserVideo: FeedAdapter = {
       avatar = (data.avatar ?? '').trim()
       for (const it of data.items ?? []) {
         push((it.title ?? '').trim(), normalizeUrl(it.url ?? ''), it)
+      }
+      // 页面已渲染（含 UP 主信息）却提取不到任何视频卡片：判定为视频列表接口被风控返回空，
+      // 抛错让上层提示（而非静默入库一个空订阅 / 静默刷新成功）。
+      if (items.length === 0 && !upName && !upSign) {
+        throw new Error('未能从 B 站空间页提取到视频列表（页面可能被风控或渲染失败），请重试')
       }
     } else if (raw.length <= 100_000) {
       // 兼容兜底：解析 HTML（本地 fixture / 小片段）。

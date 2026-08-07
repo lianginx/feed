@@ -87,6 +87,20 @@ describe('bilibili 用户视频适配器', () => {
     expect(bilibiliUserVideo.cookieDomain).toBe('.bilibili.com')
   })
 
+  it('声明注入 cookie 白名单（过滤 buvid 指纹 cookie）', () => {
+    // 只注入登录态 cookie：buvid3/buvid_fp 等指纹 cookie 与抓取环境不匹配会被 B 站风控
+    expect(bilibiliUserVideo.injectCookieNames).toEqual(['SESSDATA', 'bili_jct', 'DedeUserID'])
+  })
+
+  it('parse 页面提取 JSON 无 UP 主信息且无卡片时抛错（避免静默入库空订阅）', async () => {
+    await expect(
+      bilibiliUserVideo.parse(JSON.stringify({ upName: '', upSign: '', avatar: '', items: [] }), {
+        params: { uid: '928915' },
+        url: 'https://space.bilibili.com/928915/video'
+      })
+    ).rejects.toThrow('未能从 B 站空间页提取到视频列表')
+  })
+
   it('声明 browserExtract（渲染进程内提取，主进程不解析整页大 HTML）', () => {
     expect(bilibiliUserVideo.browserExtract).toBeTruthy()
     expect(bilibiliUserVideo.browserExtract).toContain('.bili-video-card')

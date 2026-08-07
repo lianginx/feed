@@ -28,5 +28,14 @@ export function getSiteCookieString(domain: string): string | undefined {
 export function getCookiesForAdapter(adapter: FeedAdapter): Record<string, string> {
   if (!adapter.cookieDomain) return {}
   const raw = getSiteCookieString(adapter.cookieDomain)
-  return raw ? parseCookieString(raw) : {}
+  if (!raw) return {}
+  const all = parseCookieString(raw)
+  // 声明了白名单只注入白名单内 cookie：过滤浏览器指纹类 cookie（buvid 等），
+  // 避免其与环境真实指纹不匹配被站点风控（B 站实测会导致视频列表接口返回空）。
+  if (!adapter.injectCookieNames) return all
+  const result: Record<string, string> = {}
+  for (const name of adapter.injectCookieNames) {
+    if (all[name]) result[name] = all[name]
+  }
+  return result
 }
