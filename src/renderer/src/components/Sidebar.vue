@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
+import { useLocalStorage } from '@vueuse/core'
 import {
   RefreshCw,
   Plus,
@@ -67,19 +68,22 @@ const dragCategoryId = ref<number | null>(null)
 const dragOverCategorySortId = ref<number | null>(null)
 const categoryDropPosition = ref<'before' | 'after'>('after')
 const savedCollapsedCategories = reactive<Record<number, boolean>>({})
-const collapsedCategories = reactive<Record<number, boolean>>({})
-const uncategorizedCollapsed = ref(false)
+const collapsedCategories = useLocalStorage<Record<number, boolean>>(
+  'sidebar.collapsedCategories',
+  {}
+)
+const uncategorizedCollapsed = useLocalStorage<boolean>('sidebar.uncategorizedCollapsed', false)
 const editingFeed = ref<FeedItem | null>(null)
 const showEditFeed = ref(false)
 const renamingFeedId = ref<number | null>(null)
 const renameFocused = ref(false)
 
 function isCategoryCollapsed(catId: number): boolean {
-  return collapsedCategories[catId] === true
+  return collapsedCategories.value[catId] === true
 }
 
 function toggleCategory(catId: number): void {
-  collapsedCategories[catId] = !collapsedCategories[catId]
+  collapsedCategories.value[catId] = !collapsedCategories.value[catId]
 }
 
 function toggleUncategorized(): void {
@@ -358,8 +362,8 @@ function onCategoryDragStart(catId: number, event: DragEvent): void {
   }
   // 记录所有分组折叠状态并全部收起
   for (const c of categories.value) {
-    savedCollapsedCategories[c.id] = collapsedCategories[c.id] ?? false
-    collapsedCategories[c.id] = true
+    savedCollapsedCategories[c.id] = collapsedCategories.value[c.id] ?? false
+    collapsedCategories.value[c.id] = true
   }
 }
 
@@ -410,7 +414,7 @@ function onCategoryDragEnd(): void {
   dragOverCategorySortId.value = null
   // 恢复折叠状态
   for (const c of categories.value) {
-    collapsedCategories[c.id] = savedCollapsedCategories[c.id]
+    collapsedCategories.value[c.id] = savedCollapsedCategories[c.id]
   }
 }
 </script>
