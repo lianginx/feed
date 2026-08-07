@@ -15,9 +15,9 @@
 - **RSS 解析**：rss-parser（RSS + Atom）
 - **数据存储**：better-sqlite3（文章）+ electron-store v11（配置）
 - **HTML 净化**：dompurify（防 XSS，所有文章内容必须净化）
-- **快捷键**：@vueuse/core useMagicKeys
+- **快捷键**：Electron 原生菜单加速器
 - **虚拟滚动**：@tanstack/vue-virtual
-- **拖拽排序**：vue-dnd-kit
+- **拖拽排序**：原生 HTML5 拖拽
 - **图标**：@lucide/vue
 - **其他**：opml（导入导出）、系统托盘（Electron 内置 Tray + Menu）
 

@@ -47,12 +47,8 @@
 | better-sqlite3               | ^13    | SQLite 数据库                        | https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md |
 | electron-store               | ^11    | 配置存储                             | https://github.com/sindresorhus/electron-store#readme              |
 | @tanstack/vue-virtual        | latest | 虚拟滚动                             | https://tanstack.com/virtual/latest                                |
-| vue-dnd-kit                  | ^2.4   | 拖拽排序                             | https://github.com/ZiZIGY/vue-dnd-kit                              |
 | dompurify                    | latest | HTML 净化（防 XSS）                  | https://github.com/cure53/DOMPurify#readme                         |
-| @vueuse/core                 | latest | 快捷键绑定（useMagicKeys）等工具函数 | https://vueuse.org/core/useMagicKeys/                              |
-| vue-draggable-plus（备选）   | ^0.6   | 拖拽排序                             | https://vue-draggable-plus.pages.dev/                              |
-| @vueuse/integrations（备选） | latest | 拖拽排序                             | https://vueuse.org/integrations/useSortable/                       |
-| SortableJS（备选）           | ^1.15  | 拖拽底层库                           | https://sortablejs.github.io/Sortable/                             |
+| @vueuse/core                 | ^14.3  | 渲染层工具函数（shadcn 基础组件 reactiveOmit、useLocalStorage 等） | https://vueuse.org/                                                |
 
 ## 开发工具
 
@@ -70,12 +66,12 @@
 | 存储方案         | 分层存储（electron-store + better-sqlite3）     | 配置轻量、文章数据量大，分开管理                                      |
 | UI 框架          | shadcn-vue + TailwindCSS v4                     | 源码级组件高度可定制、设计现代简约、AI 友好                           |
 | 状态管理         | Vue 组合式 API（Composable）                    | 零依赖、代码直观、TypeScript 类型推断优秀                             |
-| 快捷键绑定       | @vueuse/core useMagicKeys（方案 A）             | 一期固定绑定+开关，自定义绑定延后                                     |
+| 快捷键           | Electron 原生菜单加速器                        | 原生支持（⌘N/R/F/E/D 等），无渲染层依赖、无 JS 延迟                 |
 | RSS 解析         | rss-parser                                      | API 简洁、TypeScript 支持好、自动处理多种格式                         |
 | HTML 净化        | DOMPurify                                       | rss-parser 不做 XSS 过滤，Electron 中 v-html 必须净化                 |
 | OPML 导入导出    | opml（Dave Winer）                              | 最成熟的 OPML 库，支持 parse/stringify                                |
 | 虚拟滚动         | @tanstack/vue-virtual                           | 配合 shadcn-vue 使用，性能优秀                                        |
-| 拖拽排序         | vue-dnd-kit（首选），vue-draggable-plus（备选） | vue-dnd-kit 自研、零依赖、持续活跃；vue-draggable-plus 开箱即用       |
+| 拖拽排序         | 原生 HTML5 拖拽                                  | 零依赖、实现简单，无需第三方库                                    |
 | 图标             | @lucide/vue                                     | 与 shadcn-vue 原生集成，图标简洁现代                                  |
 | 架构设计         | 清晰的进程分层                                  | Renderer 负责 UI，Main 负责业务逻辑和数据存储                         |
 | macOS 启动崩溃修复 | fuses 翻转 + `resetAdHocDarwinSignature: true` | 未签名构建（CI）翻转 fuses 会破坏 ad-hoc 签名，启动被内核杀死；开启后 flipFuses 自动对整个 .app 重新 ad-hoc 签名，有真实证书的构建不受影响 |
