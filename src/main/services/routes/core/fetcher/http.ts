@@ -1,4 +1,4 @@
-import { fetchWithTimeout } from '../../../http'
+import { fetchWithTimeout, BROWSER_USER_AGENT } from '../../../http'
 
 export interface FetchPageOptions {
   /** 附加请求头（如 Referer），合并进默认 UA */
@@ -11,7 +11,7 @@ export interface FetchPageOptions {
  */
 export async function fetchPage(url: string, options: FetchPageOptions = {}): Promise<string> {
   const res = await fetchWithTimeout(url, {
-    headers: { 'User-Agent': 'Feed/1.0 (RSS Reader)', ...options.headers }
+    headers: { 'User-Agent': BROWSER_USER_AGENT, ...options.headers }
   })
   if (!res.ok) {
     throw new Error('Status code ' + res.status)

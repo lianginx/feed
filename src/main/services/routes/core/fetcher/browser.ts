@@ -7,6 +7,12 @@ export interface BrowserFetchOptions {
   cookieDomain?: string
   /** 等该选择器出现后再提取（可选，SPA 异步渲染用） */
   waitForSelector?: string
+  /**
+   * 页面内提取脚本（可选）：在渲染进程执行的一段 JS，返回「可 JSON 序列化」的值。
+   * 返回渲染后整页 HTML 之前先按需提取结构化数据（如 querySelectorAll 收集的条目数组），
+   * 主进程无需再 cheerio 解析整页大 HTML（避免深度递归导致 SIGSEGV），更省内存。
+   */
+  extract?: string
   /** 渲染等待上限（毫秒） */
   timeoutMs?: number
 }
@@ -14,9 +20,28 @@ export interface BrowserFetchOptions {
 export interface BrowserFetchResult {
   html: string
   title: string
+  /** extract 脚本提取结果的 JSON 字符串（无 extract 或提取失败时为 undefined） */
+  data?: string
 }
 
 const DEFAULT_TIMEOUT_MS = 25_000
+
+/**
+ * 调试开关：开发模式（electron-vite dev / preview，未打包）默认显示抓取窗口并打印渲染进度；
+ * 生产打包默认隐藏。也可用 FEED_DEBUG_FETCH_WINDOW=1 强制开启。
+ * 用 process.defaultApp（Electron 是否以源码运行）而非 @electron-toolkit/utils 的 is.dev，
+ * 因为后者顶层访问 electron.app，会在 vitest 的 node 环境（electron 非 app 对象）导入时崩溃。
+ */
+const SHOW_FETCH_WINDOW =
+  (process as NodeJS.Process & { defaultApp?: boolean }).defaultApp === true ||
+  process.env.FEED_DEBUG_FETCH_WINDOW === '1'
+
+/** 仅调试模式下输出抓取进度日志 */
+function debugFetchLog(...args: unknown[]): void {
+  if (SHOW_FETCH_WINDOW) {
+    console.log('[fetchBrowserPage]', ...args)
+  }
+}
 
 /**
  * 用隐藏 webContents（Chromium 渲染）抓取页面，返回渲染后的 HTML。
@@ -33,8 +58,9 @@ export async function fetchBrowserPage(
   options: BrowserFetchOptions = {}
 ): Promise<BrowserFetchResult> {
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
+  debugFetchLog('开始抓取:', url)
   const win = new BrowserWindow({
-    show: false,
+    show: SHOW_FETCH_WINDOW,
     webPreferences: {
       sandbox: true,
       contextIsolation: true,
@@ -77,8 +103,13 @@ export async function fetchBrowserPage(
         )
         .catch(() => null)
       const found = r ? await win.webContents.executeJavaScript(waitFor).catch(() => false) : false
+      debugFetchLog(
+        `readyState=${r?.readyState ?? '?'} htmlLen=${r?.html?.length ?? 0} found=${found}`
+      )
       if (r && r.readyState === 'complete' && r.html && found) {
-        return { html: r.html, title: r.title }
+        const data = await runExtract(win, options.extract)
+        debugFetchLog('渲染完成, 标题:', r.title, 'htmlLen:', r.html.length)
+        return { html: r.html, title: r.title, data }
       }
       await new Promise((res) => setTimeout(res, 400))
     }
@@ -93,10 +124,20 @@ export async function fetchBrowserPage(
       )
       .catch(() => null)
     if (r && r.html) {
-      return { html: r.html, title: r.title }
+      const data = await runExtract(win, options.extract)
+      debugFetchLog('超时兜底返回, 标题:', r.title, 'htmlLen:', r.html.length)
+      return { html: r.html, title: r.title, data }
     }
     throw new Error('浏览器渲染超时')
   } finally {
     win.destroy()
   }
+}
+
+/** 执行页面内提取脚本：结果序列化为 JSON 字符串；执行失败 / 返回空则 undefined */
+async function runExtract(win: BrowserWindow, extract?: string): Promise<string | undefined> {
+  if (!extract) return undefined
+  const value = await win.webContents.executeJavaScript(extract).catch(() => undefined)
+  if (value === undefined || value === null) return undefined
+  return JSON.stringify(value)
 }

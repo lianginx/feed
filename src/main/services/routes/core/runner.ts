@@ -1,6 +1,7 @@
 import type { ParsedFeed } from '../../rss'
 import type { BrowserFetchOptions, BrowserFetchResult } from './fetcher/browser'
 import { fetchPage, type FetchPageOptions } from './fetcher/http'
+import { runWithBrowserLimit, runWithHttpLimit } from './limit'
 import type { FeedAdapter } from './types'
 
 export interface AdapterRunResult {
@@ -36,14 +37,19 @@ export async function runAdapter(
   let raw: string
   if (adapter.needsBrowser) {
     const browser = fetchers.browser ?? (await import('./fetcher/browser')).fetchBrowserPage
-    const page = await browser(url, {
-      cookies: options.cookies,
-      cookieDomain: adapter.cookieDomain
-    })
-    raw = page.html
+    // 浏览器渲染并发受 browser 上限约束（一个页面 = 一个渲染进程）
+    const page = await runWithBrowserLimit(() =>
+      browser(url, {
+        cookies: options.cookies,
+        cookieDomain: adapter.cookieDomain,
+        // 声明了 browserExtract 的适配器：渲染进程内直接提取结构化数据，主进程不解析整页大 HTML
+        extract: adapter.browserExtract
+      })
+    )
+    raw = page.data ?? page.html
   } else {
     const http = fetchers.http ?? fetchPage
-    raw = await http(url, { headers: adapter.headers })
+    raw = await runWithHttpLimit(() => http(url, { headers: adapter.headers }))
   }
 
   const feed = await adapter.parse(raw, { params, url })

@@ -1,6 +1,6 @@
 import FeedParser from 'feedparser'
 import * as cheerio from 'cheerio'
-import { fetchWithTimeout } from './http'
+import { fetchWithTimeout, BROWSER_USER_AGENT } from './http'
 
 /**
  * feedparser 解析结果的部分命名空间字段（@types/feedparser 未覆盖，按需扩展）。
@@ -224,7 +224,7 @@ export async function parseFeed(url: string): Promise<ParsedFeed> {
   let res: Response
   try {
     res = await fetchWithTimeout(url, {
-      headers: { 'User-Agent': 'Feed/1.0 (RSS Reader)' }
+      headers: { 'User-Agent': BROWSER_USER_AGENT }
     })
   } catch (error) {
     // fetchWithTimeout 超时通过 AbortController 中止，抛 AbortError；

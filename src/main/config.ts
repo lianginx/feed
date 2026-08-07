@@ -45,6 +45,8 @@ export interface AppSettings {
   autoLaunch: boolean
   /** 启动时隐藏窗口（仅登录自动启动时生效），默认 false */
   launchHidden: boolean
+  /** 站点适配器登录 Cookie：域名 → 整段 cookie 字符串（如 'SESSDATA=xxx; bili_jct=yyy'），供 needsBrowser 适配器注入 */
+  siteCookies: Record<string, string>
 }
 
 const defaults: AppSettings = {
@@ -56,7 +58,8 @@ const defaults: AppSettings = {
   sync: { provider: 'none' },
   translate: { provider: 'none', targetLang: 'zh' },
   autoLaunch: false,
-  launchHidden: false
+  launchHidden: false,
+  siteCookies: {}
 }
 
 const store = new Store<AppSettings>({
