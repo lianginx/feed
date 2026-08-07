@@ -18,6 +18,20 @@ function normalizeUrl(url: string): string {
   return url
 }
 
+/**
+ * 去掉 B 站图床地址的缩放/转码参数后缀（如 @264w_264h_1e_1c.avif、@120w_120h_1c），
+ * 取原图地址。不硬编码后缀：@ 起全部截断，无 @ 原样返回，兼容各类尺寸参数。
+ */
+function stripImageScale(url: string): string {
+  const i = url.indexOf('@')
+  return i === -1 ? url : url.slice(0, i)
+}
+
+/** B 站正文在 span 内用 \n 分段，转 <br> 保留换行（HTML 渲染默认折叠空白） */
+function newlineToBr(text: string): string {
+  return text.replace(/\r?\n/g, '<br>')
+}
+
 /** B 站接口业务错误码 → 友好提示（风控/限流等常见场景，避免静默返回空订阅） */
 function bilibiliApiError(code: number, message?: string): Error {
   const reasons: Record<number, string> = {
@@ -55,10 +69,19 @@ async function fetchOpusDetail(url: string): Promise<{ pubDate?: string; content
     if (!res.ok) return {}
     const $ = cheerio.load(await res.text())
     const pubText = $('.opus-module-author__pub__text').text().replace('编辑于 ', '').trim()
-    const content = $('.opus-module-content').html()
+    // 正文在 span 内用 \n 分段，转 <br> 保留阅读排版（B 站网页靠 CSS 的 pre-line 渲染）
+    const text = $('.opus-module-content > p').text().trim()
+    const body = text ? newlineToBr(text) : ''
+    // 正文配图（opus-para-pic 相册预览，去重），去缩放后缀取原图
+    const pics = new Set<string>()
+    $('.opus-para-pic .bili-album__preview img').each((_, el) => {
+      const src = $(el).attr('src')
+      if (src) pics.add(normalizeUrl(stripImageScale(src)))
+    })
+    const content = [body, ...Array.from(pics, (s) => `<img src="${s}" />`)].join('')
     return {
       pubDate: pubText ? parseBiliDateZh(pubText) : undefined,
-      content: content ? String(content).trim() : undefined
+      content: content || undefined
     }
   } catch {
     return {}
@@ -134,11 +157,13 @@ export const bilibiliUserArticle: FeedAdapter = {
     for (const item of json?.data?.items ?? []) {
       const content = (item.content ?? '').trim()
       const url = item.jump_url ? normalizeUrl(item.jump_url) : undefined
-      const cover = item.cover?.url ? normalizeUrl(item.cover.url) : undefined
+      const cover = item.cover?.url ? normalizeUrl(stripImageScale(item.cover.url)) : undefined
       // 逐篇抓详情页补发布时间与完整正文（RSSHub 同方案；串行+失败跳过，避免并发限流）
       const detail = url ? await fetchOpusDetail(url) : {}
+      // 兜底正文同样处理换行（列表接口文本用 \n 分段，HTML 渲染需转 <br>）
+      const fallbackBody = newlineToBr(content)
       const detailContent =
-        detail.content || (cover ? `<img src="${cover}" />\n\n${content}` : content)
+        detail.content || (cover ? `<img src="${cover}" />\n\n${fallbackBody}` : fallbackBody)
       items.push({
         guid: `bilibili-${item.opus_id ?? item.jump_url ?? content}`,
         title: extractTitle(content),

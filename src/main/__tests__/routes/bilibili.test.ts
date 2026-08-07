@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { bilibiliUserArticle, bilibiliUserVideo } from '../../services/routes/adapters/bilibili'
+import { fetchWithTimeout } from '../../services/http'
 
 // 专栏适配器 parse 会联网抓 opus 详情页（补发布时间/正文），单测 mock 网络
 vi.mock('../../services/http', () => ({
@@ -18,7 +19,12 @@ vi.mock('../../services/http', () => ({
         ok: true,
         text: async () =>
           '<div class="opus-module-author__pub__text">2026年08月06日 19:07</div>' +
-          '<div class="opus-module-content"><p>详情正文</p><img src="//i0.hdslb.com/detail.jpg"></div>'
+          '<div class="opus-module-content opus-paragraph-children">' +
+          '<p><span>详情第一行\n详情第二行</span></p>' +
+          '<div class="opus-para-pic"><div class="bili-album"><div class="bili-album__preview grid2">' +
+          '<div class="bili-album__preview__picture"><img src="//i0.hdslb.com/bfs/new_dyn/a.png@264w_264h_1e_1c.avif"></div>' +
+          '<div class="bili-album__preview__picture"><img src="//i0.hdslb.com/bfs/new_dyn/b.png@264w_264h_1e_1c.avif"></div>' +
+          '</div></div></div></div>'
       }
     }
     return { ok: false }
@@ -34,7 +40,7 @@ const ARTICLE_FIXTURE = JSON.stringify({
         content: '第一行是标题\n后面是正文内容',
         jump_url: '//www.bilibili.com/opus/1233411644167553046',
         opus_id: '1233411644167553046',
-        cover: { url: 'http://i0.hdslb.com/bfs/xxx.jpg' }
+        cover: { url: 'http://i0.hdslb.com/bfs/xxx.jpg@100w_100h_1c' }
       },
       {
         content: '第二篇专栏摘要',
@@ -69,11 +75,40 @@ describe('bilibili 用户专栏适配器', () => {
     expect(first.guid).toBe('bilibili-1233411644167553046')
     expect(first.title).toBe('第一行是标题')
     expect(first.link).toBe('https://www.bilibili.com/opus/1233411644167553046')
+    // 封面去缩放后缀取原图
     expect(first.coverImage).toBe('https://i0.hdslb.com/bfs/xxx.jpg')
     // enrich 逐篇抓详情页：content 用详情页完整正文，而非封面兜底
-    expect(first.content).toContain('详情正文')
+    expect(first.content).toContain('详情第一行')
+    // span 内的 \n 转 <br> 保留换行（HTML 渲染默认折叠空白）
+    expect(first.content).toContain('详情第一行<br>详情第二行')
+    // 正文配图去重并去掉 @ 缩放后缀取原图
+    expect(first.content).toContain('<img src="https://i0.hdslb.com/bfs/new_dyn/a.png" />')
+    expect(first.content).toContain('<img src="https://i0.hdslb.com/bfs/new_dyn/b.png" />')
+    expect(first.content).not.toContain('@264w_264h_1e_1c')
     // 详情页时间 '2026年08月06日 19:07' 解析为 ISO
     expect(first.pubDate).toBe(new Date('2026-08-06T19:07:00+08:00').toISOString())
+  })
+
+  it('详情页抓取失败时，兜底正文的 \\n 也转 <br>（HTML 渲染不折叠换行）', async () => {
+    vi.mocked(fetchWithTimeout).mockImplementationOnce(async () => ({ ok: false }) as Response)
+    const feed = await bilibiliUserArticle.parse(
+      JSON.stringify({
+        data: {
+          items: [
+            {
+              content: '标题行\n正文一行\n正文二行',
+              jump_url: '//www.bilibili.com/opus/1',
+              opus_id: '1'
+            }
+          ]
+        }
+      }),
+      {
+        params: { uid: '928915' },
+        url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/opus/feed/space?host_mid=928915'
+      }
+    )
+    expect(feed.items[0].content).toContain('标题行<br>正文一行<br>正文二行')
   })
 
   it('parse 接口返回风控/限流错误码时抛友好错误（不静默入库空订阅）', async () => {
