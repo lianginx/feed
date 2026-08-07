@@ -77,6 +77,8 @@ describe('bilibili 用户专栏适配器', () => {
     expect(first.link).toBe('https://www.bilibili.com/opus/1233411644167553046')
     // 封面去缩放后缀取原图
     expect(first.coverImage).toBe('https://i0.hdslb.com/bfs/xxx.jpg')
+    // 详情页抓取成功，正文完整
+    expect(first.contentComplete).toBe(true)
     // enrich 逐篇抓详情页：content 用详情页完整正文，而非封面兜底
     expect(first.content).toContain('详情第一行')
     // span 内的 \n 转 <br> 保留换行（HTML 渲染默认折叠空白）
@@ -89,7 +91,50 @@ describe('bilibili 用户专栏适配器', () => {
     expect(first.pubDate).toBe(new Date('2026-08-06T19:07:00+08:00').toISOString())
   })
 
-  it('详情页抓取失败时，兜底正文的 \\n 也转 <br>（HTML 渲染不折叠换行）', async () => {
+  it('专栏文章（多 p 段落穿插图片）按顺序保留段落与配图位置', async () => {
+    const COLUMN_HTML =
+      '<div class="opus-module-author__pub__text">2026年08月06日 19:07</div>' +
+      '<div class="opus-module-content opus-paragraph-children">' +
+      '<p><span>第一段文字</span></p>' +
+      '<div class="opus-para-pic center"><div class="opus-pic-view"><div class="bili-dyn-pic">' +
+      '<div class="bili-dyn-pic__img"><img src="//i1.hdslb.com/bfs/new_dyn/mid.png@1192w.webp"></div>' +
+      '</div></div></div>' +
+      '<p><span>第二段文字</span></p>' +
+      '</div>'
+    vi.mocked(fetchWithTimeout).mockImplementationOnce(
+      async () => ({ ok: true, text: async () => COLUMN_HTML }) as Response
+    )
+    const feed = await bilibiliUserArticle.parse(
+      JSON.stringify({
+        data: {
+          items: [
+            {
+              content: '专栏标题\n正文',
+              jump_url: '//www.bilibili.com/opus/column1',
+              opus_id: 'column1'
+            }
+          ]
+        }
+      }),
+      {
+        params: { uid: '928915' },
+        url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/opus/feed/space?host_mid=928915'
+      }
+    )
+    const content = feed.items[0].content ?? ''
+    // 段落与配图按原文顺序输出，缩放后缀被去掉
+    expect(content.indexOf('<p>第一段文字</p>')).toBeGreaterThan(-1)
+    expect(content.indexOf('<p>第二段文字</p>')).toBeGreaterThan(-1)
+    expect(content.indexOf('<p>第一段文字</p>')).toBeLessThan(
+      content.indexOf('<img src="https://i1.hdslb.com/bfs/new_dyn/mid.png" />')
+    )
+    expect(content.indexOf('<img src="https://i1.hdslb.com/bfs/new_dyn/mid.png" />')).toBeLessThan(
+      content.indexOf('<p>第二段文字</p>')
+    )
+    expect(content).not.toContain('@1192w')
+  })
+
+  it('详情页抓取失败时正文不落兜底（content 缺失），列表 content 仍作摘要', async () => {
     vi.mocked(fetchWithTimeout).mockImplementationOnce(async () => ({ ok: false }) as Response)
     const feed = await bilibiliUserArticle.parse(
       JSON.stringify({
@@ -108,7 +153,12 @@ describe('bilibili 用户专栏适配器', () => {
         url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/opus/feed/space?host_mid=928915'
       }
     )
-    expect(feed.items[0].content).toContain('标题行<br>正文一行<br>正文二行')
+    // 详情抓取失败：正文不拿列表内容兜底
+    expect(feed.items[0].content).toBeUndefined()
+    expect(feed.items[0].contentComplete).toBe(false)
+    // 列表 content 作为摘要/搜索文本保留
+    expect(feed.items[0].summary).toBe('标题行\n正文一行\n正文二行')
+    expect(feed.items[0].contentSnippet).toBe('标题行\n正文一行\n正文二行')
   })
 
   it('parse 接口返回风控/限流错误码时抛友好错误（不静默入库空订阅）', async () => {

@@ -60,6 +60,46 @@ function parseBiliDateZh(text: string): string | undefined {
   ).toISOString()
 }
 
+/**
+ * 提取 opus 正文为 HTML，兼容两种发布形式：
+ * - 图文动态：单个 <p><span> 内用 \n 分段，图片（bili-album 相册）在末尾；
+ * - 专栏文章：多个 <p> 段落正常排版，图片（opus-para-pic）穿插在段落之间。
+ * 统一按 .opus-module-content 的直接子节点顺序输出 <p> 段落与 <img> 配图。
+ */
+function extractOpusBody($: cheerio.CheerioAPI): string {
+  const parts: string[] = []
+  // 同图经 i0/i1 多节点 CDN 返回，以路径去重
+  const seen = new Set<string>()
+  const pushPic = (src: string): void => {
+    const clean = normalizeUrl(stripImageScale(src))
+    const key = clean.replace(/^https?:\/\/[^/]+/, '')
+    if (seen.has(key)) return
+    seen.add(key)
+    parts.push(`<img src="${clean}" />`)
+  }
+  $('.opus-module-content')
+    .children()
+    .each((_, el) => {
+      const $el = $(el)
+      if ($el.is('img')) {
+        const src = $el.attr('src')
+        if (src) pushPic(src)
+        return
+      }
+      if ($el.is('.opus-para-pic')) {
+        $el.find('img').each((_, img) => {
+          const src = $(img).attr('src')
+          if (src) pushPic(src)
+        })
+        return
+      }
+      // 段落 / 文本节点：span 内 \n 转 <br> 保留换行
+      const text = $el.text().trim()
+      if (text) parts.push(`<p>${newlineToBr(text)}</p>`)
+    })
+  return parts.join('')
+}
+
 /** 抓 opus 详情页拿发布时间与完整正文（RSSHub 同方案：列表接口无时间，逐篇抓页面） */
 async function fetchOpusDetail(url: string): Promise<{ pubDate?: string; content?: string }> {
   try {
@@ -69,16 +109,7 @@ async function fetchOpusDetail(url: string): Promise<{ pubDate?: string; content
     if (!res.ok) return {}
     const $ = cheerio.load(await res.text())
     const pubText = $('.opus-module-author__pub__text').text().replace('编辑于 ', '').trim()
-    // 正文在 span 内用 \n 分段，转 <br> 保留阅读排版（B 站网页靠 CSS 的 pre-line 渲染）
-    const text = $('.opus-module-content > p').text().trim()
-    const body = text ? newlineToBr(text) : ''
-    // 正文配图（opus-para-pic 相册预览，去重），去缩放后缀取原图
-    const pics = new Set<string>()
-    $('.opus-para-pic .bili-album__preview img').each((_, el) => {
-      const src = $(el).attr('src')
-      if (src) pics.add(normalizeUrl(stripImageScale(src)))
-    })
-    const content = [body, ...Array.from(pics, (s) => `<img src="${s}" />`)].join('')
+    const content = extractOpusBody($)
     return {
       pubDate: pubText ? parseBiliDateZh(pubText) : undefined,
       content: content || undefined
@@ -160,17 +191,15 @@ export const bilibiliUserArticle: FeedAdapter = {
       const cover = item.cover?.url ? normalizeUrl(stripImageScale(item.cover.url)) : undefined
       // 逐篇抓详情页补发布时间与完整正文（RSSHub 同方案；串行+失败跳过，避免并发限流）
       const detail = url ? await fetchOpusDetail(url) : {}
-      // 兜底正文同样处理换行（列表接口文本用 \n 分段，HTML 渲染需转 <br>）
-      const fallbackBody = newlineToBr(content)
-      const detailContent =
-        detail.content || (cover ? `<img src="${cover}" />\n\n${fallbackBody}` : fallbackBody)
       items.push({
         guid: `bilibili-${item.opus_id ?? item.jump_url ?? content}`,
         title: extractTitle(content),
         link: url,
+        // 列表 content 仅作简介/搜索摘要，正文与发布日期必须来自详情页（不做兜底）
         summary: content || undefined,
-        content: detailContent || undefined,
         contentSnippet: content || undefined,
+        content: detail.content,
+        contentComplete: Boolean(detail.content),
         coverImage: cover,
         pubDate: detail.pubDate
       })

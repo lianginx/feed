@@ -77,6 +77,15 @@ function openInBrowser(url: string | null): void {
 
 // 阅读时间：根据文章正文字数估算（中文按字、英文按词，分开计速）
 const readingTime = computed(() => estimateReadingTime(currentArticle.value?.content ?? null))
+
+// 展示正文：优先译文/原文正文；正文缺失（如详情抓取失败）时回退显示摘要，保留换行
+const displayContent = computed(() => {
+  const article = currentArticle.value
+  if (!article) return ''
+  const content = shown.value && translated.value ? translated.value.content : article.content
+  if (content) return content
+  return article.summary ? article.summary.replace(/\n/g, '<br>') : ''
+})
 </script>
 
 <template>
@@ -207,10 +216,10 @@ const readingTime = computed(() => estimateReadingTime(currentArticle.value?.con
 
           <!-- eslint-disable vue/no-v-html -- 内容已由 sanitizeHtml（DOMPurify）净化 -->
           <div
-            v-if="currentArticle.content"
+            v-if="displayContent"
             v-highlight
             class="prose prose-neutral dark:prose-invert max-w-none pb-20"
-            v-html="sanitizeHtml(shown && translated ? translated.content : currentArticle.content)"
+            v-html="sanitizeHtml(displayContent)"
           />
           <!-- eslint-enable vue/no-v-html -->
           <div v-else class="text-muted-foreground text-sm">暂无内容</div>

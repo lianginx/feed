@@ -33,6 +33,8 @@ export interface ParsedArticle {
   pubDate?: string
   author?: string
   coverImage?: string
+  /** 正文完整度契约：false 表示正文完全未提取到（不得携带 content），刷新时不得用兜底/缺失覆盖已有正文 */
+  contentComplete?: boolean
 }
 
 /**

@@ -103,7 +103,9 @@ export async function persistParsedFeed(
     UPDATE articles SET title = ?, content = ?, author = ?, published_at = ?, cover_image = ?
     WHERE feed_id = ? AND guid = ?
   `)
-  const selectStmt = db.prepare('SELECT id FROM articles WHERE feed_id = ? AND guid = ?')
+  const selectStmt = db.prepare(
+    'SELECT id, content, published_at FROM articles WHERE feed_id = ? AND guid = ?'
+  )
 
   let inserted = 0
   let updated = 0
@@ -112,22 +114,33 @@ export async function persistParsedFeed(
     for (const item of parsed.items) {
       if (!item.guid) continue
 
-      const content = item.content || item.contentSnippet || ''
-      const sanitizedContent = normalizeContentImages(purify.sanitize(content))
+      // 详情未提取到正文（contentComplete=false）时不用 contentSnippet/列表摘要兜底，
+      // 避免刷新把劣质内容覆盖成已入库的完整正文
+      const degraded = item.contentComplete === false
+      const rawContent = degraded ? '' : item.content || item.contentSnippet || ''
+      const sanitizedContent = normalizeContentImages(purify.sanitize(rawContent))
       // 无效（无法解析）的发布时间回退为当前时间，避免 NaN 落库导致按时间排序异常
       const parsedTime = item.pubDate ? new Date(item.pubDate).getTime() : NaN
       const publishedAt = Number.isFinite(parsedTime)
         ? Math.floor(parsedTime / 1000)
         : Math.floor(Date.now() / 1000)
 
-      const existing = selectStmt.get(feedId, item.guid)
+      const existing = selectStmt.get(feedId, item.guid) as
+        { id: number; content: string; published_at: number | null } | undefined
 
       if (existing) {
+        // 详情抓取失败（正文缺失）时不覆盖已抓到的完整正文
+        const effectiveContent = degraded && existing.content ? existing.content : sanitizedContent
+        // 发布时间缺失时不回退为当前时间，保留原有日期（对所有订阅源生效：
+        // 缺失日期用 now 填充会让旧文章排序时"看起来最新"，且刷新会不断改写真实日期）
+        const effectivePublishedAt = Number.isFinite(parsedTime)
+          ? Math.floor(parsedTime / 1000)
+          : (existing.published_at ?? Math.floor(Date.now() / 1000))
         updateStmt.run(
           item.title,
-          sanitizedContent,
+          effectiveContent,
           item.author || null,
-          publishedAt,
+          effectivePublishedAt,
           item.coverImage || null,
           feedId,
           item.guid
