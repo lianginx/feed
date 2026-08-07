@@ -76,9 +76,11 @@ src/
     │   │   ├── Sidebar.vue
     │   │   ├── ArticleList.vue
     │   │   ├── ArticleReader.vue
-    │   │   ├── AddFeedDialog.vue
+    │   │   ├── AdapterParamsForm.vue  # 内置路由动态参数表单
     │   │   ├── AddCategoryDialog.vue
     │   │   └── EditFeedDialog.vue
+    │   ├── addfeed/          # 「添加订阅源」独立窗口（RSS + 内置路由）
+    │   │   └── AddFeedApp.vue
     │   ├── utils/
     │   │   ├── sanitize.ts   # DOMPurify HTML 净化
     │   │   └── index.ts

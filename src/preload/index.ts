@@ -36,7 +36,6 @@ const api = {
       ipcRenderer.invoke('feeds:updateSortOrder', feeds),
     refreshFavicon: (id: number) => ipcRenderer.invoke('feeds:refreshFavicon', id),
     refresh: (feedId: number) => ipcRenderer.invoke('feeds:refresh', feedId),
-    parseUrl: (url: string) => ipcRenderer.invoke('feeds:parseUrl', url),
     listAdapters: () => ipcRenderer.invoke('feeds:listAdapters'),
     addAdapter: (input: {
       adapterId: string

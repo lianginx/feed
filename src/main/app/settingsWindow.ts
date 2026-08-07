@@ -6,10 +6,6 @@ import { setupExternalNavigation } from './window'
 
 let settingsWindow: BrowserWindow | null = null
 
-export function getSettingsWindow(): BrowserWindow | null {
-  return settingsWindow
-}
-
 /**
  * 创建（或聚焦）独立的设置窗口。
  * 单例：已存在则显示并聚焦，否则新建；关闭即销毁。

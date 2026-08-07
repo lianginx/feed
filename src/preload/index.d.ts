@@ -160,7 +160,6 @@ interface FeedApi {
   ) => Promise<ApiResponse<{ updated: number }>>
   refreshFavicon: (id: number) => Promise<ApiResponse<{ id: number; favicon_url: string | null }>>
   refresh: (feedId: number) => Promise<ApiResponse<RefreshResult>>
-  parseUrl: (url: string) => Promise<ApiResponse<unknown>>
   /** 订阅单个订阅源刷新进度事件，返回取消订阅函数 */
   onRefreshProgress: (callback: (data: RefreshProgressEvent) => void) => () => void
   /** 打开「添加订阅源」独立窗口 */

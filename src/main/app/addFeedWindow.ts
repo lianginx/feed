@@ -6,10 +6,6 @@ import { setupExternalNavigation } from './window'
 
 let addFeedWindow: BrowserWindow | null = null
 
-export function getAddFeedWindow(): BrowserWindow | null {
-  return addFeedWindow
-}
-
 /** 关闭添加订阅源窗口（添加完成后由主进程调用） */
 export function closeAddFeedWindow(): void {
   if (addFeedWindow && !addFeedWindow.isDestroyed()) {

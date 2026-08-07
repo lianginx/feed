@@ -263,15 +263,6 @@ export function registerFeedHandlers(): void {
     }
   })
 
-  ipcMain.handle('feeds:parseUrl', async (_event, url: string) => {
-    try {
-      const parsed = await parseFeed(url)
-      return success(parsed)
-    } catch (e) {
-      return error((e as Error).message)
-    }
-  })
-
   // 打开「添加订阅源」独立窗口（侧边栏按钮 / 菜单触发）
   ipcMain.handle('feeds:openAddFeedWindow', async () => {
     createAddFeedWindow()
