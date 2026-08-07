@@ -74,7 +74,7 @@ export function registerFeedHandlers(): void {
     }
   )
 
-  // 内置站点适配器列表（供前端「适配站点」入口选择）
+  // 内置路由列表（供前端「内置路由」入口选择）
   ipcMain.handle('feeds:listAdapters', async () => {
     try {
       const adapters = listAdapters().map((a) => ({

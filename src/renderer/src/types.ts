@@ -38,7 +38,7 @@ export interface SyncResult {
   lastSyncedAt?: number
 }
 
-/** 适配器参数声明（添加适配站点时填写，与主进程 AdapterParam 一致） */
+/** 路由参数声明（添加内置路由时填写，与主进程 AdapterParam 一致） */
 export interface AdapterParam {
   key: string
   label: string
@@ -46,7 +46,7 @@ export interface AdapterParam {
   placeholder?: string
 }
 
-/** 内置站点适配器元信息（feeds:listAdapters 返回） */
+/** 内置路由元信息（feeds:listAdapters 返回） */
 export interface AdapterInfo {
   id: string
   name: string

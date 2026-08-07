@@ -87,13 +87,13 @@ export function useFeeds() {
     return false
   }
 
-  /** 内置站点适配器列表（适配站点入口用） */
+  /** 内置路由（站点适配器）列表 */
   async function listAdapters(): Promise<AdapterInfo[]> {
     const result = await window.api.feeds.listAdapters()
     return result.success && result.data ? result.data : []
   }
 
-  /** 添加适配站点：主进程一次抓取即验证+入库，这里只需刷新列表并选中 */
+  /** 添加内置路由：主进程一次抓取即验证+入库，这里只需刷新列表并选中 */
   async function addAdapter(
     adapterId: string,
     params: Record<string, string>,

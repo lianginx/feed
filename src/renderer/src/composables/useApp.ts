@@ -104,7 +104,7 @@ export function useApp() {
     await window.api.config.update({ translate: next })
   }
 
-  /** 保存站点登录 Cookie（域名 → 整段 cookie），空值省略 */
+  /** 保存内置路由登录 Cookie（域名 → 整段 cookie），空值省略 */
   async function setSiteCookies(next: Record<string, string>): Promise<void> {
     const cleaned: Record<string, string> = {}
     for (const [domain, cookie] of Object.entries(next)) {

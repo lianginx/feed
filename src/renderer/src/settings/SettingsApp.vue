@@ -183,7 +183,7 @@ const translateError = ref<string | null>(null)
 const translating = ref(false)
 const translateTestResult = ref<string | null>(null)
 
-// ---------- 站点登录 Cookie（本地编辑态，点「保存站点设置」后写入配置） ----------
+// ---------- 内置路由登录 Cookie（本地编辑态，点「保存路由设置」后写入配置） ----------
 const siteCookieInputs = ref<Record<string, string>>({})
 const siteCookieAdapters = ref<AdapterInfo[]>([])
 const siteCookiesSaved = ref(false)
@@ -279,7 +279,7 @@ const navItems = [
   { id: 'startup', label: '启动', icon: Rocket },
   { id: 'sync', label: '同步', icon: Cloud },
   { id: 'translate', label: '翻译', icon: Languages },
-  { id: 'sites', label: '站点', icon: Globe },
+  { id: 'sites', label: '内置路由', icon: Globe },
   { id: 'data', label: '数据', icon: Database }
 ] as const
 
@@ -309,7 +309,7 @@ async function handleLoginSite(adapter: AdapterInfo): Promise<void> {
     if (result.success && result.data && !('cancelled' in result.data)) {
       const domain = (adapter.cookieDomain ?? '').replace(/^\./, '')
       siteCookieInputs.value = { ...siteCookieInputs.value, [domain]: result.data.cookie }
-      siteLoginMsg.value = '已获取登录态，请点「保存站点设置」生效'
+      siteLoginMsg.value = '已获取登录态，请点「保存路由设置」生效'
     } else {
       siteLoginMsg.value = '未完成登录，已取消'
     }
@@ -337,7 +337,7 @@ onMounted(async () => {
   translateSaved.value = false
   translateTestResult.value = null
 
-  // 加载站点 Cookie 配置：只展示需要登录 cookie 的适配器
+  // 加载内置路由 Cookie 配置：只展示需要登录 cookie 的适配器
   const adapterResult = await window.api.feeds.listAdapters()
   if (adapterResult.success && adapterResult.data) {
     siteCookieAdapters.value = adapterResult.data.filter((a) => a.cookieDomain)
@@ -765,11 +765,11 @@ onMounted(async () => {
 
       <div v-else-if="activeSection === 'sites'">
         <section>
-          <h2 class="text-sm font-semibold text-foreground mb-1">站点</h2>
+          <h2 class="text-sm font-semibold text-foreground mb-1">内置路由</h2>
           <div class="py-3">
-            <div class="text-sm">站点登录 Cookie</div>
+            <div class="text-sm">内置路由登录 Cookie</div>
             <div class="mt-0.5 text-xs text-muted-foreground">
-              部分内置站点（如 B 站）需要登录 Cookie 才能抓取完整内容。从浏览器复制整段 Cookie
+              部分内置路由（如 B 站）需要登录 Cookie 才能抓取完整内容。从浏览器复制整段 Cookie
               粘贴到对应站点即可；未配置也能抓公开内容。
             </div>
           </div>
@@ -803,12 +803,12 @@ onMounted(async () => {
               </div>
             </div>
           </template>
-          <p v-else class="py-2 text-xs text-muted-foreground">暂无需要登录 Cookie 的站点。</p>
+          <p v-else class="py-2 text-xs text-muted-foreground">暂无需要登录 Cookie 的路由。</p>
 
           <div class="mt-5 flex items-center gap-3">
             <Button variant="outline" size="sm" @click="handleSaveSiteCookies">
               <Save class="size-3.5" />
-              保存站点设置
+              保存路由设置
             </Button>
             <span v-if="siteCookiesSaved" class="text-xs text-primary flex items-center gap-1">
               <CheckCircle2 class="size-3" />

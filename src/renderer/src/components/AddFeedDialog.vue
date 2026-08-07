@@ -93,7 +93,7 @@ async function handleSubmit(): Promise<void> {
     return
   }
 
-  // 适配站点
+  // 内置路由
   const adapter = selectedAdapter.value
   if (!adapter) {
     error.value = '请选择站点'
@@ -131,7 +131,7 @@ async function handleSubmit(): Promise<void> {
       <Tabs v-model="mode" class="grid gap-4 py-2">
         <TabsList class="grid w-full grid-cols-2">
           <TabsTrigger value="rss">RSS 地址</TabsTrigger>
-          <TabsTrigger value="adapter">适配站点</TabsTrigger>
+          <TabsTrigger value="adapter">内置路由</TabsTrigger>
         </TabsList>
 
         <TabsContent value="rss" class="grid gap-4">
@@ -156,7 +156,7 @@ async function handleSubmit(): Promise<void> {
             <Label>站点 *</Label>
             <Select v-model="adapterId">
               <SelectTrigger class="w-full">
-                <SelectValue placeholder="选择内置适配的站点" />
+                <SelectValue placeholder="选择站点" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="a in adapters" :key="a.id" :value="a.id">
@@ -184,7 +184,7 @@ async function handleSubmit(): Promise<void> {
               />
             </div>
             <p v-if="selectedAdapter.cookieDomain" class="text-xs text-muted-foreground">
-              该站点可能需登录 Cookie，可在「设置 → 站点」中配置。
+              该路由可能需要登录 Cookie，可在「设置 → 内置路由」中配置。
             </p>
           </template>
         </TabsContent>
