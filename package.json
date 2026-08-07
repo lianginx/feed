@@ -27,7 +27,6 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@lucide/vue": "^1.26.0",
     "@tanstack/vue-virtual": "^3.13.34",
-    "@vue-dnd-kit/core": "^2.4.7",
     "@vueuse/core": "^14.3.0",
     "anylang": "^3.4.1",
     "better-sqlite3": "^13.0.1",
