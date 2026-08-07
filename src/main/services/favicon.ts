@@ -59,12 +59,15 @@ function isImageContentType(contentType: string | null): boolean {
 }
 
 /**
- * 尝试下载单个 favicon 候选并缓存到本地。
- * 成功返回本地协议 URL（favicon://{feedId}.ext），失败返回 null。
+ * 尝试下载单个 favicon 候选并缓存到本地（通用：可指定目录 / 文件名 / URL 前缀）。
+ * 成功返回本地协议 URL（如 favicon://{fileName}），失败返回 null。
  */
-async function tryDownloadFavicon(faviconUrl: string, feedId: number): Promise<string | null> {
-  const dir = getFaviconDir()
-
+async function tryDownloadFaviconTo(
+  faviconUrl: string,
+  dir: string,
+  id: string,
+  urlPrefix: string
+): Promise<string | null> {
   // 先 HEAD 拿 Content-Type 推断扩展名
   let ext = '.ico'
   let headOk = false
@@ -80,7 +83,7 @@ async function tryDownloadFavicon(faviconUrl: string, feedId: number): Promise<s
   // HEAD 非 ok（如 405）时按 URL 推断扩展名，避免 SVG 被存成 .ico
   if (!headOk) ext = extFromUrl(faviconUrl)
 
-  const fileName = `${feedId}${ext}`
+  const fileName = `${id}${ext}`
   const filePath = join(dir, fileName)
 
   try {
@@ -92,7 +95,7 @@ async function tryDownloadFavicon(faviconUrl: string, feedId: number): Promise<s
     if (buffer.length === 0) return null
 
     writeFileSync(filePath, buffer)
-    return `favicon://${fileName}`
+    return `${urlPrefix}${fileName}`
   } catch {
     return null
   }
@@ -160,7 +163,7 @@ export async function resolveAndCacheFavicon(
 ): Promise<string | null> {
   const candidates = await buildFaviconCandidates(siteUrl, feedImageUrl)
   for (const url of candidates) {
-    const result = await tryDownloadFavicon(url, feedId)
+    const result = await tryDownloadFaviconTo(url, getFaviconDir(), String(feedId), 'favicon://')
     if (result) return result
   }
   return null
@@ -246,4 +249,41 @@ export function getFavicon(feedId: number): string | null {
   const feed = db.prepare('SELECT favicon_url FROM feeds WHERE id = ?').get(feedId) as
     { favicon_url: string | null } | undefined
   return feed?.favicon_url || null
+}
+
+let adapterFaviconDir: string | null = null
+
+/**
+ * 获取内置路由 favicon 缓存目录（按适配器 id 缓存，独立于订阅源 feedId 缓存）。
+ */
+export function getAdapterFaviconDir(): string {
+  if (adapterFaviconDir) return adapterFaviconDir
+  adapterFaviconDir = join(getFaviconDir(), 'routes')
+  if (!existsSync(adapterFaviconDir)) {
+    mkdirSync(adapterFaviconDir, { recursive: true })
+  }
+  return adapterFaviconDir
+}
+
+/**
+ * 解析并缓存内置路由的 favicon，逐个域名尝试候选 URL（不依赖 feedId）。
+ * 返回 favicon://routes/{adapterId}.ext；全部失败返回 null。
+ */
+export async function resolveAndCacheAdapterFavicon(
+  adapterId: string,
+  domains: string[]
+): Promise<string | null> {
+  for (const domain of domains) {
+    const candidates = await buildFaviconCandidates(`https://${domain}`)
+    for (const url of candidates) {
+      const result = await tryDownloadFaviconTo(
+        url,
+        getAdapterFaviconDir(),
+        adapterId,
+        'favicon://routes/'
+      )
+      if (result) return result
+    }
+  }
+  return null
 }

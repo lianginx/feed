@@ -1,4 +1,6 @@
 import { ipcMain } from 'electron'
+import { getMainWindow } from '../app/window'
+import { createAddFeedWindow, closeAddFeedWindow } from '../app/addFeedWindow'
 import { getConnection } from '../database/connection'
 import { parseFeed, validateFeed, toFriendlyFeedError } from '../services/rss'
 import { resolveAndCacheFavicon, refreshFeedFavicon } from '../services/favicon'
@@ -268,5 +270,18 @@ export function registerFeedHandlers(): void {
     } catch (e) {
       return error((e as Error).message)
     }
+  })
+
+  // 打开「添加订阅源」独立窗口（侧边栏按钮 / 菜单触发）
+  ipcMain.handle('feeds:openAddFeedWindow', async () => {
+    createAddFeedWindow()
+    return success(true)
+  })
+
+  // 添加订阅源完成：关闭添加窗口，并通知主窗口刷新列表（带上新 feedId 供选中）
+  ipcMain.handle('feeds:notifyAdded', async (_event, feedId?: number) => {
+    closeAddFeedWindow()
+    getMainWindow()?.webContents.send('feeds:changed', { feedId: feedId ?? undefined })
+    return success(true)
   })
 }

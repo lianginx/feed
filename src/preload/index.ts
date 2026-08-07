@@ -53,7 +53,14 @@ const api = {
         updated?: number
         error?: string
       }) => void
-    ): (() => void) => onChannel('feeds:refresh-progress', callback)
+    ): (() => void) => onChannel('feeds:refresh-progress', callback),
+    /** 打开「添加订阅源」独立窗口 */
+    openAddFeedWindow: () => ipcRenderer.invoke('feeds:openAddFeedWindow'),
+    /** 添加订阅源完成：通知主进程关闭窗口并刷新主窗口列表 */
+    notifyAdded: (feedId?: number) => ipcRenderer.invoke('feeds:notifyAdded', feedId),
+    /** 订阅源列表变更（添加完成）事件，返回取消订阅函数 */
+    onChanged: (callback: (data: { feedId?: number }) => void): (() => void) =>
+      onChannel('feeds:changed', callback)
   },
   categories: {
     list: () => ipcRenderer.invoke('categories:list'),
@@ -101,7 +108,6 @@ const api = {
       isTranslated?: boolean
       translateConfigured?: boolean
     }): void => ipcRenderer.send('menu:updateState', state),
-    onAddFeed: (callback: () => void): (() => void) => onChannel('menu:addFeed', callback),
     onRefreshFeed: (callback: () => void): (() => void) => onChannel('menu:refreshFeed', callback),
     onRefreshAllFeeds: (callback: () => void): (() => void) =>
       onChannel('menu:refreshAllFeeds', callback),

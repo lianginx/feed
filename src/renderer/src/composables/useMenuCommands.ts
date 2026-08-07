@@ -1,5 +1,4 @@
 import { computed, onMounted, onUnmounted, watch } from 'vue'
-import { useAddFeedDialog } from './useAddFeedDialog'
 import { useSearchFocus } from './useSearchFocus'
 import { useConfirmDialog } from './useConfirmDialog'
 import { useFeeds } from './useFeeds'
@@ -8,7 +7,6 @@ import { useUpdater } from './useUpdater'
 import { useTranslate } from './useTranslate'
 
 export function useMenuCommands(): void {
-  const { showAddFeed } = useAddFeedDialog()
   const { requestSearchFocus } = useSearchFocus()
   const { confirm } = useConfirmDialog()
   const { checkForUpdates } = useUpdater()
@@ -43,9 +41,6 @@ export function useMenuCommands(): void {
 
   onMounted(() => {
     stopMenuListeners.push(
-      window.api.menu.onAddFeed(() => {
-        showAddFeed.value = true
-      }),
       window.api.menu.onRefreshFeed(async () => {
         if (selectedFeedId.value) {
           await refreshSingleFeed(selectedFeedId.value)

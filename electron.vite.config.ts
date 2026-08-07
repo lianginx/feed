@@ -37,7 +37,8 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve('src/renderer/index.html'),
-          settings: resolve('src/renderer/settings.html')
+          settings: resolve('src/renderer/settings.html'),
+          addfeed: resolve('src/renderer/addfeed.html')
         }
       }
     }

@@ -163,6 +163,12 @@ interface FeedApi {
   parseUrl: (url: string) => Promise<ApiResponse<unknown>>
   /** 订阅单个订阅源刷新进度事件，返回取消订阅函数 */
   onRefreshProgress: (callback: (data: RefreshProgressEvent) => void) => () => void
+  /** 打开「添加订阅源」独立窗口 */
+  openAddFeedWindow: () => Promise<ApiResponse<boolean>>
+  /** 添加订阅源完成：通知主进程关闭窗口并刷新主窗口列表 */
+  notifyAdded: (feedId?: number) => Promise<ApiResponse<boolean>>
+  /** 订阅源列表变更（添加完成）事件，返回取消订阅函数 */
+  onChanged: (callback: (data: { feedId?: number }) => void) => () => void
 }
 
 interface CategoryApi {
@@ -263,7 +269,6 @@ interface MenuState {
 
 interface MenuApi {
   updateState: (state: MenuState) => void
-  onAddFeed: (callback: () => void) => () => void
   onRefreshFeed: (callback: () => void) => () => void
   onRefreshAllFeeds: (callback: () => void) => () => void
   onMarkListRead: (callback: () => void) => () => void

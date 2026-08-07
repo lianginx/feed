@@ -38,12 +38,21 @@ export interface SyncResult {
   lastSyncedAt?: number
 }
 
+/** 路由参数控件类型（动态表单据此渲染） */
+export type AdapterParamType = 'text' | 'number' | 'select' | 'textarea' | 'url'
+
 /** 路由参数声明（添加内置路由时填写，与主进程 AdapterParam 一致） */
 export interface AdapterParam {
   key: string
   label: string
   required?: boolean
   placeholder?: string
+  /** 控件类型，默认 text */
+  type?: AdapterParamType
+  /** 字段辅助说明 */
+  description?: string
+  /** select 类型选项 */
+  options?: { label: string; value: string }[]
 }
 
 /** 内置路由元信息（feeds:listAdapters 返回） */

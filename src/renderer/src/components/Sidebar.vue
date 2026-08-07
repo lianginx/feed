@@ -35,7 +35,6 @@ import {
 import { useFeeds, type FeedItem } from '../composables/useFeeds'
 import { useArticles } from '../composables/useArticles'
 import { useToast } from '../composables/useToast'
-import { useAddFeedDialog } from '../composables/useAddFeedDialog'
 import { useAddCategoryDialog } from '../composables/useAddCategoryDialog'
 import { useConfirmDialog } from '../composables/useConfirmDialog'
 import EditFeedDialog from './EditFeedDialog.vue'
@@ -58,7 +57,6 @@ const {
 } = useFeeds()
 
 const { showToast } = useToast()
-const { showAddFeed } = useAddFeedDialog()
 const { showAddCategory, handleEditCategory, handleDeleteCategory } = useAddCategoryDialog()
 const { confirm } = useConfirmDialog()
 const dragFeedId = ref<number | null>(null)
@@ -215,6 +213,10 @@ function handleSelectCategory(id: number | null): void {
 async function handleRefreshFeed(feedId: number, event: Event): Promise<void> {
   event.stopPropagation()
   await refreshSingleFeed(feedId)
+}
+
+function openAddFeedWindow(): void {
+  void window.api.feeds.openAddFeedWindow()
 }
 
 async function handleImportOpml(): Promise<void> {
@@ -480,7 +482,7 @@ function onCategoryDragEnd(): void {
           size="icon-sm"
           variant="ghost"
           title="添加订阅源"
-          @click="showAddFeed = true"
+          @click="openAddFeedWindow"
         >
           <Plus class="size-4" />
         </Button>
@@ -504,9 +506,7 @@ function onCategoryDragEnd(): void {
             <Rss class="size-10 text-sidebar-foreground/20 mb-3" />
             <p class="text-sm text-sidebar-foreground/50 mb-4">还没有订阅源</p>
             <div class="flex flex-col gap-2 w-full max-w-36">
-              <Button size="sm" class="h-7 text-xs" @click="showAddFeed = true">
-                添加订阅源
-              </Button>
+              <Button size="sm" class="h-7 text-xs" @click="openAddFeedWindow"> 添加订阅源 </Button>
               <Button size="sm" variant="outline" class="h-7 text-xs" @click="handleImportOpml">
                 导入订阅源
               </Button>

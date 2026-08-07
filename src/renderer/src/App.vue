@@ -3,7 +3,6 @@ import { onMounted, onUnmounted } from 'vue'
 import { useApp } from './composables/useApp'
 import { useFeeds } from './composables/useFeeds'
 import { useMenuCommands } from './composables/useMenuCommands'
-import { useAddFeedDialog } from './composables/useAddFeedDialog'
 import { useAddCategoryDialog } from './composables/useAddCategoryDialog'
 import { useConfirmDialog } from './composables/useConfirmDialog'
 import { useSync, registerSyncListener } from './composables/useSync'
@@ -12,18 +11,16 @@ import SidebarNav from './components/Sidebar.vue'
 import ArticleList from './components/ArticleList.vue'
 import ArticleReader from './components/ArticleReader.vue'
 import ToastNotification from './components/ToastNotification.vue'
-import AddFeedDialog from './components/AddFeedDialog.vue'
 import AddCategoryDialog from './components/AddCategoryDialog.vue'
 import ConfirmDialog from './components/ConfirmDialog.vue'
 import UpdateDialog from './components/UpdateDialog.vue'
 import SyncConflictDialog from './components/SyncConflictDialog.vue'
 
 const { loadSettings } = useApp()
-const { loadFeeds } = useFeeds()
+const { loadFeeds, selectFeed } = useFeeds()
 
 useMenuCommands()
 
-const { showAddFeed } = useAddFeedDialog()
 const {
   showAddCategory,
   editCategoryData,
@@ -44,6 +41,7 @@ const { pendingConflict, resolveConflict, loadStatus } = useSync()
 let stopSyncListener: (() => void) | null = null
 let stopConfigListener: (() => void) | null = null
 let stopOpmlListener: (() => void) | null = null
+let stopFeedsListener: (() => void) | null = null
 
 // 全局禁用浏览器默认右键菜单（自定义 ContextMenu 已自行处理 preventDefault）
 function onContextMenu(e: MouseEvent): void {
@@ -97,9 +95,10 @@ onMounted(async () => {
   })
   await loadStatus()
 
-  // 设置窗口变更后重载配置、OPML 导入后刷新订阅列表
+  // 设置窗口变更后重载配置、OPML 导入后刷新订阅列表、添加订阅窗口完成后刷新并选中
   stopConfigListener = window.api.config.onChanged(onConfigChanged)
   stopOpmlListener = window.api.opml.onImported(onOpmlImported)
+  stopFeedsListener = window.api.feeds.onChanged(onFeedsChanged)
 })
 
 function onConfigChanged(): void {
@@ -110,11 +109,19 @@ function onOpmlImported(): void {
   void loadFeeds()
 }
 
+async function onFeedsChanged(data: { feedId?: number }): Promise<void> {
+  await loadFeeds()
+  if (data.feedId) {
+    selectFeed(data.feedId)
+  }
+}
+
 onUnmounted(() => {
   document.removeEventListener('contextmenu', onContextMenu)
   stopConfigListener?.()
   stopOpmlListener?.()
   stopSyncListener?.()
+  stopFeedsListener?.()
 })
 
 async function handleSyncConflictChoice(choice: 'local' | 'remote'): Promise<void> {
@@ -141,8 +148,6 @@ async function handleSyncConflictChoice(choice: 'local' | 'remote'): Promise<voi
   </SidebarProvider>
 
   <ToastNotification />
-
-  <AddFeedDialog v-model:open="showAddFeed" />
 
   <AddCategoryDialog
     :open="showAddCategory || editCategoryData !== null"

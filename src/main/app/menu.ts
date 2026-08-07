@@ -2,6 +2,7 @@ import { app, ipcMain, Menu } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import { getMainWindow } from './window'
 import { createSettingsWindow } from './settingsWindow'
+import { createAddFeedWindow } from './addFeedWindow'
 
 /**
  * 构建并设置应用菜单。
@@ -65,7 +66,7 @@ export function buildAppMenu(): void {
         {
           label: '添加订阅源',
           accelerator: 'CmdOrCtrl+N',
-          click: () => getMainWindow()?.webContents.send('menu:addFeed')
+          click: () => createAddFeedWindow()
         },
         { type: 'separator' },
         {
