@@ -1,3 +1,4 @@
+import { is } from '@electron-toolkit/utils'
 import { getSettings } from '../config'
 import { refreshAllFeeds } from './refresher'
 import { runSync } from './sync'
@@ -6,9 +7,13 @@ let timer: ReturnType<typeof setInterval> | null = null
 
 /**
  * 启动定时刷新——立即执行一次，然后按间隔重复。
+ * 开发模式不启动：客户端频繁重启会重复对源站发起请求，避免造成压力；
+ * 开发时刷新走手动/菜单触发。
  */
 export function startScheduler(): void {
   stopScheduler()
+
+  if (is.dev) return
 
   const settings = getSettings()
   const intervalMs = settings.updateInterval * 60 * 1000
