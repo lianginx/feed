@@ -276,12 +276,12 @@ const activeSection = ref<'general' | 'startup' | 'sync' | 'translate' | 'data' 
 )
 
 const navItems = [
-  { id: 'general', label: '常规', icon: Settings },
-  { id: 'startup', label: '启动', icon: Rocket },
-  { id: 'sync', label: '同步', icon: Cloud },
-  { id: 'translate', label: '翻译', icon: Languages },
+  { id: 'general', label: '常规设置', icon: Settings },
+  { id: 'startup', label: '开机启动', icon: Rocket },
+  { id: 'sync', label: '订阅同步', icon: Cloud },
+  { id: 'translate', label: '文章翻译', icon: Languages },
   { id: 'sites', label: '内置路由', icon: Globe },
-  { id: 'data', label: '数据', icon: Database }
+  { id: 'data', label: '数据管理', icon: Database }
 ] as const
 
 async function handleSaveSiteCookies(): Promise<void> {
@@ -787,7 +787,6 @@ onMounted(async () => {
             >
               <div class="min-w-0">
                 <div class="text-sm">{{ a.name }}</div>
-                <div class="mt-0.5 text-xs text-muted-foreground">{{ a.cookieDomain }}</div>
               </div>
               <div class="flex items-center gap-2">
                 <Input
