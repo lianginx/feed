@@ -4,7 +4,7 @@ import Store from 'electron-store'
 export type SyncProvider = 'none' | 'gist' | 'gitee' | 'webdav'
 
 /** 翻译提供商类型 */
-export type TranslateProviderKind = 'none' | 'baidu'
+export type TranslateProviderKind = 'none' | 'baidu' | 'edge'
 
 export interface TranslateConfig {
   provider: TranslateProviderKind
@@ -56,7 +56,7 @@ const defaults: AppSettings = {
   autoCheckUpdate: true,
   updateCheckInterval: 360,
   sync: { provider: 'none' },
-  translate: { provider: 'none', targetLang: 'zh' },
+  translate: { provider: 'edge', targetLang: 'zh' },
   autoLaunch: false,
   launchHidden: false,
   siteCookies: {}

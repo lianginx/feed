@@ -2,7 +2,7 @@
 export type SyncProvider = 'none' | 'gist' | 'gitee' | 'webdav'
 
 /** 翻译提供商类型（与 preload 声明保持一致） */
-export type TranslateProviderKind = 'none' | 'baidu'
+export type TranslateProviderKind = 'none' | 'baidu' | 'edge'
 
 /** 文章翻译配置 */
 export interface TranslateConfig {

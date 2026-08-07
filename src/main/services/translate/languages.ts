@@ -34,3 +34,14 @@ const BAIDU_CODE_MAP: Record<string, string> = {
 export function toBaiduCode(code: string): string {
   return BAIDU_CODE_MAP[code] ?? code
 }
+
+/** 微软 Edge 翻译语言码（微软用 zh-Hans / zh-Hant，其余同 ISO 透传） */
+const EDGE_CODE_MAP: Record<string, string> = {
+  'zh-Hant': 'zh-Hant',
+  zh: 'zh-Hans'
+}
+
+/** 应用语言码 → 微软 Edge 翻译语言码；未知码原样透传 */
+export function toEdgeCode(code: string): string {
+  return EDGE_CODE_MAP[code] ?? code
+}

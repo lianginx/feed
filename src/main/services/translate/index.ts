@@ -4,8 +4,9 @@ import type { TranslatorInstanceMembers } from './providers'
 import { createTranslateProvider } from './providers'
 import { extractPieces, packPieces, rebuildHtml, type TranslateUnit } from './html'
 import { getTranslation, saveTranslation, computeSourceHash } from './cache'
-import { detectLanguage, isSameLanguage } from './detect'
+import { detectLanguage, isSameLanguage, SAMPLE_LIMIT } from './detect'
 import type { BaiduApiError } from './providers/baidu'
+import { EdgeTranslator } from './providers/edge'
 import { createRateLimiter, type RateLimiter } from './rateLimit'
 
 export interface TranslateResult {
@@ -79,26 +80,39 @@ export async function translateArticle(
     }
   }
 
+  // 单篇总量上限检查提前：超长直接抛错，不做提取/检测/发请求（防配额失控）
+  if (article.title.length + content.length > MAX_CHARS) {
+    throw new Error('文章过长，超出单篇翻译上限（5 万字符）')
+  }
+
   // 正文：收集文本节点（标签留在 DOM，只翻译并回填文本节点）
   const { $, pieces, units, isFullDocument } = extractPieces(content)
 
   // 语言检测：基于提取后的正文纯文本（去掉标签/样式干扰），源 ≈ 目标直接跳过；
   // zh 与 zh-Hant 视为不同语言不跳过。中文网页目标 zh → 直接返回原文（原文变原文）
   const sampleText = `${article.title}\n${units.map((u) => u.text).join('\n')}`
-  const detected = detectLanguage(sampleText)
+  const provider = createTranslateProvider(settings.translate)
+
+  // 本地轻量检测先判同语言 → 直接跳过（零网络开销，无需已配置翻译服务）
+  let detected = detectLanguage(sampleText)
   if (isSameLanguage(detected, to)) {
     return { title: article.title, content, degraded: false, skipped: true }
   }
 
-  const provider = createTranslateProvider(settings.translate)
-  if (!provider) throw new Error('未配置翻译服务，请在设置中启用翻译并填写百度翻译凭据')
+  // 本地检测不明确/不同语言时，Edge 免费检测复核（复用翻译接口、加权投票，更准），
+  // 失败回退本地检测；样本截断对齐本地检测大小，长文不会为检测切批浪费请求
+  if (provider instanceof EdgeTranslator) {
+    const edgeDetected = await provider.detect([sampleText.slice(0, SAMPLE_LIMIT)])
+    if (edgeDetected) detected = edgeDetected
+  }
+  if (isSameLanguage(detected, to)) {
+    return { title: article.title, content, degraded: false, skipped: true }
+  }
+
+  // 到此才真正需要翻译服务；源≈目标已提前跳过（无需凭据），未配置在此报错
+  if (!provider) throw new Error('未配置翻译服务，请在设置中启用翻译')
 
   const throttle = createProviderThrottle(provider)
-
-  // 单篇总量上限检查，防配额失控
-  if (article.title.length + content.length > MAX_CHARS) {
-    throw new Error('文章过长，超出单篇翻译上限（5 万字符）')
-  }
 
   // 标题翻译（单独请求，与正文分离）
   let translatedTitle = article.title
@@ -186,7 +200,7 @@ export async function translateArticle(
 /** 用给定配置验证翻译凭据（保存前可测） */
 export async function testTranslate(config: TranslateConfig): Promise<void> {
   const provider = createTranslateProvider(config)
-  if (!provider) throw new Error('翻译配置不完整，请填写百度翻译 appid 与密钥')
+  if (!provider) throw new Error('翻译配置不完整，请选择可用的翻译服务')
   const throttle = createProviderThrottle(provider)
   const [result] = await translateWithRetry(provider, ['你好，世界'], 'auto', 'en', 1, throttle)
   if (!result) throw new Error('翻译测试失败，请检查凭据后重试')

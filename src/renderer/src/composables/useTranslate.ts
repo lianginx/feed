@@ -32,11 +32,10 @@ export function useTranslate() {
 
   /** 已配置凭据（渲染层复刻 createTranslateProvider 的完整性判断，两处需保持一致；
    *  因配置已由主进程下发到渲染层，本地 computed 免去额外 IPC，仍属合理做法） */
-  const configured = computed(
-    () =>
-      translateConfig.value.provider === 'baidu' &&
-      Boolean(translateConfig.value.baiduAppid) &&
-      Boolean(translateConfig.value.baiduSecretKey)
+  const configured = computed(() =>
+    translateConfig.value.provider === 'baidu'
+      ? Boolean(translateConfig.value.baiduAppid) && Boolean(translateConfig.value.baiduSecretKey)
+      : translateConfig.value.provider === 'edge'
   )
 
   /** 执行翻译请求并落盘展示；forceRefresh=true 时忽略缓存强制重新翻译 */

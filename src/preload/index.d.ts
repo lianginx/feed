@@ -75,7 +75,7 @@ interface AppSettings {
 
 /** 文章翻译配置 */
 interface TranslateConfig {
-  provider: 'none' | 'baidu'
+  provider: 'none' | 'baidu' | 'edge'
   baiduAppid?: string
   baiduSecretKey?: string
   targetLang: string

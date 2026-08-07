@@ -3,6 +3,7 @@ import type { Fetcher } from 'anylang/esm/utils/fetcher/types.js'
 import type { TranslatorInstanceMembers } from 'anylang/esm/translators/Translator.js'
 import { fetchWithTimeout } from '../../http'
 import { BaiduTranslator } from './baidu'
+import { EdgeTranslator } from './edge'
 
 export type { TranslatorInstanceMembers } from 'anylang/esm/translators/Translator.js'
 
@@ -45,6 +46,9 @@ export function createTranslateProvider(config: TranslateConfig): TranslatorInst
             headers: {}
           })
         : null
+    case 'edge':
+      // 微软 Edge 免费接口：免注册 / 免 API key
+      return new EdgeTranslator({ fetcher: anylangFetcher, headers: {} })
     default:
       return null
   }

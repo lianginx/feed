@@ -212,10 +212,11 @@ function buildTranslateConfig(): TranslateConfig | null {
     }
     config.baiduAppid = translateAppidInput.value.trim()
     config.baiduSecretKey = translateSecretKeyInput.value
-  } else {
+  } else if (translateProvider.value === 'none') {
     translateError.value = '请先选择翻译服务'
     return null
   }
+  // edge：免凭据，直接可用
   return config
 }
 
@@ -258,7 +259,7 @@ async function handleSaveTranslate(): Promise<void> {
     partial.baiduAppid = translateAppidInput.value.trim()
     partial.baiduSecretKey = translateSecretKeyInput.value
   } else {
-    // 关闭翻译：清空凭据，避免敏感信息残留配置
+    // 关闭翻译或改用免凭据服务：清空凭据，避免敏感信息残留配置
     partial.baiduAppid = ''
     partial.baiduSecretKey = ''
   }
@@ -614,9 +615,7 @@ onMounted(async () => {
           <div class="flex items-center justify-between gap-6 py-3">
             <div class="min-w-0">
               <div class="text-sm">翻译服务</div>
-              <div class="mt-0.5 text-xs text-muted-foreground">
-                一键翻译外文文章，译文在本地缓存（标题与正文，代码块不翻译）
-              </div>
+              <div class="mt-0.5 text-xs text-muted-foreground">一键翻译文章标题与正文</div>
             </div>
             <div class="w-44 shrink-0">
               <Select
@@ -627,7 +626,8 @@ onMounted(async () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">暂无翻译</SelectItem>
+                  <SelectItem value="none">禁用翻译</SelectItem>
+                  <SelectItem value="edge">微软翻译</SelectItem>
                   <SelectItem value="baidu">百度翻译</SelectItem>
                 </SelectContent>
               </Select>
@@ -720,13 +720,18 @@ onMounted(async () => {
           </div>
 
           <p
+            v-if="translateProvider === 'edge'"
+            class="mt-4 text-xs text-muted-foreground leading-relaxed"
+          >
+            微软翻译的公共接口，免费、无需注册与 API key。
+          </p>
+          <p
             v-if="translateProvider === 'baidu'"
             class="mt-4 text-xs text-muted-foreground leading-relaxed"
           >
             在
             <a class="link" href="https://fanyi-api.baidu.com" target="_blank">百度翻译开放平台</a>
-            创建应用获取 AppID 与密钥。配置保存后，阅读区 工具栏会出现翻译按钮，也可用 Option+T
-            快速翻译当前文章。翻译会把文章正文发送至所选翻译服务商。
+            创建应用获取 AppID 与密钥。
           </p>
         </section>
       </div>

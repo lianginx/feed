@@ -18,7 +18,7 @@ const SIMPLIFIED_SET = '们这说时为发经国见门风东马龙飞过还进�
 const TRADITIONAL_SET = '們這說時為發經國見門風東馬龍飛過還進給現對頭從開樂單雙號網'
 
 /** 分析样本上限（字符），大文章只取开头足够样本即可 */
-const SAMPLE_LIMIT = 2000
+export const SAMPLE_LIMIT = 2000
 
 export function detectLanguage(text: string): DetectedLang {
   if (!text) return 'unknown'
@@ -74,4 +74,26 @@ export function detectLanguage(text: string): DetectedLang {
 export function isSameLanguage(detected: DetectedLang, target: string): boolean {
   if (detected === 'unknown') return false
   return detected === target
+}
+
+/** 微软检测返回的语言码 → 应用级 DetectedLang；未知语言归为 unknown */
+export function toDetectedLang(lang: string): DetectedLang {
+  switch (lang) {
+    case 'zh':
+    case 'zh-Hans':
+    case 'zh-CN':
+      return 'zh'
+    case 'zh-Hant':
+    case 'zh-TW':
+    case 'zh-HK':
+      return 'zh-Hant'
+    case 'en':
+      return 'en'
+    case 'ja':
+      return 'ja'
+    case 'ko':
+      return 'ko'
+    default:
+      return 'unknown'
+  }
 }

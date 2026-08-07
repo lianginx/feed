@@ -133,7 +133,7 @@ const api = {
     article: (id: number, targetLang?: string, forceRefresh?: boolean) =>
       ipcRenderer.invoke('translate:article', id, targetLang, forceRefresh),
     test: (config: {
-      provider: 'none' | 'baidu'
+      provider: 'none' | 'baidu' | 'edge'
       baiduAppid?: string
       baiduSecretKey?: string
       targetLang: string
