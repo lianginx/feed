@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio'
 import { fetchWithTimeout, BROWSER_USER_AGENT } from '../../../http'
 import type { ParsedArticle, ParsedFeed } from '../../../rss'
-import type { FeedAdapter } from '../../core/types'
+import type { AdapterParseContext, FeedAdapter } from '../../core/types'
 
 /** B 站 opus 专栏 feed 返回的条目结构（按需声明） */
 interface BiliOpusItem {
@@ -102,7 +102,7 @@ export const bilibiliUserArticle: FeedAdapter = {
       imageUrl: info.face ? normalizeUrl(info.face) : undefined
     }
   },
-  async parse(raw: string): Promise<ParsedFeed> {
+  async parse(raw: string, ctx: AdapterParseContext): Promise<ParsedFeed> {
     const json = JSON.parse(raw) as { data?: { items?: BiliOpusItem[] } }
     const items: ParsedArticle[] = []
     for (const item of json?.data?.items ?? []) {
@@ -124,10 +124,11 @@ export const bilibiliUserArticle: FeedAdapter = {
         pubDate: detail.pubDate
       })
     }
+    const uid = ctx.params.uid ?? ''
     return {
       title: 'B 站 UP 主专栏',
       description: 'B 站 UP 主图文',
-      link: 'https://space.bilibili.com/',
+      link: `https://space.bilibili.com/${uid}/`,
       items
     }
   }

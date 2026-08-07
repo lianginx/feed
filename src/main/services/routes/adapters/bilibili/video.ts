@@ -7,18 +7,45 @@ function normalizeUrl(url: string): string {
   return url.startsWith('//') ? 'https:' + url : url
 }
 
-/** 解析 B 站卡片日期文本（'07-26' 当年 / '2025-07-26' 带年）为 ISO 时间 */
-function parseBiliDate(text: string): string | undefined {
+/**
+ * 解析 B 站卡片日期文本为 ISO 时间。
+ * 实测 B 站空间页分级显示：刚刚 / x分钟前 / x小时前 / 昨天 / MM-DD(当年) / YYYY-MM-DD(往年)。
+ * 相对时间基于 now（默认当前时间）反推；跨年 MM-DD（1 月看到 12-30 属去年）自动校正。
+ * 无法识别返回 undefined。
+ */
+export function parseBiliDate(text: string, now: Date = new Date()): string | undefined {
   const t = text.trim()
+  const nowMs = now.getTime()
+
+  // 相对时间：刚刚 / x分钟前 / x小时前 / 昨天
+  if (t === '刚刚') {
+    return new Date(nowMs).toISOString()
+  }
+  let m = t.match(/^(\d+)\s*分钟前$/)
+  if (m) return new Date(nowMs - Number(m[1]) * 60_000).toISOString()
+  m = t.match(/^(\d+)\s*小时前$/)
+  if (m) return new Date(nowMs - Number(m[1]) * 3_600_000).toISOString()
+  if (t === '昨天') {
+    return new Date(nowMs - 86_400_000).toISOString()
+  }
+
+  // 往年 YYYY-MM-DD
   const withYear = t.match(/^(\d{4})-(\d{2})-(\d{2})$/)
   if (withYear) {
     return new Date(`${withYear[1]}-${withYear[2]}-${withYear[3]}T00:00:00+08:00`).toISOString()
   }
+
+  // 当年 MM-DD（含跨年校正：MM-DD 只会是过去日期，若落在未来则属去年）
   const monthDay = t.match(/^(\d{2})-(\d{2})$/)
   if (monthDay) {
-    const year = new Date().getFullYear()
-    return new Date(`${year}-${monthDay[1]}-${monthDay[2]}T00:00:00+08:00`).toISOString()
+    const year = now.getFullYear()
+    const parsed = new Date(`${year}-${monthDay[1]}-${monthDay[2]}T00:00:00+08:00`)
+    if (parsed.getTime() > nowMs) {
+      return new Date(`${year - 1}-${monthDay[1]}-${monthDay[2]}T00:00:00+08:00`).toISOString()
+    }
+    return parsed.toISOString()
   }
+
   return undefined
 }
 
