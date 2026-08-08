@@ -103,6 +103,14 @@ export function buildAppMenu(): void {
           accelerator: 'CmdOrCtrl+F',
           click: () => getMainWindow()?.webContents.send('menu:focusSearch')
         },
+        {
+          label: '只看未读/显示全部',
+          accelerator: 'Tab',
+          // 不实际注册快捷键（macOS 支持），避免与渲染进程 keydown 拦截冲突，
+          // 仅在菜单中显示提示；Tab 实际由渲染进程 useTabShortcut 处理
+          registerAccelerator: false,
+          click: () => getMainWindow()?.webContents.send('menu:toggleUnread')
+        },
         { type: 'separator' },
         {
           id: 'menu-toggle-read',

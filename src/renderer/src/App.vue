@@ -2,7 +2,9 @@
 import { onMounted, onUnmounted } from 'vue'
 import { useApp } from './composables/useApp'
 import { useFeeds } from './composables/useFeeds'
+import { useArticleView } from './composables/useArticleView'
 import { useMenuCommands } from './composables/useMenuCommands'
+import { registerTabShortcut } from './composables/useTabShortcut'
 import { useAddCategoryDialog } from './composables/useAddCategoryDialog'
 import { useConfirmDialog } from './composables/useConfirmDialog'
 import { useSync, registerSyncListener } from './composables/useSync'
@@ -17,9 +19,11 @@ import UpdateDialog from './components/UpdateDialog.vue'
 import SyncConflictDialog from './components/SyncConflictDialog.vue'
 
 const { loadSettings } = useApp()
-const { loadFeeds, selectFeed } = useFeeds()
+const { loadFeeds } = useFeeds()
+const { selectFeed } = useArticleView()
 
 useMenuCommands()
+registerTabShortcut()
 
 const {
   showAddCategory,
