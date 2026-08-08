@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio'
 import { app } from 'electron'
 import { join, extname } from 'path'
-import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'fs'
 import { getConnection } from '../database/connection'
 
 let faviconDir: string | null = null
@@ -266,13 +266,33 @@ export function getAdapterFaviconDir(): string {
 }
 
 /**
+ * 查找内置路由 favicon 的本地缓存（favicon://routes/{adapterId}.ext）。
+ * 命中返回本地协议 URL，未命中返回 null。
+ */
+export function getAdapterFaviconCached(adapterId: string): string | null {
+  const dir = getAdapterFaviconDir()
+  try {
+    const fileName = readdirSync(dir).find(
+      (f) => f.startsWith(`${adapterId}.`) && /\.(png|jpg|jpeg|gif|svg|webp|ico)$/.test(f)
+    )
+    return fileName ? `favicon://routes/${fileName}` : null
+  } catch {
+    return null
+  }
+}
+
+/**
  * 解析并缓存内置路由的 favicon，逐个域名尝试候选 URL（不依赖 feedId）。
+ * 已有本地缓存则直接返回（避免每次打开窗口都重新联网抓取远程源站）；
  * 返回 favicon://routes/{adapterId}.ext；全部失败返回 null。
  */
 export async function resolveAndCacheAdapterFavicon(
   adapterId: string,
   domains: string[]
 ): Promise<string | null> {
+  const cached = getAdapterFaviconCached(adapterId)
+  if (cached) return cached
+
   for (const domain of domains) {
     const candidates = await buildFaviconCandidates(`https://${domain}`)
     for (const url of candidates) {
