@@ -115,12 +115,21 @@ interface RefreshResult {
   updated: number
 }
 
+/** 适配器参数控件类型（动态表单据此渲染） */
+type AdapterParamType = 'text' | 'number' | 'select' | 'textarea' | 'url' | 'boolean'
+
 /** 适配器参数声明（用户在添加适配站点时填写） */
 interface AdapterParam {
   key: string
   label: string
   required?: boolean
   placeholder?: string
+  /** 控件类型，默认 text */
+  type?: AdapterParamType
+  /** 字段辅助说明 */
+  description?: string
+  /** select 类型选项 */
+  options?: { label: string; value: string }[]
 }
 
 /** 内置站点适配器元信息（feeds:listAdapters 返回） */

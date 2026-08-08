@@ -1,7 +1,7 @@
 import type { ParsedFeed } from '../../rss'
 
 /** 适配器参数控件类型（动态表单据此渲染） */
-export type AdapterParamType = 'text' | 'number' | 'select' | 'textarea' | 'url'
+export type AdapterParamType = 'text' | 'number' | 'select' | 'textarea' | 'url' | 'boolean'
 
 /** 适配器参数声明：用户在添加订阅源时填写 */
 export interface AdapterParam {

@@ -48,10 +48,10 @@ function selectRss(): void {
 
 function selectAdapter(a: AdapterInfo): void {
   selectedId.value = a.id
-  // 切换路由时重置参数，只保留当前路由声明的字段
+  // 切换路由时重置参数，只保留当前路由声明的字段；boolean 开关默认「是」
   const next: Record<string, string> = {}
   for (const p of a.params) {
-    next[p.key] = ''
+    next[p.key] = p.type === 'boolean' ? 'true' : ''
   }
   adapterParams.value = next
 }

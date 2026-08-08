@@ -39,7 +39,7 @@ export interface SyncResult {
 }
 
 /** 路由参数控件类型（动态表单据此渲染） */
-export type AdapterParamType = 'text' | 'number' | 'select' | 'textarea' | 'url'
+export type AdapterParamType = 'text' | 'number' | 'select' | 'textarea' | 'url' | 'boolean'
 
 /** 路由参数声明（添加内置路由时填写，与主进程 AdapterParam 一致） */
 export interface AdapterParam {
