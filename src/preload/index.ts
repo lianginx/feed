@@ -76,12 +76,13 @@ const api = {
       categoryId?: number | null
       isUnread?: boolean
       isStar?: boolean
+      isToday?: boolean
       query?: string
     }) => ipcRenderer.invoke('articles:list', params),
     get: (id: number) => ipcRenderer.invoke('articles:get', id),
     toggleRead: (id: number) => ipcRenderer.invoke('articles:toggleRead', id),
-    markAllRead: (feedId?: number, isStar?: boolean) =>
-      ipcRenderer.invoke('articles:markAllRead', feedId, isStar),
+    markAllRead: (feedId?: number, isStar?: boolean, isToday?: boolean) =>
+      ipcRenderer.invoke('articles:markAllRead', feedId, isStar, isToday),
     toggleStar: (id: number) => ipcRenderer.invoke('articles:toggleStar', id),
     getUnreadCounts: () => ipcRenderer.invoke('articles:getUnreadCounts')
   },

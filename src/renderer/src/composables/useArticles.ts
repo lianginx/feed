@@ -37,7 +37,8 @@ export function useArticles() {
     feedId?: number,
     categoryId?: number | null,
     isUnread?: boolean,
-    isStar?: boolean
+    isStar?: boolean,
+    isToday?: boolean
   ): Promise<void> {
     const loadingTimer = setTimeout(() => {
       loading.value = true
@@ -48,7 +49,8 @@ export function useArticles() {
         feedId,
         categoryId,
         isUnread,
-        isStar
+        isStar,
+        isToday
       })
 
       clearTimeout(loadingTimer)
@@ -114,7 +116,7 @@ export function useArticles() {
   // 把当前选中的订阅源/分类范围的文章全部标为已读
   async function markScopeRead(): Promise<void> {
     const { selectedFeedId, selectedCategoryId } = useFeeds()
-    const { isStar } = useArticleView()
+    const { isStar, isToday } = useArticleView()
     if (selectedFeedId.value !== null) {
       await markAllRead(selectedFeedId.value)
     } else if (selectedCategoryId.value !== undefined) {
@@ -131,6 +133,13 @@ export function useArticles() {
       })
       const { loadFeeds } = useFeeds()
       await loadFeeds()
+    } else if (isToday.value) {
+      await window.api.articles.markAllRead(undefined, false, true)
+      articles.value.forEach((a) => {
+        a.is_read = 1
+      })
+      const { loadFeeds } = useFeeds()
+      await loadFeeds()
     } else {
       await markAllRead()
     }
@@ -139,25 +148,38 @@ export function useArticles() {
   // 按当前选中的订阅源/分类/筛选重新加载文章
   async function reloadScope(): Promise<void> {
     const { selectedFeedId, selectedCategoryId } = useFeeds()
-    const { isUnread, isStar } = useArticleView()
+    const { isUnread, isStar, isToday } = useArticleView()
     if (selectedFeedId.value !== null) {
-      await loadArticles(selectedFeedId.value, undefined, isUnread.value, isStar.value)
+      await loadArticles(
+        selectedFeedId.value,
+        undefined,
+        isUnread.value,
+        isStar.value,
+        isToday.value
+      )
     } else if (selectedCategoryId.value !== undefined) {
-      await loadArticles(undefined, selectedCategoryId.value, isUnread.value, isStar.value)
+      await loadArticles(
+        undefined,
+        selectedCategoryId.value,
+        isUnread.value,
+        isStar.value,
+        isToday.value
+      )
     } else {
-      await loadArticles(undefined, undefined, isUnread.value, isStar.value)
+      await loadArticles(undefined, undefined, isUnread.value, isStar.value, isToday.value)
     }
   }
 
   async function search(query: string): Promise<ArticleItem[]> {
     const { selectedFeedId, selectedCategoryId } = useFeeds()
-    const { isUnread, isStar } = useArticleView()
+    const { isUnread, isStar, isToday } = useArticleView()
     const result = await window.api.articles.list({
       query,
       feedId: selectedFeedId.value ?? undefined,
       categoryId: selectedCategoryId.value,
       isUnread: isUnread.value,
-      isStar: isStar.value
+      isStar: isStar.value,
+      isToday: isToday.value
     })
     if (result.success && result.data) {
       return result.data.articles
@@ -175,14 +197,26 @@ export function useArticles() {
     window.api.feeds.onRefreshProgress((data) => {
       if (data.status !== 'complete') return
       const { selectedFeedId, selectedCategoryId } = useFeeds()
-      const { isUnread, isStar } = useArticleView()
+      const { isUnread, isStar, isToday } = useArticleView()
       // 只重载与当前视图相关的订阅源完成事件
       if (selectedFeedId.value !== null) {
         if (data.feedId === selectedFeedId.value) {
-          void loadArticles(selectedFeedId.value, undefined, isUnread.value, isStar.value)
+          void loadArticles(
+            selectedFeedId.value,
+            undefined,
+            isUnread.value,
+            isStar.value,
+            isToday.value
+          )
         }
       } else {
-        void loadArticles(undefined, selectedCategoryId.value, isUnread.value, isStar.value)
+        void loadArticles(
+          undefined,
+          selectedCategoryId.value,
+          isUnread.value,
+          isStar.value,
+          isToday.value
+        )
       }
     })
   }

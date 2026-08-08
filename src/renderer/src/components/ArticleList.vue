@@ -20,13 +20,13 @@ import Button from './ui/button/Button.vue'
 const { articles, currentArticle, loading, reloadScope, openArticle, toggleStar, toggleRead } =
   useArticles()
 const { selectedFeedId, selectedCategoryId } = useFeeds()
-const { selectedView, isUnread, isStar } = useArticleView()
+const { selectedView, isUnread, isStar, isToday } = useArticleView()
 
 const parentRef = ref<HTMLElement | null>(null)
 
 // 当选择的订阅源或筛选条件变化时重新加载
 watch(
-  [selectedFeedId, selectedCategoryId, isUnread, isStar],
+  [selectedFeedId, selectedCategoryId, isUnread, isStar, isToday],
   () => {
     currentArticle.value = null // 切换时关闭文章详情
     parentRef.value?.scrollTo(0, 0) // 滚动到顶部

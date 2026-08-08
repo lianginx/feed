@@ -9,7 +9,7 @@ import { useSearchFocus } from '../composables/useSearchFocus'
 
 const { articles, reloadScope, search } = useArticles()
 const { selectedFeedId, selectedCategoryId } = useFeeds()
-const { isUnread, isStar } = useArticleView()
+const { isUnread, isStar, isToday } = useArticleView()
 
 const searchQuery = ref('')
 const searchExpanded = ref(true)
@@ -58,7 +58,7 @@ function onSearchBlur(): void {
 }
 
 // 切换订阅源/分类/筛选时清空搜索
-watch([selectedFeedId, selectedCategoryId, isUnread, isStar], () => {
+watch([selectedFeedId, selectedCategoryId, isUnread, isStar, isToday], () => {
   searchQuery.value = ''
 })
 </script>

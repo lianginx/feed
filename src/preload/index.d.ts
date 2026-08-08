@@ -187,11 +187,16 @@ interface ArticleApi {
     categoryId?: number | null
     isUnread?: boolean
     isStar?: boolean
+    isToday?: boolean
     query?: string
   }) => Promise<ApiResponse<ArticleListResult>>
   get: (id: number) => Promise<ApiResponse<ArticleDetail>>
   toggleRead: (id: number) => Promise<ApiResponse<{ id: number; is_read: number }>>
-  markAllRead: (feedId?: number, isStar?: boolean) => Promise<ApiResponse<{ ok: boolean }>>
+  markAllRead: (
+    feedId?: number,
+    isStar?: boolean,
+    isToday?: boolean
+  ) => Promise<ApiResponse<{ ok: boolean }>>
   toggleStar: (id: number) => Promise<ApiResponse<{ id: number; is_starred: number }>>
   getUnreadCounts: () => Promise<ApiResponse<{ feed_id: number; count: number }[]>>
 }

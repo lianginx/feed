@@ -9,6 +9,7 @@ import {
   Newspaper,
   BookOpen,
   Star,
+  CalendarDays,
   Rss
 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
@@ -223,6 +224,16 @@ const uncategorizedUnreadCount = computed(() =>
   <SidebarHeader class="px-3 pt-12 pb-2 gap-2" style="app-region: drag">
     <SidebarMenuButton
       style="app-region: no-drag"
+      :is-active="selectedView === 'today'"
+      @click="selectView('today')"
+    >
+      <span class="flex items-center gap-2">
+        <CalendarDays class="size-4" />
+        <span>今日文章</span>
+      </span>
+    </SidebarMenuButton>
+    <SidebarMenuButton
+      style="app-region: no-drag"
       :is-active="selectedView === 'all'"
       @click="selectView('all')"
     >
@@ -371,18 +382,18 @@ const uncategorizedUnreadCount = computed(() =>
                           </button>
                         </CollapsibleTrigger>
                         <button
-                          class="flex-1 text-left truncate py-1.5"
+                          class="flex-1 text-left truncate py-1.5 pr-2 flex items-baseline justify-between gap-2"
                           @click="selectCategory(cat.id)"
                           @dblclick="toggleCategory(cat.id)"
                         >
-                          {{ cat.name }}
+                          <span class="truncate">{{ cat.name }}</span>
+                          <span
+                            v-if="categoryUnreadCount[cat.id] > 0"
+                            class="text-xs tabular-nums text-sidebar-foreground/50"
+                          >
+                            {{ categoryUnreadCount[cat.id] }}
+                          </span>
                         </button>
-                        <span
-                          v-if="categoryUnreadCount[cat.id] > 0"
-                          class="text-xs tabular-nums ml-auto text-sidebar-foreground/50"
-                        >
-                          {{ categoryUnreadCount[cat.id] }}
-                        </span>
                       </div>
                       <CollapsibleContent>
                         <SidebarMenuSub class="mr-0 pr-0 pt-1 gap-0">

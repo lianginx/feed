@@ -18,7 +18,7 @@ export function useMenuCommands(): void {
     refreshCategoryFeeds,
     refreshAllFeeds
   } = useFeeds()
-  const { isStar, isUnread, selectedView } = useArticleView()
+  const { isStar, isUnread, isToday, selectedView } = useArticleView()
   const { currentArticle, toggleStar, toggleRead, markAllRead, markScopeRead } = useArticles()
   const { shown, configured, toggle, refresh } = useTranslate()
 
@@ -57,8 +57,15 @@ export function useMenuCommands(): void {
       window.api.menu.onMarkListRead(async () => {
         const isListContext =
           selectedFeedId.value === null && selectedCategoryId.value === undefined
-        // 全局列表（非星标视图）时"标为已读"会影响全部文章，需要确认
-        if (isListContext && !isStar.value) {
+        if (isListContext && isToday.value) {
+          const ok = await confirm({
+            title: '今日文章标为已读',
+            message: '将把今日发布的文章标为已读，确定？',
+            confirmText: '全部标为已读'
+          })
+          if (!ok) return
+        } else if (isListContext && !isStar.value) {
+          // 全局列表（非星标/今日视图）时"标为已读"会影响全部文章，需要确认
           const ok = await confirm({
             title: '全部文章标为已读',
             message: '将把全部文章标为已读，确定？',

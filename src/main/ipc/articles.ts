@@ -8,6 +8,7 @@ interface ArticleListParams {
   categoryId?: number | null
   isUnread?: boolean
   isStar?: boolean
+  isToday?: boolean
   query?: string
 }
 
@@ -33,6 +34,13 @@ function buildArticleConditions(params: ArticleListParams): {
   }
   if (params.isStar) {
     conditions.push('a.is_starred = 1')
+  }
+  if (params.isToday) {
+    // 今日发布：本地时区当天 0 点起（published_at 为 Unix 秒）
+    const now = new Date()
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000
+    conditions.push('a.published_at >= @todayStart')
+    queryParams.todayStart = todayStart
   }
 
   return { conditions, queryParams }
@@ -123,22 +131,34 @@ export function registerArticleHandlers(): void {
     }
   })
 
-  ipcMain.handle('articles:markAllRead', async (_event, feedId?: number, isStar?: boolean) => {
-    try {
-      const db = getConnection()
-      if (isStar) {
-        db.prepare('UPDATE articles SET is_read = 1 WHERE is_read = 0 AND is_starred = 1').run()
-      } else if (feedId) {
-        db.prepare('UPDATE articles SET is_read = 1 WHERE feed_id = ? AND is_read = 0').run(feedId)
-      } else {
-        db.prepare('UPDATE articles SET is_read = 1 WHERE is_read = 0').run()
+  ipcMain.handle(
+    'articles:markAllRead',
+    async (_event, feedId?: number, isStar?: boolean, isToday?: boolean) => {
+      try {
+        const db = getConnection()
+        if (isToday) {
+          const now = new Date()
+          const todayStart =
+            new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000
+          db.prepare('UPDATE articles SET is_read = 1 WHERE is_read = 0 AND published_at >= ?').run(
+            todayStart
+          )
+        } else if (isStar) {
+          db.prepare('UPDATE articles SET is_read = 1 WHERE is_read = 0 AND is_starred = 1').run()
+        } else if (feedId) {
+          db.prepare('UPDATE articles SET is_read = 1 WHERE feed_id = ? AND is_read = 0').run(
+            feedId
+          )
+        } else {
+          db.prepare('UPDATE articles SET is_read = 1 WHERE is_read = 0').run()
+        }
+        scheduleBadgeUpdate()
+        return success({ ok: true })
+      } catch (e) {
+        return error((e as Error).message)
       }
-      scheduleBadgeUpdate()
-      return success({ ok: true })
-    } catch (e) {
-      return error((e as Error).message)
     }
-  })
+  )
 
   ipcMain.handle('articles:toggleStar', async (_event, id: number) => {
     try {
