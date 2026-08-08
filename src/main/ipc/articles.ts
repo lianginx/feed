@@ -6,7 +6,8 @@ import { scheduleBadgeUpdate } from '../services/badge'
 interface ArticleListParams {
   feedId?: number
   categoryId?: number | null
-  filter?: 'all' | 'unread' | 'starred'
+  isUnread?: boolean
+  isStar?: boolean
   query?: string
 }
 
@@ -27,9 +28,10 @@ function buildArticleConditions(params: ArticleListParams): {
     queryParams.categoryId = params.categoryId
   }
 
-  if (params.filter === 'unread') {
+  if (params.isUnread) {
     conditions.push('a.is_read = 0')
-  } else if (params.filter === 'starred') {
+  }
+  if (params.isStar) {
     conditions.push('a.is_starred = 1')
   }
 
@@ -121,10 +123,10 @@ export function registerArticleHandlers(): void {
     }
   })
 
-  ipcMain.handle('articles:markAllRead', async (_event, feedId?: number, scope?: 'starred') => {
+  ipcMain.handle('articles:markAllRead', async (_event, feedId?: number, isStar?: boolean) => {
     try {
       const db = getConnection()
-      if (scope === 'starred') {
+      if (isStar) {
         db.prepare('UPDATE articles SET is_read = 1 WHERE is_read = 0 AND is_starred = 1').run()
       } else if (feedId) {
         db.prepare('UPDATE articles SET is_read = 1 WHERE feed_id = ? AND is_read = 0').run(feedId)

@@ -1,9 +1,4 @@
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-
-import { useArticles } from './useArticles'
-import type { AdapterInfo } from '../types'
-
-export type FilterType = 'all' | 'unread' | 'starred'
+import { ref, computed } from 'vue'
 
 export interface FeedItem {
   id: number
@@ -34,9 +29,30 @@ const categories = ref<CategoryItem[]>([])
 const feeds = ref<FeedItem[]>([])
 const selectedFeedId = ref<number | null>(null)
 const selectedCategoryId = ref<number | null | undefined>(undefined)
-const filter = ref<FilterType | undefined>('all')
 const loading = ref(false)
 const refreshingFeedIds = ref<Set<number>>(new Set())
+
+// 订阅源刷新进度监听：模块级单次注册，避免被多个组件重复订阅
+let refreshListenerRegistered = false
+
+function registerRefreshListener(): void {
+  if (refreshListenerRegistered) return
+  refreshListenerRegistered = true
+  window.api.feeds.onRefreshProgress((data) => {
+    if (data.status === 'fetching') {
+      refreshingFeedIds.value = new Set(refreshingFeedIds.value).add(data.feedId)
+    } else {
+      const next = new Set(refreshingFeedIds.value)
+      next.delete(data.feedId)
+      refreshingFeedIds.value = next
+
+      // 刷新完成后重载列表，更新未读数
+      if (data.status === 'complete' || data.status === 'error') {
+        loadFeeds()
+      }
+    }
+  })
+}
 
 const filteredFeeds = computed(() => {
   if (selectedCategoryId.value === undefined) return feeds.value
@@ -48,72 +64,26 @@ const unreadCount = computed(() => {
   return feeds.value.reduce((sum, f) => sum + f.unread_count, 0)
 })
 
+async function loadFeeds(): Promise<void> {
+  loading.value = true
+  try {
+    const [feedsResult, categoriesResult] = await Promise.all([
+      window.api.feeds.list(),
+      window.api.categories.list()
+    ])
+    if (feedsResult.success && feedsResult.data) {
+      feeds.value = feedsResult.data
+    }
+    if (categoriesResult.success && categoriesResult.data) {
+      categories.value = categoriesResult.data
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useFeeds() {
-  async function loadFeeds(): Promise<void> {
-    loading.value = true
-    try {
-      const [feedsResult, categoriesResult] = await Promise.all([
-        window.api.feeds.list(),
-        window.api.categories.list()
-      ])
-      if (feedsResult.success && feedsResult.data) {
-        feeds.value = feedsResult.data
-      }
-      if (categoriesResult.success && categoriesResult.data) {
-        categories.value = categoriesResult.data
-      }
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function addFeed(
-    url: string,
-    title?: string,
-    categoryId?: number
-  ): Promise<number | false> {
-    const result = await window.api.feeds.add({ url, title, categoryId })
-    if (result.success && result.data) {
-      const feedId = result.data.id
-      // 立即获取该订阅源的文章
-      await refreshSingleFeed(feedId)
-      // 刷新订阅源列表
-      await loadFeeds()
-      // 选中新添加的订阅源
-      selectFeed(feedId)
-      return feedId
-    }
-    return false
-  }
-
-  /** 内置路由（站点适配器）列表 */
-  async function listAdapters(): Promise<AdapterInfo[]> {
-    const result = await window.api.feeds.listAdapters()
-    return result.success && result.data ? result.data : []
-  }
-
-  /** 添加内置路由：主进程一次抓取即验证+入库，这里只需刷新列表并选中 */
-  async function addAdapter(
-    adapterId: string,
-    params: Record<string, string>,
-    categoryId?: number
-  ): Promise<number | false> {
-    // Vue ref 的 value 是 reactive Proxy，IPC 结构化克隆无法克隆 Proxy，需展开成普通对象
-    const result = await window.api.feeds.addAdapter({
-      adapterId,
-      params: { ...params },
-      categoryId
-    })
-    if (result.success && result.data) {
-      const feedId = result.data.id
-      await loadFeeds()
-      selectFeed(feedId)
-      return feedId
-    }
-    return false
-  }
-
   async function deleteFeed(id: number): Promise<boolean> {
     const result = await window.api.feeds.delete(id)
     if (result.success) {
@@ -163,48 +133,20 @@ export function useFeeds() {
 
   function selectFeed(id: number | null): void {
     selectedFeedId.value = id
-    if (id !== null) selectedCategoryId.value = undefined
+    if (id !== null) {
+      selectedCategoryId.value = undefined
+    }
   }
 
   function selectCategory(id: number | null | undefined): void {
     selectedCategoryId.value = id
-    if (id !== undefined) selectedFeedId.value = null
+    if (id !== undefined) {
+      selectedFeedId.value = null
+    }
   }
 
-  // 监听单个订阅源刷新进度
-  let stopRefreshListener: (() => void) | null = null
-
-  onMounted(() => {
-    stopRefreshListener = window.api.feeds.onRefreshProgress((data) => {
-      if (data.status === 'fetching') {
-        refreshingFeedIds.value = new Set(refreshingFeedIds.value).add(data.feedId)
-      } else {
-        const next = new Set(refreshingFeedIds.value)
-        next.delete(data.feedId)
-        refreshingFeedIds.value = next
-
-        // 刷新完成后重载列表，更新未读数
-        if (data.status === 'complete') {
-          loadFeeds()
-          // 同步刷新文章列表（与当前视图相关的订阅源完成时）
-          const { loadArticles } = useArticles()
-          if (selectedFeedId.value !== null) {
-            if (data.feedId === selectedFeedId.value) {
-              loadArticles(selectedFeedId.value, undefined, filter.value)
-            }
-          } else {
-            loadArticles(undefined, selectedCategoryId.value, filter.value)
-          }
-        } else if (data.status === 'error') {
-          loadFeeds()
-        }
-      }
-    })
-  })
-
-  onUnmounted(() => {
-    stopRefreshListener?.()
-  })
+  // 惰性单次注册，随应用生命周期存在，不随单个组件卸载而关闭
+  registerRefreshListener()
 
   return {
     categories,
@@ -212,14 +154,10 @@ export function useFeeds() {
     filteredFeeds,
     selectedFeedId,
     selectedCategoryId,
-    filter,
     unreadCount,
     loading,
     refreshingFeedIds,
     loadFeeds,
-    addFeed,
-    listAdapters,
-    addAdapter,
     deleteFeed,
     updateFeed,
     updateSortOrder,

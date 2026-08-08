@@ -2,6 +2,7 @@ import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useSearchFocus } from './useSearchFocus'
 import { useConfirmDialog } from './useConfirmDialog'
 import { useFeeds } from './useFeeds'
+import { useArticleView } from './useArticleView'
 import { useArticles } from './useArticles'
 import { useUpdater } from './useUpdater'
 import { useTranslate } from './useTranslate'
@@ -13,11 +14,11 @@ export function useMenuCommands(): void {
   const {
     selectedFeedId,
     selectedCategoryId,
-    filter,
     refreshSingleFeed,
     refreshCategoryFeeds,
     refreshAllFeeds
   } = useFeeds()
+  const { isStar, isUnread, selectedView } = useArticleView()
   const { currentArticle, toggleStar, toggleRead, markAllRead, markScopeRead } = useArticles()
   const { shown, configured, toggle, refresh } = useTranslate()
 
@@ -56,7 +57,8 @@ export function useMenuCommands(): void {
       window.api.menu.onMarkListRead(async () => {
         const isListContext =
           selectedFeedId.value === null && selectedCategoryId.value === undefined
-        if (isListContext && (filter.value === 'all' || filter.value === 'unread')) {
+        // 全局列表（非星标视图）时"标为已读"会影响全部文章，需要确认
+        if (isListContext && !isStar.value) {
           const ok = await confirm({
             title: '全部文章标为已读',
             message: '将把全部文章标为已读，确定？',
@@ -78,6 +80,12 @@ export function useMenuCommands(): void {
       window.api.menu.onToggleRead(async () => {
         if (currentArticle.value) {
           await toggleRead(currentArticle.value.id)
+        }
+      }),
+      window.api.menu.onToggleUnread(() => {
+        // 未读视图本身已是未读筛选，无需重复切换
+        if (selectedView.value !== 'unread') {
+          isUnread.value = !isUnread.value
         }
       }),
       window.api.menu.onCheckForUpdates(() => {

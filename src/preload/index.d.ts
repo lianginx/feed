@@ -185,12 +185,13 @@ interface ArticleApi {
   list: (params: {
     feedId?: number
     categoryId?: number | null
-    filter?: 'all' | 'unread' | 'starred'
+    isUnread?: boolean
+    isStar?: boolean
     query?: string
   }) => Promise<ApiResponse<ArticleListResult>>
   get: (id: number) => Promise<ApiResponse<ArticleDetail>>
   toggleRead: (id: number) => Promise<ApiResponse<{ id: number; is_read: number }>>
-  markAllRead: (feedId?: number, scope?: 'starred') => Promise<ApiResponse<{ ok: boolean }>>
+  markAllRead: (feedId?: number, isStar?: boolean) => Promise<ApiResponse<{ ok: boolean }>>
   toggleStar: (id: number) => Promise<ApiResponse<{ id: number; is_starred: number }>>
   getUnreadCounts: () => Promise<ApiResponse<{ feed_id: number; count: number }[]>>
 }
@@ -273,6 +274,7 @@ interface MenuApi {
   onMarkListRead: (callback: () => void) => () => void
   onMarkAllRead: (callback: () => void) => () => void
   onToggleRead: (callback: () => void) => () => void
+  onToggleUnread: (callback: () => void) => () => void
   onCheckForUpdates: (callback: () => void) => () => void
   onToggleStar: (callback: () => void) => () => void
   onTranslate: (callback: () => void) => () => void

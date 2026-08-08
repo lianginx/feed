@@ -1,5 +1,6 @@
 import { ref } from 'vue'
-import { useFeeds, type FilterType } from './useFeeds'
+import { useFeeds } from './useFeeds'
+import { useArticleView } from './useArticleView'
 
 interface ArticleItem {
   id: number
@@ -27,12 +28,16 @@ const articles = ref<ArticleItem[]>([])
 const currentArticle = ref<ArticleDetail | null>(null)
 const loading = ref(false)
 
+// 订阅源刷新完成时同步刷新文章列表：模块级单次注册
+let refreshReloadRegistered = false
+
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useArticles() {
   async function loadArticles(
     feedId?: number,
     categoryId?: number | null,
-    filter?: FilterType
+    isUnread?: boolean,
+    isStar?: boolean
   ): Promise<void> {
     const loadingTimer = setTimeout(() => {
       loading.value = true
@@ -42,7 +47,8 @@ export function useArticles() {
       const result = await window.api.articles.list({
         feedId,
         categoryId,
-        filter
+        isUnread,
+        isStar
       })
 
       clearTimeout(loadingTimer)
@@ -107,7 +113,8 @@ export function useArticles() {
 
   // 把当前选中的订阅源/分类范围的文章全部标为已读
   async function markScopeRead(): Promise<void> {
-    const { selectedFeedId, selectedCategoryId, filter } = useFeeds()
+    const { selectedFeedId, selectedCategoryId } = useFeeds()
+    const { isStar } = useArticleView()
     if (selectedFeedId.value !== null) {
       await markAllRead(selectedFeedId.value)
     } else if (selectedCategoryId.value !== undefined) {
@@ -117,8 +124,8 @@ export function useArticles() {
       })
       const { loadFeeds } = useFeeds()
       await loadFeeds()
-    } else if (filter.value === 'starred') {
-      await window.api.articles.markAllRead(undefined, 'starred')
+    } else if (isStar.value) {
+      await window.api.articles.markAllRead(undefined, true)
       articles.value.forEach((a) => {
         a.is_read = 1
       })
@@ -129,13 +136,28 @@ export function useArticles() {
     }
   }
 
+  // 按当前选中的订阅源/分类/筛选重新加载文章
+  async function reloadScope(): Promise<void> {
+    const { selectedFeedId, selectedCategoryId } = useFeeds()
+    const { isUnread, isStar } = useArticleView()
+    if (selectedFeedId.value !== null) {
+      await loadArticles(selectedFeedId.value, undefined, isUnread.value, isStar.value)
+    } else if (selectedCategoryId.value !== undefined) {
+      await loadArticles(undefined, selectedCategoryId.value, isUnread.value, isStar.value)
+    } else {
+      await loadArticles(undefined, undefined, isUnread.value, isStar.value)
+    }
+  }
+
   async function search(query: string): Promise<ArticleItem[]> {
-    const { selectedFeedId, selectedCategoryId, filter } = useFeeds()
+    const { selectedFeedId, selectedCategoryId } = useFeeds()
+    const { isUnread, isStar } = useArticleView()
     const result = await window.api.articles.list({
       query,
       feedId: selectedFeedId.value ?? undefined,
       categoryId: selectedCategoryId.value,
-      filter: filter.value
+      isUnread: isUnread.value,
+      isStar: isStar.value
     })
     if (result.success && result.data) {
       return result.data.articles
@@ -146,6 +168,26 @@ export function useArticles() {
   function closeArticle(): void {
     currentArticle.value = null
   }
+
+  function registerRefreshReload(): void {
+    if (refreshReloadRegistered) return
+    refreshReloadRegistered = true
+    window.api.feeds.onRefreshProgress((data) => {
+      if (data.status !== 'complete') return
+      const { selectedFeedId, selectedCategoryId } = useFeeds()
+      const { isUnread, isStar } = useArticleView()
+      // 只重载与当前视图相关的订阅源完成事件
+      if (selectedFeedId.value !== null) {
+        if (data.feedId === selectedFeedId.value) {
+          void loadArticles(selectedFeedId.value, undefined, isUnread.value, isStar.value)
+        }
+      } else {
+        void loadArticles(undefined, selectedCategoryId.value, isUnread.value, isStar.value)
+      }
+    })
+  }
+
+  registerRefreshReload()
 
   return {
     articles,
@@ -158,6 +200,7 @@ export function useArticles() {
     markAllRead,
     markScopeRead,
     search,
+    reloadScope,
     closeArticle
   }
 }

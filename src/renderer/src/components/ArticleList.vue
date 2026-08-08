@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { watch, ref, computed, nextTick } from 'vue'
+import { watch, ref, computed } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
-import { Search, Star, X, Newspaper } from '@lucide/vue'
+import { Star, Newspaper, BookOpen } from '@lucide/vue'
 import { dayjs } from '../utils/dayjs'
-import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   ContextMenu,
@@ -14,48 +13,24 @@ import {
 } from '@/components/ui/context-menu'
 import { useArticles } from '../composables/useArticles'
 import { useFeeds } from '../composables/useFeeds'
-import { useSearchFocus } from '../composables/useSearchFocus'
+import { useArticleView } from '../composables/useArticleView'
+import ArticleSearch from './ArticleSearch.vue'
+import Button from './ui/button/Button.vue'
 
-const {
-  articles,
-  currentArticle,
-  loading,
-  loadArticles,
-  openArticle,
-  search,
-  toggleStar,
-  toggleRead
-} = useArticles()
-const { selectedFeedId, selectedCategoryId, filter } = useFeeds()
+const { articles, currentArticle, loading, reloadScope, openArticle, toggleStar, toggleRead } =
+  useArticles()
+const { selectedFeedId, selectedCategoryId } = useFeeds()
+const { selectedView, isUnread, isStar } = useArticleView()
 
 const parentRef = ref<HTMLElement | null>(null)
-const searchQuery = ref('')
-const searchActive = ref(false)
-const searchInput = ref<{ $el: Element } | null>(null)
-let searchTimer: ReturnType<typeof setTimeout> | null = null
-
-const { focusSignal } = useSearchFocus()
-
-// 菜单触发的搜索聚焦（⌘F）
-watch(focusSignal, () => {
-  nextTick(() => {
-    const el = searchInput.value?.$el
-    if (el instanceof HTMLInputElement) {
-      el.focus()
-      el.select()
-    }
-  })
-})
 
 // 当选择的订阅源或筛选条件变化时重新加载
 watch(
-  [selectedFeedId, selectedCategoryId, filter],
+  [selectedFeedId, selectedCategoryId, isUnread, isStar],
   () => {
-    searchActive.value = false
-    searchQuery.value = ''
     currentArticle.value = null // 切换时关闭文章详情
     parentRef.value?.scrollTo(0, 0) // 滚动到顶部
-    reloadArticles()
+    reloadScope()
   },
   { immediate: true }
 )
@@ -70,72 +45,31 @@ const virtualizer = useVirtualizer(
   }))
 )
 
-function reloadArticles(): void {
-  if (selectedFeedId.value !== null) {
-    loadArticles(selectedFeedId.value, undefined, filter.value)
-  } else if (selectedCategoryId.value !== undefined) {
-    loadArticles(undefined, selectedCategoryId.value, filter.value)
-  } else {
-    loadArticles(undefined, undefined, filter.value)
-  }
-}
-
-async function handleSearch(): Promise<void> {
-  const q = searchQuery.value.trim()
-  if (!q) {
-    searchActive.value = false
-    await reloadArticles()
-    return
-  }
-  searchActive.value = true
-  const results = await search(q)
-  if (results) {
-    articles.value = results
-  }
-}
-
-function onSearchInput(): void {
-  if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(handleSearch, 300)
-}
-
-function clearSearch(): void {
-  searchQuery.value = ''
-  handleSearch()
-}
-
 function openInBrowser(url: string | null): void {
   if (url) {
     window.open(url, '_blank')
   }
 }
+
+function toggleUnreadFilter(): void {
+  isUnread.value = !isUnread.value
+}
 </script>
 
 <template>
   <div class="h-full flex flex-col">
-    <div class="p-3 flex items-center min-h-9.5" style="app-region: drag">
-      <div class="relative flex-1 h-8" style="app-region: no-drag">
-        <Search
-          class="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none"
-        />
-        <Input
-          ref="searchInput"
-          v-model="searchQuery"
-          type="text"
-          placeholder="搜索文章..."
-          class="h-full w-full pl-8 pr-8 rounded-md bg-muted/70 border-transparent shadow-none transition-colors hover:bg-muted focus:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
-          @input="onSearchInput"
-          @keyup.escape="clearSearch"
-        />
-        <button
-          v-if="searchQuery"
-          class="absolute right-1 top-1/2 -translate-y-1/2 size-7 flex items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
-          title="清除"
-          @click="clearSearch"
-        >
-          <X class="size-3.5" />
-        </button>
-      </div>
+    <div class="p-3 flex items-center gap-2 min-h-9.5" style="app-region: drag">
+      <ArticleSearch />
+      <Button
+        v-if="selectedView !== 'unread'"
+        class="size-8 shrink-0 flex items-center justify-center rounded-md bg-transparent text-muted-foreground transition-colors hover:text-foreground hover:bg-muted"
+        :class="{ 'text-foreground bg-muted': isUnread }"
+        title="只看未读"
+        style="app-region: no-drag"
+        @click="toggleUnreadFilter"
+      >
+        <BookOpen class="size-4" />
+      </Button>
     </div>
 
     <!-- 文章列表 -->

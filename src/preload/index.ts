@@ -74,13 +74,14 @@ const api = {
     list: (params: {
       feedId?: number
       categoryId?: number | null
-      filter?: 'all' | 'unread' | 'starred'
+      isUnread?: boolean
+      isStar?: boolean
       query?: string
     }) => ipcRenderer.invoke('articles:list', params),
     get: (id: number) => ipcRenderer.invoke('articles:get', id),
     toggleRead: (id: number) => ipcRenderer.invoke('articles:toggleRead', id),
-    markAllRead: (feedId?: number, scope?: 'starred') =>
-      ipcRenderer.invoke('articles:markAllRead', feedId, scope),
+    markAllRead: (feedId?: number, isStar?: boolean) =>
+      ipcRenderer.invoke('articles:markAllRead', feedId, isStar),
     toggleStar: (id: number) => ipcRenderer.invoke('articles:toggleStar', id),
     getUnreadCounts: () => ipcRenderer.invoke('articles:getUnreadCounts')
   },
@@ -114,6 +115,8 @@ const api = {
       onChannel('menu:markListRead', callback),
     onMarkAllRead: (callback: () => void): (() => void) => onChannel('menu:markAllRead', callback),
     onToggleRead: (callback: () => void): (() => void) => onChannel('menu:toggleRead', callback),
+    onToggleUnread: (callback: () => void): (() => void) =>
+      onChannel('menu:toggleUnread', callback),
     onCheckForUpdates: (callback: () => void): (() => void) =>
       onChannel('menu:checkForUpdates', callback),
     onToggleStar: (callback: () => void): (() => void) => onChannel('menu:toggleStar', callback),
