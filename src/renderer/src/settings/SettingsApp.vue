@@ -28,7 +28,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { useApp, type Theme } from '../composables/useApp'
 import { useSync } from '../composables/useSync'
-import type { SyncConfig, TranslateConfig, AdapterInfo } from '../types'
+import type { SyncConfig, TranslateConfig, AdapterInfo, ProxyConfig } from '../types'
 
 const {
   theme,
@@ -49,7 +49,9 @@ const {
   setAutoLaunch,
   setLaunchHidden,
   siteCookies,
-  setSiteCookies
+  setSiteCookies,
+  proxyConfig,
+  setProxyConfig
 } = useApp()
 const { runSync } = useSync()
 
@@ -153,6 +155,64 @@ async function handleClearCache(): Promise<void> {
   } finally {
     clearingCache.value = false
   }
+}
+
+// ---------- 全局网络代理（本地编辑态，点「保存代理设置」后写入配置） ----------
+const proxyMode = ref<ProxyConfig['mode']>('auto')
+const proxyProtocol = ref<ProxyConfig['protocol']>('http')
+const proxyHost = ref('')
+const proxyPort = ref<number | undefined>(undefined)
+const proxyUsername = ref('')
+const proxyPassword = ref('')
+const proxySaved = ref(false)
+const proxyError = ref<string | null>(null)
+
+const proxyModeOptions = [
+  { value: 'auto', label: '自动跟随系统代理' },
+  { value: 'none', label: '直连（不使用代理）' },
+  { value: 'manual', label: '手动配置' }
+]
+
+const proxyProtocolOptions = [
+  { value: 'http', label: 'HTTP' },
+  { value: 'socks5', label: 'SOCKS5' }
+]
+
+function initProxyInputs(): void {
+  const p = proxyConfig.value
+  proxyMode.value = p.mode
+  proxyProtocol.value = p.protocol ?? 'http'
+  proxyHost.value = p.host ?? ''
+  proxyPort.value = p.port
+  proxyUsername.value = p.username ?? ''
+  proxyPassword.value = p.password ?? ''
+}
+
+async function handleSaveProxy(): Promise<void> {
+  proxyError.value = null
+  if (proxyMode.value === 'manual') {
+    if (!proxyHost.value.trim() || !proxyPort.value) {
+      proxyError.value = '请填写代理主机与端口'
+      return
+    }
+    if (!Number.isInteger(proxyPort.value) || proxyPort.value < 1 || proxyPort.value > 65535) {
+      proxyError.value = '端口需为 1-65535 的整数'
+      return
+    }
+  }
+  const next: ProxyConfig = { mode: proxyMode.value }
+  if (proxyMode.value === 'manual') {
+    next.protocol = proxyProtocol.value
+    next.host = proxyHost.value.trim()
+    next.port = proxyPort.value
+    if (proxyUsername.value.trim()) next.username = proxyUsername.value.trim()
+    if (proxyPassword.value) next.password = proxyPassword.value
+  }
+  await setProxyConfig(next)
+  proxySaved.value = true
+  setTimeout(() => {
+    proxySaved.value = false
+  }, 2000)
 }
 
 onMounted(() => {
@@ -380,6 +440,10 @@ onMounted(async () => {
   translateSaved.value = false
   translateTestResult.value = null
 
+  // 用已保存的配置回填网络代理编辑态
+  initProxyInputs()
+  proxySaved.value = false
+
   // 加载内置路由 Cookie 配置：只展示需要登录 cookie 的适配器
   const adapterResult = await window.api.feeds.listAdapters()
   if (adapterResult.success && adapterResult.data) {
@@ -506,6 +570,88 @@ onMounted(async () => {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </section>
+
+        <!-- 网络 -->
+        <section class="mt-8">
+          <h2 class="text-sm font-semibold text-foreground mb-1">网络</h2>
+          <div class="flex items-center justify-between gap-6 py-3">
+            <div class="min-w-0">
+              <div class="text-sm">代理模式</div>
+              <div class="mt-0.5 text-xs text-muted-foreground">
+                覆盖订阅抓取、图标、同步与翻译请求；「自动跟随系统代理」默认启用
+              </div>
+            </div>
+            <div class="w-44 shrink-0">
+              <Select
+                :model-value="proxyMode"
+                @update:model-value="(v) => (proxyMode = v as ProxyConfig['mode'])"
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="opt in proxyModeOptions" :key="opt.value" :value="opt.value">
+                    {{ opt.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <template v-if="proxyMode === 'manual'">
+            <div class="flex items-center justify-between gap-6 py-3">
+              <span class="text-sm">协议</span>
+              <div class="w-44 shrink-0">
+                <Select
+                  :model-value="proxyProtocol"
+                  @update:model-value="(v) => (proxyProtocol = v as ProxyConfig['protocol'])"
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem
+                      v-for="opt in proxyProtocolOptions"
+                      :key="opt.value"
+                      :value="opt.value"
+                    >
+                      {{ opt.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div class="flex items-center justify-between gap-6 py-3">
+              <span class="text-sm">主机与端口</span>
+              <div class="flex shrink-0 gap-2">
+                <Input v-model="proxyHost" placeholder="127.0.0.1" class="w-44" />
+                <Input v-model.number="proxyPort" type="number" placeholder="端口" class="w-24" />
+              </div>
+            </div>
+            <div class="flex items-center justify-between gap-6 py-3">
+              <span class="text-sm">用户名（可选）</span>
+              <Input v-model="proxyUsername" placeholder="用户名" class="w-44 shrink-0" />
+            </div>
+            <div class="flex items-center justify-between gap-6 py-3">
+              <span class="text-sm">密码（可选）</span>
+              <Input
+                v-model="proxyPassword"
+                type="password"
+                placeholder="密码"
+                class="w-44 shrink-0"
+              />
+            </div>
+          </template>
+
+          <div class="flex items-center gap-3 pt-2">
+            <Button variant="outline" size="sm" @click="handleSaveProxy">保存代理设置</Button>
+            <span v-if="proxySaved" class="text-xs text-primary flex items-center gap-1">
+              <CheckCircle2 class="size-3" />
+              已保存
+            </span>
+            <span v-else-if="proxyError" class="text-xs text-destructive">{{ proxyError }}</span>
           </div>
         </section>
       </div>

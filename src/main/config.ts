@@ -6,6 +6,20 @@ export type SyncProvider = 'none' | 'gist' | 'gitee' | 'webdav'
 /** 翻译提供商类型 */
 export type TranslateProviderKind = 'none' | 'baidu' | 'edge'
 
+/** 网络代理模式：auto=自动跟随系统代理，none=直连，manual=手动指定 */
+export type ProxyMode = 'auto' | 'none' | 'manual'
+
+/** 全局网络代理配置（覆盖 Node fetch 与浏览器抓取两条路径；Telegram MTProto 二期接入） */
+export interface ProxyConfig {
+  mode: ProxyMode
+  /** manual 模式：代理协议 */
+  protocol?: 'http' | 'socks5'
+  host?: string
+  port?: number
+  username?: string
+  password?: string
+}
+
 export interface TranslateConfig {
   provider: TranslateProviderKind
   /** 百度翻译开放平台 appid */
@@ -47,6 +61,8 @@ export interface AppSettings {
   launchHidden: boolean
   /** 站点适配器登录 Cookie：域名 → 整段 cookie 字符串（如 'SESSDATA=xxx; bili_jct=yyy'），供 needsBrowser 适配器注入 */
   siteCookies: Record<string, string>
+  /** 全局网络代理设置 */
+  proxy: ProxyConfig
 }
 
 const defaults: AppSettings = {
@@ -59,7 +75,8 @@ const defaults: AppSettings = {
   translate: { provider: 'edge', targetLang: 'zh' },
   autoLaunch: false,
   launchHidden: false,
-  siteCookies: {}
+  siteCookies: {},
+  proxy: { mode: 'auto' }
 }
 
 const store = new Store<AppSettings>({

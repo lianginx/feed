@@ -1,5 +1,5 @@
 import { ref, computed, watch } from 'vue'
-import type { SyncConfig, TranslateConfig } from '../types'
+import type { SyncConfig, TranslateConfig, ProxyConfig } from '../types'
 
 export type Theme = 'light' | 'dark' | 'system'
 
@@ -12,6 +12,7 @@ const translateConfig = ref<TranslateConfig>({ provider: 'none', targetLang: 'zh
 const autoLaunch = ref(false)
 const launchHidden = ref(false)
 const siteCookies = ref<Record<string, string>>({})
+const proxyConfig = ref<ProxyConfig>({ mode: 'auto' })
 
 function resolveTheme(t: Theme): 'light' | 'dark' {
   if (t === 'system') {
@@ -51,6 +52,7 @@ export function useApp() {
       autoLaunch.value = result.data.autoLaunch
       launchHidden.value = result.data.launchHidden
       siteCookies.value = result.data.siteCookies ?? {}
+      proxyConfig.value = result.data.proxy ?? { mode: 'auto' }
     }
   }
 
@@ -116,6 +118,21 @@ export function useApp() {
     await window.api.config.update({ siteCookies: cleaned })
   }
 
+  /** 保存全局网络代理设置 */
+  async function setProxyConfig(partial: Partial<ProxyConfig>): Promise<void> {
+    const next: ProxyConfig = { ...proxyConfig.value, ...partial }
+    if (next.mode !== 'manual') {
+      // 非手动模式不保留手动字段，避免残留
+      delete next.protocol
+      delete next.host
+      delete next.port
+      delete next.username
+      delete next.password
+    }
+    proxyConfig.value = next
+    await window.api.config.update({ proxy: next })
+  }
+
   return {
     theme,
     resolvedTheme,
@@ -127,6 +144,7 @@ export function useApp() {
     autoLaunch,
     launchHidden,
     siteCookies,
+    proxyConfig,
     loadSettings,
     setTheme,
     setUpdateInterval,
@@ -135,6 +153,7 @@ export function useApp() {
     setSyncConfig,
     setTranslateConfig,
     setSiteCookies,
+    setProxyConfig,
     setAutoLaunch,
     setLaunchHidden
   }

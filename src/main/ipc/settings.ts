@@ -6,6 +6,7 @@ import { refreshAutoCheckTimer } from '../services/updater'
 import { applyAutoLaunch } from '../services/autoLaunch'
 import { loginToSite } from '../services/siteLogin'
 import { getCacheStats, clearCache } from '../services/cache'
+import { applyProxySettings } from '../services/proxy'
 import { success, error } from './util'
 
 export function registerSettingsHandlers(): void {
@@ -87,6 +88,10 @@ export function registerSettingsHandlers(): void {
       if (settings.autoLaunch !== undefined || settings.launchHidden !== undefined) {
         const { autoLaunch, launchHidden } = getSettings()
         void applyAutoLaunch(autoLaunch, launchHidden)
+      }
+      // 如果更新了网络代理设置，立即应用（Node fetch + 浏览器抓取）
+      if (settings.proxy !== undefined) {
+        void applyProxySettings(getSettings())
       }
       // 通知主窗口重新加载配置（如主题变化即时生效）
       getMainWindow()?.webContents.send('config:changed')

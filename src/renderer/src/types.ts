@@ -4,6 +4,19 @@ export type SyncProvider = 'none' | 'gist' | 'gitee' | 'webdav'
 /** 翻译提供商类型（与 preload 声明保持一致） */
 export type TranslateProviderKind = 'none' | 'baidu' | 'edge'
 
+/** 网络代理模式（与 preload 声明保持一致） */
+export type ProxyMode = 'auto' | 'none' | 'manual'
+
+/** 全局网络代理配置 */
+export interface ProxyConfig {
+  mode: ProxyMode
+  protocol?: 'http' | 'socks5'
+  host?: string
+  port?: number
+  username?: string
+  password?: string
+}
+
 /** 文章翻译配置 */
 export interface TranslateConfig {
   provider: TranslateProviderKind

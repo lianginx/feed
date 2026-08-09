@@ -57,6 +57,17 @@ interface ArticleListResult {
   articles: Article[]
 }
 
+/** 网络代理模式：auto=自动跟随系统代理，none=直连，manual=手动指定 */
+interface ProxyConfig {
+  mode: 'auto' | 'none' | 'manual'
+  /** manual 模式：代理协议 */
+  protocol?: 'http' | 'socks5'
+  host?: string
+  port?: number
+  username?: string
+  password?: string
+}
+
 interface AppSettings {
   theme: 'light' | 'dark' | 'system'
   updateInterval: number
@@ -71,6 +82,8 @@ interface AppSettings {
   launchHidden: boolean
   /** 站点适配器登录 Cookie：域名 → 整段 cookie 字符串（如 'SESSDATA=xxx; bili_jct=yyy'） */
   siteCookies: Record<string, string>
+  /** 全局网络代理设置 */
+  proxy: ProxyConfig
 }
 
 /** 文章翻译配置 */
