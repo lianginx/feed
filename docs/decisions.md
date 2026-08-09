@@ -93,4 +93,17 @@
 | 窗口状态记忆     | debounce(500ms) 持续保存                        | 异常崩溃也不丢失窗口位置                                              |
 | API Key 存储     | electron-store 明文                             | 与 VSCode/OpenCode 等主流做法一致，不做过度设计                       |
 | 格式支持         | RSS + Atom                                      | rss-parser 原生支持，文档统一表述                                     |
+
+> 分期说明：**路由架构 / 统一缓存 / 全局代理**为一期（立即实施）；**Telegram 相关**为二期目标（待 api_id/api_hash 申请成功，暂缓）。
+
+| 路由架构          | source 判别联合 + 注册表分发                     | 开闭原则：加新数据源只需新增模块+注册，分发器与 core 不改            |
+| 统一缓存          | services/cache/（favicon:// 保留 + media:// 新增） | 同一套 LRU/清理/协议机制，favicon 记录零迁移                        |
+| 网络代理          | 全局（自动跟随系统代理 → 手动覆盖）              | 覆盖 MTProto/Node fetch/浏览器三条路径，满足隐私与未来需求           |
+| Telegram 取数方式 | MTProto（mtcute）+ 用户账号登录                  | Bot API 读不了任意频道/私有内容；mtcute 纯 TS 无 native，适合 Electron 分发 |
+| Telegram 凭据     | 用户自备 api_id/api_hash                        | 申请免费即时；应用内置共享 api_id 全量用户共用易触发封号、违反官方"每号一 api_id"限制 |
+| Telegram 账号模型 | 全局单账号                                      | 一次登录全 app 复用；多账号封号风险翻倍、管理复杂                     |
+| Telegram 登录     | 二维码（auth.exportLoginToken）                 | 免短信验证码/2FA 输入，桌面端体验最好                                |
+| Telegram web 降级 | 暂缓（二期移除），一期保留 web 解析             | 二期移除后单一路径；一期以 web 解析为过渡，功能不倒退               |
+| Telegram 更新     | 定时轮询增量（getHistory + offset_id）          | 契合现有 refresher；连接时间短，封号信号弱                           |
+| Telegram 媒体     | 图片/音频本地缓存，视频/文档跳转链接             | 媒体无公开直链（MTProto 无 URL 概念），本地下载是唯一稳定方案；视频体积大不值当 |
 | IPC 错误处理     | `{ success, data?, error? }`                    | 统一格式，调用方只需判断 success                                      |

@@ -142,6 +142,55 @@ graph TB
     Tray -->|恢复窗口| UI
 ```
 
+### 路由框架架构（Source 通道分发）
+
+适配器是「内置路由」的声明式描述：`params` 驱动添加订阅表单，`parse` 把抓取内容解析为统一 `ParsedFeed`。新架构把「取数方式」提升为适配器的一等概念，未来新增非 HTTP 数据源（如 Telegram MTProto）无需改动框架分发逻辑。
+
+核心概念：
+
+- **source**：适配器声明的数据源类型。划分标准是**数据契约形态**而非传输实现——`http` 适配器产出原始文本（HTML/JSON），`telegram` 适配器产出结构化消息对象。
+- **SourceRunner**：对应 source 的执行器，实现 `run(adapter, params, options) → ParsedFeed`。
+- **分发器**（`core/runner.ts`）：按 `adapter.source` 查 `sourceRunners` 注册表；未声明 source 的适配器走**内置 http runner**（默认路径，即原 `buildUrl → fetch → parse` 流程）。
+
+http 与 browser 产出同一种形态（原始文本），归入同一 source，用 `needsBrowser` 标志选择 fetcher（`core/fetcher/http.ts` / `browser.ts`）。
+
+目录结构（telegram source 为二期，见下节）：
+
+```
+routes/
+  types.ts          # 契约：FeedAdapter 判别联合、SourceKind、SourceRunner
+  core/
+    runner.ts       # 分发器 + registerSource + 内置 http runner
+    registry.ts     # 适配器注册表
+    fetcher/        # http.ts / browser.ts
+    limit.ts        # HTTP/浏览器并发上限
+    extract.ts      # 文本/封面提取辅助
+  adapters/
+    index.ts        # 集中注册：registerAdapter + registerSource
+    telegram/
+      index.ts      # 二期：适配器定义（source: 'telegram'）
+      source.ts     # 二期：telegram SourceRunner（复用 services/telegram 连接服务）
+    v2ex/ bilibili/ # http 适配器（不声明 source，零改动）
+```
+
+新增数据源 = `types.ts` 加一个 SourceKind + 适配器接口 + `adapters/<feature>/source.ts` + `adapters/index.ts` 一行注册。分发器与 core 永不改。
+
+### Telegram 订阅（MTProto）
+
+> **状态：二期 · 阻塞中（待 api_id/api_hash 申请成功）**。当前仍使用 t.me/s web 解析适配器（普通 http 适配器）作为过渡，一期不涉及 Telegram 改动。以下为二期目标设计。
+
+- 技术栈：**mtcute**（纯 TS 实现 MTProto、无 native 依赖、内置 SOCKS5/HTTP/MTProxy transport）
+- 凭据：用户自备 `api_id/api_hash`（my.telegram.org 免费即时申请），全局单账号，**二维码登录**
+- 订阅范围：
+  - 公开频道 / 受限频道（web 受限但客户端可预览）：`resolveUsername` + `getHistory`，不加入即可读
+  - 私有频道（invite-only）：用户先在官方客户端手动加入，再从账号已加入频道列表（`messages.getDialogs`）选择
+- 更新机制：定时轮询增量（`getHistory` + `offset_id`），每次刷新周期连接一次、读完所有 Telegram 订阅后断开；媒体下载时按需再连
+- 媒体：图片+音频下载到本地缓存，视频给缩略图 + t.me 跳转链接，文档给链接
+- 统一缓存 `services/cache/`：favicon（保留 `favicon://`，DB 记录零迁移）+ media（新增 `media://`，需扩展 CSP img-src/media-src），容量上限 LRU 淘汰 + 手动清理，懒加载
+- 全局代理：默认自动跟随系统代理 + 手动覆盖，覆盖 MTProto / Node fetch / 浏览器三条路径
+- 风险提示：登录时提示账号封号风险；api_hash 为永久密钥不可重置，提示妥善保管
+- 待验证（开工前 spike）：受限频道非成员 `getHistory` 可读性；账号所属地区对 sensitive/porno 内容的限制
+
 ## 容错策略
 
 | 场景           | 策略                                                                       |
