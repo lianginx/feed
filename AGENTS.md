@@ -30,3 +30,12 @@
 ### Commit Message 格式
 `<type>: <中文描述>`，如 `feat: 增加导出功能`
 type：`feat` 新功能 / `fix` 修复 / `refactor` 重构 / `docs` 文档 / `style` 样式 / `chore` 杂项
+
+## 发版规范（GitHub Release）
+
+<constraints>
+1. 发版唯一入口是推送 `v*` 标签（`git tag vX.Y.Z && git push origin vX.Y.Z`），由 CI（`.github/workflows/release.yml`）自动创建 draft、上传三平台安装包并正式发布。
+2. 禁止直接用 `gh release create` / `gh release edit` / `gh api .../releases` 创建或发布 Release，否则会绕过 CI、生成不带安装包的空 Release，并抢占 tag 导致 CI 产物无法发布。
+3. 发版前必须先检查该 tag 是否已有 Release（`gh release view vX.Y.Z`），若存在（尤其空壳的正式版或残留 draft），需先与用户确认清理，再重新走 tag 推送流程。
+4. 发布完成后用 `gh release view vX.Y.Z --json draft,assets` 验证：`draft` 为 `false` 且 `assets` 包含安装包；若失败需修复后再继续。
+</constraints>
