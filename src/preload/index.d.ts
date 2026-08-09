@@ -223,6 +223,13 @@ interface ConfigApi {
   onChanged: (callback: () => void) => () => void
 }
 
+interface CacheApi {
+  /** 本地缓存占用统计（按命名空间） */
+  stats: () => Promise<ApiResponse<{ namespace: string; sizeBytes: number; fileCount: number }[]>>
+  /** 清理本地缓存，返回释放字节数 */
+  clear: () => Promise<ApiResponse<{ clearedBytes: number }>>
+}
+
 interface OpmlApi {
   import: () => Promise<
     ApiResponse<
@@ -306,6 +313,7 @@ interface AppApi {
   categories: CategoryApi
   articles: ArticleApi
   config: ConfigApi
+  cache: CacheApi
   opml: OpmlApi
   sync: SyncApi
   translate: TranslateApi

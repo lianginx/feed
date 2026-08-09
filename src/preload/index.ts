@@ -95,6 +95,12 @@ const api = {
     /** 订阅配置变更事件，返回取消订阅函数 */
     onChanged: (callback: () => void): (() => void) => onChannel('config:changed', callback)
   },
+  cache: {
+    /** 本地缓存占用统计（按命名空间） */
+    stats: () => ipcRenderer.invoke('cache:stats'),
+    /** 清理本地缓存，返回释放字节数 */
+    clear: () => ipcRenderer.invoke('cache:clear')
+  },
   opml: {
     import: () => ipcRenderer.invoke('opml:import'),
     export: () => ipcRenderer.invoke('opml:export'),

@@ -5,9 +5,28 @@ import { startScheduler } from '../services/timer'
 import { refreshAutoCheckTimer } from '../services/updater'
 import { applyAutoLaunch } from '../services/autoLaunch'
 import { loginToSite } from '../services/siteLogin'
+import { getCacheStats, clearCache } from '../services/cache'
 import { success, error } from './util'
 
 export function registerSettingsHandlers(): void {
+  // 本地缓存占用统计（按命名空间）
+  ipcMain.handle('cache:stats', async () => {
+    try {
+      return success(getCacheStats())
+    } catch (e) {
+      return error((e as Error).message)
+    }
+  })
+
+  // 清理本地缓存（全部命名空间；favicon 内容寻址，缺失时会按源自动重建）
+  ipcMain.handle('cache:clear', async () => {
+    try {
+      return success({ clearedBytes: clearCache() })
+    } catch (e) {
+      return error((e as Error).message)
+    }
+  })
+
   ipcMain.handle('config:get', async () => {
     try {
       return success(getSettings())

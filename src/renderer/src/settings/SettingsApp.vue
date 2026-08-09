@@ -12,7 +12,8 @@ import {
   Eye,
   EyeOff,
   Languages,
-  Globe
+  Globe,
+  Trash2
 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
@@ -116,6 +117,47 @@ async function handleExportOpml(): Promise<void> {
     exporting.value = false
   }
 }
+
+// ---------- 本地缓存清理 ----------
+const cacheSize = ref<number | null>(null)
+const clearingCache = ref(false)
+const cacheCleared = ref(false)
+const cacheClearedBytes = ref(0)
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+}
+
+async function loadCacheStats(): Promise<void> {
+  const result = await window.api.cache.stats()
+  if (result.success && result.data) {
+    cacheSize.value = result.data.reduce((sum, ns) => sum + ns.sizeBytes, 0)
+  }
+}
+
+async function handleClearCache(): Promise<void> {
+  clearingCache.value = true
+  cacheCleared.value = false
+  try {
+    const result = await window.api.cache.clear()
+    if (result.success) {
+      cacheClearedBytes.value = result.data?.clearedBytes ?? 0
+      cacheCleared.value = true
+      await loadCacheStats()
+      setTimeout(() => {
+        cacheCleared.value = false
+      }, 3000)
+    }
+  } finally {
+    clearingCache.value = false
+  }
+}
+
+onMounted(() => {
+  void loadCacheStats()
+})
 
 // ---------- 订阅源同步（本地编辑态，点「保存同步设置」后写入配置） ----------
 const syncProvider = ref<SyncConfig['provider']>(syncConfig.value.provider)
@@ -764,6 +806,36 @@ onMounted(async () => {
           >
             <CheckCircle2 class="size-3" />
             {{ importResult }}
+          </div>
+
+          <div class="mt-6 border-t pt-4">
+            <div class="flex items-center justify-between gap-6 py-3">
+              <div class="min-w-0">
+                <div class="text-sm">本地缓存</div>
+                <div class="mt-0.5 text-xs text-muted-foreground">
+                  图标、媒体等本地缓存文件，超出上限自动按最久未使用清理；图标缺失时会自动重建
+                </div>
+              </div>
+              <div class="flex shrink-0 items-center gap-2">
+                <span v-if="cacheSize !== null" class="text-xs text-muted-foreground tabular-nums">
+                  {{ formatBytes(cacheSize) }}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  :disabled="clearingCache"
+                  @click="handleClearCache"
+                >
+                  <Spinner v-if="clearingCache" />
+                  <Trash2 v-else class="size-3.5" />
+                  {{ clearingCache ? '清理中…' : '清理缓存' }}
+                </Button>
+              </div>
+            </div>
+            <span v-if="cacheCleared" class="text-xs text-primary flex items-center gap-1">
+              <CheckCircle2 class="size-3" />
+              已清理 {{ formatBytes(cacheClearedBytes) }}
+            </span>
           </div>
         </section>
       </div>
