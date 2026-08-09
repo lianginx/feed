@@ -38,6 +38,8 @@ function createDb(): Database.Database {
 
 // getConnection 返回测试内共享的内存库；其余外部依赖打桩
 const holders = vi.hoisted(() => ({ db: null as unknown as Database.Database }))
+const electronApp = vi.hoisted(() => ({ mockUserData: '/tmp/feed-refresher-test' }))
+vi.mock('electron', () => ({ app: { getPath: () => electronApp.mockUserData } }))
 vi.mock('../../database/connection', () => ({ getConnection: () => holders.db }))
 vi.mock('../../services/favicon', () => ({ resolveAndCacheFavicon: async () => null }))
 vi.mock('../../services/badge', () => ({ scheduleBadgeUpdate: () => undefined }))

@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mkdirSync, writeFileSync, existsSync, unlinkSync } from 'fs'
 import { join } from 'path'
-import { getAdapterFaviconCached, resolveAndCacheAdapterFavicon } from '../../services/favicon'
+import {
+  getAdapterFaviconCached,
+  resolveAndCacheAdapterFavicon,
+  parseFaviconName
+} from '../../services/favicon'
 
 // favicon.ts 顶层 import electron 的 app（node 测试环境无 electron），mock 掉
 // 注意：mockUserData 在 vi.hoisted 工厂内初始化（不能引用模块级 import），
@@ -17,7 +21,8 @@ let adapterDir: string
 
 describe('内置路由 favicon 缓存', () => {
   beforeEach(() => {
-    adapterDir = join(app.mockUserData, 'favicons', 'routes')
+    // 统一缓存 favicon 命名空间（userData/cache/favicon/routes）
+    adapterDir = join(app.mockUserData, 'cache', 'favicon', 'routes')
     mkdirSync(adapterDir, { recursive: true })
     // 清空缓存目录（模拟首次运行）
     for (const f of ['telegram-channel.svg', 'v2ex-hot.png', 'unused.tmp']) {
@@ -55,4 +60,33 @@ describe('内置路由 favicon 缓存', () => {
     ])
     expect(url).toBeNull()
   }, 30_000)
+
+  it('resolveAndCacheAdapterFavicon 下载成功后返回 favicon://routes/{adapterId}.{ext}（无双重前缀）', async () => {
+    const origFetch = globalThis.fetch
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      headers: { get: () => 'image/png' },
+      text: async () => '<html></html>',
+      arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer
+    })) as unknown as typeof fetch
+    try {
+      const url = await resolveAndCacheAdapterFavicon('v2ex-hot', ['v2ex.com'])
+      expect(url).toBe('favicon://routes/v2ex-hot.png')
+    } finally {
+      globalThis.fetch = origFetch
+    }
+  })
+})
+
+describe('favicon 内容寻址（parseFaviconName）', () => {
+  it('base64url 源可解码回 http(s) URL', () => {
+    const src = 'https://t.me/i/userpic/320/NewlearnerChannel.jpg'
+    const name = `${Buffer.from(src, 'utf8').toString('base64url')}.jpg`
+    expect(parseFaviconName(name)).toEqual({ sourceUrl: src, ext: 'jpg' })
+  })
+
+  it('旧格式（数字 feedId）与非法字符不识别', () => {
+    expect(parseFaviconName('42.png')).toBeUndefined()
+    expect(parseFaviconName('not-base64!@#.png')).toBeUndefined()
+  })
 })

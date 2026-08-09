@@ -54,11 +54,7 @@ export function registerFeedHandlers(): void {
         // 再解析 favicon 并缓存到本地
         try {
           const feedData = await parseFeed(params.url)
-          const localUrl = await resolveAndCacheFavicon(
-            feedId,
-            feedData.link || null,
-            feedData.image?.url
-          )
+          const localUrl = await resolveAndCacheFavicon(feedData.link || null, feedData.image?.url)
           if (localUrl) {
             db.prepare('UPDATE feeds SET favicon_url = ? WHERE id = ?').run(localUrl, feedId)
           }

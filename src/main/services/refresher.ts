@@ -3,7 +3,8 @@ import { parseFeed, toFriendlyFeedError, type ParsedFeed } from './rss'
 import { normalizeContentImages } from './contentImages'
 import { getAdapter, runAdapter } from './routes'
 import { getCookiesForAdapter } from './siteCookies'
-import { resolveAndCacheFavicon } from './favicon'
+import { getCacheFile } from './cache'
+import { fileNameForSource, parseFaviconName, resolveAndCacheFavicon } from './favicon'
 import { scheduleBadgeUpdate } from './badge'
 import { getMainWindow } from '../app/window'
 import DOMPurify from 'dompurify'
@@ -81,12 +82,26 @@ export async function persistParsedFeed(
     ).run(parsed.title, parsed.description || null, parsed.link || null, feedId)
   }
 
-  // 缓存 favicon：已有则跳过，避免每次定时刷新都重复拉取站点首页/图标
-  if (!feed.favicon_url) {
+  // 缓存 favicon：内容寻址（favicon_url = favicon://{base64url(源URL)}.{ext}）。
+  // 本地文件存在且源未变化（与当前解析出的 feed 图像一致）则跳过；
+  // 否则重新解析并以新格式覆盖（旧格式/缺失/源变化都会在此升级或重建）。
+  const imageUrl = parsed.image?.url ?? null
+  const currentName = feed.favicon_url?.startsWith('favicon://')
+    ? feed.favicon_url.slice('favicon://'.length)
+    : undefined
+  const currentParsed = currentName ? parseFaviconName(currentName) : undefined
+  // 磁盘文件为定长 hash 命名，按解码出的源计算实际文件名
+  const currentFileKey = currentParsed
+    ? `${fileNameForSource(currentParsed.sourceUrl)}.${currentParsed.ext}`
+    : undefined
+  const fileOk = currentFileKey ? getCacheFile('favicon', currentFileKey) !== undefined : false
+  const sourceOk =
+    currentParsed !== undefined && (!imageUrl || currentParsed.sourceUrl === imageUrl)
+  if (!fileOk || !sourceOk) {
     try {
       const siteUrl = parsed.link || feed.url
-      const localUrl = await resolveAndCacheFavicon(feedId, siteUrl, parsed.image?.url)
-      if (localUrl) {
+      const localUrl = await resolveAndCacheFavicon(siteUrl, imageUrl ?? undefined)
+      if (localUrl && localUrl !== feed.favicon_url) {
         db.prepare('UPDATE feeds SET favicon_url = ? WHERE id = ?').run(localUrl, feedId)
       }
     } catch {
