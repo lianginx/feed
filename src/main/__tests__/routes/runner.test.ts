@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { runAdapter } from '../../services/routes/core/runner'
+import { runAdapter, registerSource } from '../../services/routes/core/runner'
 import { v2exAdapter } from '../../services/routes/adapters/v2ex'
 import type { FeedAdapter } from '../../services/routes/core/types'
 
@@ -57,5 +57,34 @@ describe('runAdapter（注入 mock fetcher，不联网）', () => {
       cookieDomain: '.example.com'
     })
     expect(feed.title).toBe('T')
+  })
+
+  it('自定义 source：注册的 SourceRunner 接管执行', async () => {
+    const runner = {
+      run: vi.fn().mockResolvedValue({
+        adapterId: 'fake-source',
+        url: 'n/a',
+        feed: { title: '自定义源结果', link: 'https://example.com', items: [] }
+      })
+    }
+    registerSource('fake', runner)
+
+    const fakeAdapter: FeedAdapter = {
+      id: 'fake-source',
+      name: '测试自定义源',
+      domains: ['example.com'],
+      params: [],
+      // 自定义 source 在类型联合之外，运行期经注册表分发（二期 telegram 加入 SourceKind 后无需断言）
+      source: 'fake' as FeedAdapter['source'],
+      buildUrl: () => 'n/a',
+      async parse() {
+        return { title: '', link: '', items: [] }
+      }
+    }
+
+    const { feed } = await runAdapter(fakeAdapter, {})
+    expect(runner.run).toHaveBeenCalledTimes(1)
+    expect(runner.run).toHaveBeenCalledWith(fakeAdapter, {}, {})
+    expect(feed.title).toBe('自定义源结果')
   })
 })

@@ -1,32 +1,40 @@
-import type { ParsedFeed } from '../../rss'
-import type { BrowserFetchOptions, BrowserFetchResult } from './fetcher/browser'
-import { fetchPage, type FetchPageOptions } from './fetcher/http'
+import type { AdapterRunResult, FeedAdapter, RunAdapterOptions, SourceRunner } from '../types'
+import { fetchPage } from './fetcher/http'
 import { runWithBrowserLimit, runWithHttpLimit } from './limit'
-import type { FeedAdapter } from './types'
 
-export interface AdapterRunResult {
-  adapterId: string
-  url: string
-  feed: ParsedFeed
-}
+/** 自定义取数通道注册表（source → SourceRunner）。分发器查表，不感知具体通道 */
+const sourceRunners = new Map<string, SourceRunner>()
 
-/** fetcher 依赖注入（单测可 mock，避免真实网络 / Electron） */
-export interface AdapterFetchers {
-  http?: (url: string, options?: FetchPageOptions) => Promise<string>
-  browser?: (url: string, options?: BrowserFetchOptions) => Promise<BrowserFetchResult>
-}
-
-export interface RunAdapterOptions {
-  fetchers?: AdapterFetchers
-  /** 登录态 Cookie（name → value），由上层配置提供 */
-  cookies?: Record<string, string>
+/**
+ * 注册自定义取数通道的执行器。
+ * 新增数据源：实现 SourceRunner 后在此登记，runAdapter 按 adapter.source 查表分发；
+ * 未注册 / 未声明 source 的适配器走内置 http runner（缺省路径）。
+ */
+export function registerSource(kind: string, runner: SourceRunner): void {
+  sourceRunners.set(kind, runner)
 }
 
 /**
- * 执行一个适配器：构建 URL → 按 needsBrowser 选 fetcher → 解析为 ParsedFeed。
+ * 执行一个适配器：按 adapter.source 分发到对应 SourceRunner；缺省走内置 http 通道。
  * 基础层编排，不接触数据库 / IPC / 刷新主流程。
  */
 export async function runAdapter(
+  adapter: FeedAdapter,
+  params: Record<string, string>,
+  options: RunAdapterOptions = {}
+): Promise<AdapterRunResult> {
+  const custom = adapter.source ? sourceRunners.get(adapter.source) : undefined
+  if (custom) {
+    return custom.run(adapter, params, options)
+  }
+  return runHttpAdapter(adapter, params, options)
+}
+
+/**
+ * 内置 http 取数通道（默认路径）：
+ * 构建 URL → 按 needsBrowser 选 fetcher → 解析为 ParsedFeed。
+ */
+async function runHttpAdapter(
   adapter: FeedAdapter,
   params: Record<string, string>,
   options: RunAdapterOptions = {}
