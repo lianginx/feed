@@ -5,24 +5,24 @@
 
 ## 0. 现状与阻塞
 
+- **一期已完成** ✅：路由框架 source 分发、统一缓存模块、全局网络代理均已落地（见下方任务节点状态）。
 - **阻塞项**：Telegram MTProto 改造依赖用户自行申请 `api_id/api_hash`（my.telegram.org）。当前申请被 IP 风控卡住（反复 ERROR），**二期暂停**，凭据到位后继续。
-- **一期**（不依赖凭据）立即推进：路由框架 source 分发、统一缓存、全局代理。
 - **过渡**：一期期间现有 t.me/s web 解析适配器**继续保留**，作为普通 http 适配器服务公开频道，功能不倒退。
 
 ## 1. 分期
 
-| 期 | 内容 | 依赖 |
-|----|------|------|
-| **一期** | 路由框架重构、统一缓存模块、全局网络代理 | 无 |
-| **二期** | Telegram MTProto 连接服务、适配器改造、移除 web 解析、账号 UI | api_id/api_hash 到位 |
+| 期 | 内容 | 依赖 | 状态 |
+|----|------|------|------|
+| **一期** | 路由框架重构、统一缓存模块、全局网络代理 | 无 | ✅ 已完成 |
+| **二期** | Telegram MTProto 连接服务、适配器改造、移除 web 解析、账号 UI | api_id/api_hash 到位 | ⏸ 待凭据 |
 
-## 2. 一期任务节点（每节点独立提交）
+## 2. 一期任务节点（已全部完成）
 
-| 节点 | 内容 | 主要涉及文件 | 建议 commit |
-|------|------|--------------|-------------|
-| P1-N1 | 路由框架重构：`types.ts` 契约 + core 分发器 + `registerSource`，内置 http runner 保持默认路径，现有适配器零改动 | `routes/types.ts`(新)、`routes/core/runner.ts`、`routes/core/types.ts`(迁移/删除)、`routes/core/registry.ts` | `refactor: 路由框架引入 source 通道分发` |
-| P1-N2 | 统一缓存模块：favicon 保留 `favicon://` 零迁移 + `media://` 新增，LRU + 手动清理；扩展 CSP | `services/cache/`(新)、`services/favicon.ts`、`app/protocol.ts`、renderer 三个 html 的 CSP | `refactor: 统一本地缓存模块` |
-| P1-N3 | 全局网络代理：自动跟随系统代理 + 手动覆盖，接入 Node fetch / 浏览器两条路径 | `config` 设置项、`services/http.ts`、`core/fetcher/browser.ts` | `feat: 全局网络代理设置` |
+| 节点 | 内容 | 状态 | commit |
+|------|------|------|--------|
+| P1-N1 | 路由框架重构：`types.ts` 契约 + core 分发器 + `registerSource`，内置 http runner 保持默认路径，现有适配器零改动 | ✅ | `75a5a51 refactor: 路由框架引入 source 通道分发` |
+| P1-N2 | 统一缓存模块：favicon 内容寻址（源内嵌 URL + 定长 hash 文件）+ `media://` 协议，LRU + 手动清理；扩展 CSP | ✅ | `13a2c37 refactor: 统一本地缓存模块` + `4e98b90 fix: favicon 源内嵌与定长 hash 文件` |
+| P1-N3 | 全局网络代理：自动跟随系统代理 + 手动覆盖，接入 Node fetch / 浏览器两条路径 | ✅ | `be05f8b feat: 全局网络代理设置` |
 
 一期不涉及 Telegram：现有 web 适配器保持 http 适配器身份，无改动。
 
