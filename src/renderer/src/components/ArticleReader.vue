@@ -188,7 +188,7 @@ const displayContent = computed(() => {
             </div>
             <h1
               ref="articleTitle"
-              class="mb-4 text-3xl font-bold text-foreground leading-snug cursor-default hover:underline transition-colors"
+              class="mb-4 text-3xl font-bold text-foreground leading-snug break-words cursor-default hover:underline transition-colors"
               :title="currentArticle.url ? '在浏览器中打开' : undefined"
               @click="openInBrowser(currentArticle.url)"
             >
