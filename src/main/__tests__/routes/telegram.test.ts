@@ -82,6 +82,29 @@ const POLL_MSG = wrapMessage(
 /** 服务消息（置顶/换头像） */
 const SERVICE_MSG = wrapMessage('<div class="service_message">pinned</div>', '5')
 
+/** 文档消息：文档附件（文件名 + 大小）+ 正文 */
+const DOC_MSG = wrapMessage(
+  '<a class="tgme_widget_message_document_wrap" href="https://t.me/OutsightChina/6">' +
+    '<div class="tgme_widget_message_document_icon accent_bg"></div>' +
+    '<div class="tgme_widget_message_document">' +
+    '<div class="tgme_widget_message_document_title accent_color">App-1.2.0.dmg</div>' +
+    '<div class="tgme_widget_message_document_extra">220.3 MB</div>' +
+    '</div></a>' +
+    '<div class="tgme_widget_message_text js-message_text" dir="auto">修复了若干 bug</div>',
+  '6'
+)
+
+/** 纯文档消息：只有文档附件，无正文文本 */
+const DOC_ONLY_MSG = wrapMessage(
+  '<a class="tgme_widget_message_document_wrap" href="https://t.me/OutsightChina/7">' +
+    '<div class="tgme_widget_message_document_icon accent_bg"></div>' +
+    '<div class="tgme_widget_message_document">' +
+    '<div class="tgme_widget_message_document_title accent_color">Setup.exe</div>' +
+    '<div class="tgme_widget_message_document_extra">50 MB</div>' +
+    '</div></a>',
+  '7'
+)
+
 const CHANNEL_PAGE = page([TEXT_MSG, PHOTO_MSG, VIDEO_MSG, POLL_MSG, SERVICE_MSG])
 
 describe('telegram 频道适配器', () => {
@@ -176,6 +199,30 @@ describe('telegram 频道适配器', () => {
     })
     const item = feed.items.find((i) => i.guid === 'https://t.me/OutsightChina/7')
     expect(item?.title).toBe('10块跑一天！稳定首选')
+  })
+
+  it('文档消息：附件名与大小写入正文，链接指向消息页', async () => {
+    const feed = await telegramChannelAdapter.parse(page([DOC_MSG]), {
+      params: { username: 'OutsightChina' },
+      url: 'https://t.me/s/OutsightChina'
+    })
+    const item = feed.items.find((i) => i.guid === 'https://t.me/OutsightChina/6')
+    expect(item?.title).toBe('📄 修复了若干 bug')
+    expect(item?.content).toContain('<a href="https://t.me/OutsightChina/6">App-1.2.0.dmg</a>')
+    expect(item?.content).toContain('（220.3 MB）')
+    expect(item?.content).toContain('修复了若干 bug')
+  })
+
+  it('纯文档消息（无正文）：不跳过，标题回退到附件名', async () => {
+    const feed = await telegramChannelAdapter.parse(page([DOC_ONLY_MSG]), {
+      params: { username: 'OutsightChina' },
+      url: 'https://t.me/s/OutsightChina'
+    })
+    const item = feed.items.find((i) => i.guid === 'https://t.me/OutsightChina/7')
+    expect(item).toBeDefined()
+    expect(item?.title).toBe('📄 Setup.exe')
+    expect(item?.content).toContain('Setup.exe')
+    expect(item?.content).toContain('（50 MB）')
   })
 
   it('页面无消息且无频道历史容器时抛友好错误', async () => {

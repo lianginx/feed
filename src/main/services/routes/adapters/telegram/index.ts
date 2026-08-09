@@ -67,16 +67,17 @@ function detectTypes($item: cheerio.Cheerio<import('domhandler').AnyNode>): MsgT
 }
 
 /**
- * 消息正文 HTML：转发来源 + 回复引用 + 文本 + 媒体（图片/视频/贴纸）。
- * 返回拼接后的 HTML、纯文本（供标题/摘要）与首张封面图。
+ * 消息正文 HTML：转发来源 + 回复引用 + 文本 + 媒体（图片/视频/贴纸）+ 文档附件。
+ * 返回拼接后的 HTML、纯文本（供标题/摘要）、首张封面图与文档附件名（供标题回退/判空）。
  */
 function buildMessageHtml(
   $: cheerio.CheerioAPI,
   $item: cheerio.Cheerio<import('domhandler').AnyNode>,
   username: string
-): { html: string; text: string; firstImage: string | undefined } {
+): { html: string; text: string; firstImage: string | undefined; documentTitles: string[] } {
   const parts: string[] = []
   const media: string[] = []
+  const documentTitles: string[] = []
 
   // 转发来源
   const fwdName = $item.find('.tgme_widget_message_forwarded_from_name')
@@ -181,7 +182,19 @@ function buildMessageHtml(
       if (src) pushImage(src)
     })
 
-  return { html: parts.join(''), text, firstImage: media[0] }
+  // 文档附件：文件名 + 大小，链接指向消息页（t.me 预览页无文件直链）
+  $item.find('.tgme_widget_message_document_wrap').each((_, el) => {
+    const $doc = $(el)
+    const title = escapeHtml($doc.find('.tgme_widget_message_document_title').text().trim())
+    if (!title) return
+    const extra = escapeHtml($doc.find('.tgme_widget_message_document_extra').text().trim())
+    const href = $doc.attr('href')
+    const link = href ? `<a href="${normalizeUrl(href)}">${title}</a>` : title
+    parts.push(`<p>${link}${extra ? `（${extra}）` : ''}</p>`)
+    documentTitles.push(title)
+  })
+
+  return { html: parts.join(''), text, firstImage: media[0], documentTitles }
 }
 
 /**
@@ -253,14 +266,15 @@ export const telegramChannelAdapter: FeedAdapter = {
     messageWraps.each((_, el) => {
       const $item = $(el)
 
-      const { html, text, firstImage } = buildMessageHtml($, $item, username)
+      const { html, text, firstImage, documentTitles } = buildMessageHtml($, $item, username)
 
       // 无正文也无封面图的消息（如 web 端不支持的投票：仅引用 + not_supported，
       // 无 media_supported_cont 也无可提取媒体）整体跳过，不产出空壳条目。
       // 服务消息（置顶等，includeService 已决定是否收录）不受此限制。
       // 注意不能用「message_media_not_supported 且无 media_supported_cont」判定：
       // 视频消息同样满足该特征（提示浏览器不支持），但带缩略图/文字，必须保留。
-      if (!text && !firstImage && !$item.find('.service_message').length) return
+      if (!text && !firstImage && !documentTitles.length && !$item.find('.service_message').length)
+        return
 
       // 无文本也无媒体的空消息（纯媒体已处理）跳过
       const dateEl = $item.find('.tgme_widget_message_date time')
@@ -271,7 +285,8 @@ export const telegramChannelAdapter: FeedAdapter = {
 
       const types = detectTypes($item)
       const mediaTag = types.map((t) => TYPE[t]).join('')
-      const titleLine = extractTitle(text)
+      // 标题：优先取正文首行；纯文档消息无正文时回退到附件文件名（多个用逗号连接）
+      const titleLine = extractTitle(text) || documentTitles.slice(0, 3).join('、').slice(0, 80)
 
       items.push({
         guid: link,
