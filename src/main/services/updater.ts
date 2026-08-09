@@ -3,12 +3,12 @@ import { ipcMain, app, shell, net } from 'electron'
 // Node 的 ESM-CJS 互操作无法静态识别它 → 命名导入/namespace 导入都会得到 undefined。
 // 只能用默认导入拿到整个 module.exports（含 getter）后再解构。
 import electronUpdater from 'electron-updater'
-import { is } from '@electron-toolkit/utils'
 import { createWriteStream, createReadStream, existsSync, statSync } from 'fs'
 import { createHash } from 'crypto'
 import { join } from 'path'
 import { getMainWindow } from '../app/window'
 import { getSettings } from '../config'
+import { envBool, isEnvConfigured } from '../env'
 // UpdaterStatus 是主进程 / preload / 渲染进程的公共契约，统一在 src/shared/types 定义，
 // 供各进程 import type 引用（编译期擦除，无运行时泄漏）
 import type { UpdaterStatus } from '../../shared/types/updater'
@@ -308,12 +308,20 @@ async function downloadUpdate(): Promise<{ success: boolean; error?: string }> {
 }
 
 /**
- * 初始化自动更新（仅在打包运行、非开发模式时启用）。
+ * 初始化自动更新（仅当 FEED_ENABLE_UPDATER 开启时启用，.env 中 MAIN_VITE_ENABLE_UPDATER）。
  * - 所有平台统一：检查只探测不自动下载，用户确认后才下载
  * - 自动检查：启动后延迟数秒静默检查一次，之后按设置周期定时检查
+ * 开发默认 0 关闭，生产默认 1 开启；命令行环境变量可覆盖。
  */
 export function initUpdater(): void {
-  if (is.dev) return
+  if (!envBool('FEED_ENABLE_UPDATER', import.meta.env.MAIN_VITE_ENABLE_UPDATER)) {
+    if (!isEnvConfigured('FEED_ENABLE_UPDATER', import.meta.env.MAIN_VITE_ENABLE_UPDATER)) {
+      console.warn(
+        '[updater] 未配置 MAIN_VITE_ENABLE_UPDATER，自动更新已禁用；若为生产构建请确认 .env.production 存在'
+      )
+    }
+    return
+  }
 
   autoUpdater.logger = console
   // 统一关闭自动下载：发现新版后先提示，用户确认才下载

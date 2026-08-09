@@ -1,4 +1,4 @@
-import { is } from '@electron-toolkit/utils'
+import { envBool, isEnvConfigured } from '../env'
 import { getSettings } from '../config'
 import { refreshAllFeeds } from './refresher'
 import { runSync } from './sync'
@@ -7,13 +7,21 @@ let timer: ReturnType<typeof setInterval> | null = null
 
 /**
  * 启动定时刷新——立即执行一次，然后按间隔重复。
- * 开发模式不启动：客户端频繁重启会重复对源站发起请求，避免造成压力；
- * 开发时刷新走手动/菜单触发。
+ * 是否启用完全由 FEED_ENABLE_SCHEDULER 决定（.env 中 MAIN_VITE_ENABLE_SCHEDULER）：
+ * 开发默认 0 关闭（避免频繁重启对源站产生压力，刷新走手动/菜单触发），
+ * 生产默认 1 开启；命令行环境变量可覆盖。
  */
 export function startScheduler(): void {
   stopScheduler()
 
-  if (is.dev) return
+  if (!envBool('FEED_ENABLE_SCHEDULER', import.meta.env.MAIN_VITE_ENABLE_SCHEDULER)) {
+    if (!isEnvConfigured('FEED_ENABLE_SCHEDULER', import.meta.env.MAIN_VITE_ENABLE_SCHEDULER)) {
+      console.warn(
+        '[timer] 未配置 MAIN_VITE_ENABLE_SCHEDULER，定时刷新已禁用；若为生产构建请确认 .env.production 存在'
+      )
+    }
+    return
+  }
 
   const settings = getSettings()
   const intervalMs = settings.updateInterval * 60 * 1000

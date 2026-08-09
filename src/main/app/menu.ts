@@ -1,5 +1,5 @@
 import { app, ipcMain, Menu } from 'electron'
-import { is } from '@electron-toolkit/utils'
+import { envBool } from '../env'
 import { getMainWindow } from './window'
 import { createSettingsWindow } from './settingsWindow'
 import { createAddFeedWindow } from './addFeedWindow'
@@ -9,6 +9,12 @@ import { createAddFeedWindow } from './addFeedWindow'
  * 菜单项通过 webContents.send 向渲染进程发送指令。
  */
 export function buildAppMenu(): void {
+  // 开发者工具菜单：完全由 FEED_ENABLE_DEVTOOLS 决定（.env 中 MAIN_VITE_ENABLE_DEVTOOLS）
+  const showDevToolsMenu = envBool(
+    'FEED_ENABLE_DEVTOOLS',
+    import.meta.env.MAIN_VITE_ENABLE_DEVTOOLS
+  )
+
   const template: Electron.MenuItemConstructorOptions[] = [
     {
       label: app.name,
@@ -149,7 +155,7 @@ export function buildAppMenu(): void {
         }
       ]
     },
-    ...(is.dev
+    ...(showDevToolsMenu
       ? [
           {
             label: '视图',
