@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio'
+import { normalizeUrl } from '../../core/extract'
 import type { ParsedArticle, ParsedFeed } from '../../../rss'
 import type { AdapterParseContext, FeedAdapter } from '../../core/types'
 
@@ -26,11 +27,6 @@ const TYPE = {
 } as const
 
 type MsgType = keyof typeof TYPE
-
-/** 补全协议头：//xxx → https://xxx（项目 CSP 的 img-src 只放行 https） */
-function normalizeUrl(url: string): string {
-  return url.startsWith('//') ? 'https:' + url : url
-}
 
 /** HTML 转义文本插值（转发来源/回复引用拼接进正文前） */
 function escapeHtml(text: string): string {

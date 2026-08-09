@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 import { fetchWithTimeout, BROWSER_USER_AGENT } from '../../../http'
+import { normalizeUrl } from '../../core/extract'
 import type { ParsedArticle, ParsedFeed } from '../../../rss'
 import type { AdapterParseContext, FeedAdapter } from '../../core/types'
 
@@ -9,13 +10,6 @@ interface BiliOpusItem {
   jump_url?: string
   opus_id?: string | number
   cover?: { url?: string }
-}
-
-/** 补全协议头：//xxx 与 http:// 都转 https://（项目 CSP 的 img-src 只放行 https） */
-function normalizeUrl(url: string): string {
-  if (url.startsWith('//')) return 'https:' + url
-  if (url.startsWith('http://')) return 'https://' + url.slice(7)
-  return url
 }
 
 /**
