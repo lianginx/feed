@@ -1,4 +1,4 @@
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
 import { useFeeds, type FeedItem } from '@/composables/useFeeds'
 
@@ -30,6 +30,37 @@ export function useFeedDnD() {
 
   function toggleUncategorized(): void {
     uncategorizedCollapsed.value = !uncategorizedCollapsed.value
+  }
+
+  function collapseAllCategories(): void {
+    for (const c of categories.value) {
+      collapsedCategories.value[c.id] = true
+    }
+    uncategorizedCollapsed.value = true
+  }
+
+  function expandAllCategories(): void {
+    for (const c of categories.value) {
+      collapsedCategories.value[c.id] = false
+    }
+    uncategorizedCollapsed.value = false
+  }
+
+  const allCategoriesCollapsed = computed(() => {
+    const hasUncategorized = getFeedsByCategory(null).length > 0
+    if (categories.value.length === 0 && !hasUncategorized) return false
+    return (
+      categories.value.every((c) => collapsedCategories.value[c.id] === true) &&
+      (!hasUncategorized || uncategorizedCollapsed.value)
+    )
+  })
+
+  function toggleAllCategories(): void {
+    if (allCategoriesCollapsed.value) {
+      expandAllCategories()
+    } else {
+      collapseAllCategories()
+    }
   }
 
   function getFeedsByCategory(catId: number | null): FeedItem[] {
@@ -215,6 +246,10 @@ export function useFeedDnD() {
     isCategoryCollapsed,
     toggleCategory,
     toggleUncategorized,
+    collapseAllCategories,
+    expandAllCategories,
+    allCategoriesCollapsed,
+    toggleAllCategories,
     onDragStart,
     onDragOverFeed,
     onDragLeaveFeed,
