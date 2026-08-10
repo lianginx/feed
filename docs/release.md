@@ -14,7 +14,7 @@
 ### 应用内自动更新（electron-updater）
 
 - 依赖：`electron-updater`
-- 更新源：GitHub Releases（由 `electron-builder.yml` 的 `publish` 配置决定）
+- 更新源：GitHub Releases（由 `electron-builder.ts` 的 `publish` 配置决定）
 - 主进程逻辑：`src/main/services/updater.ts`
 - 入口：菜单「检查更新…」；发现新版自动后台下载，重启安装
 - 产物配套：`latest-mac.yml`（更新清单）+ `*.blockmap`（差分更新）
