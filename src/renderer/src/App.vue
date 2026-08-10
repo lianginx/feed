@@ -15,10 +15,10 @@ import SidebarNav from '@/components/sidebar/SidebarNav.vue'
 import ArticleList from '@/components/ArticleList.vue'
 import ArticleReader from '@/components/ArticleReader.vue'
 import ToastNotification from '@/components/ToastNotification.vue'
-import AddCategoryDialog from '@/components/AddCategoryDialog.vue'
-import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import UpdateDialog from '@/components/UpdateDialog.vue'
-import SyncConflictDialog from '@/components/SyncConflictDialog.vue'
+import DialogAddCategory from '@/components/dialog/DialogAddCategory.vue'
+import DialogConfirm from '@/components/dialog/DialogConfirm.vue'
+import DialogUpdate from '@/components/dialog/DialogUpdate.vue'
+import DialogSyncConflict from '@/components/dialog/DialogSyncConflict.vue'
 
 const { loadSettings } = useApp()
 const { loadFeeds } = useFeeds()
@@ -125,7 +125,7 @@ async function handleSyncConflictChoice(choice: 'local' | 'remote'): Promise<voi
 
   <ToastNotification />
 
-  <AddCategoryDialog
+  <DialogAddCategory
     :open="showAddCategory || editCategoryData !== null"
     :edit-category-id="editCategoryData?.id"
     :edit-category-name="editCategoryData?.name"
@@ -134,7 +134,7 @@ async function handleSyncConflictChoice(choice: 'local' | 'remote'): Promise<voi
     @update="handleUpdateCategory"
   />
 
-  <ConfirmDialog
+  <DialogConfirm
     :open="showConfirmDialog"
     :title="confirmDialogTitle"
     :message="confirmDialogMessage"
@@ -149,9 +149,9 @@ async function handleSyncConflictChoice(choice: 'local' | 'remote'): Promise<voi
     "
   />
 
-  <UpdateDialog />
+  <DialogUpdate />
 
-  <SyncConflictDialog
+  <DialogSyncConflict
     :open="pendingConflict"
     @update:open="
       (open) => {

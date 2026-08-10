@@ -18,7 +18,7 @@ import { useFeeds } from '@/composables/useFeeds'
 import { useAddCategoryDialog } from '@/composables/useAddCategoryDialog'
 import { useFeedDnD } from '@/composables/useFeedDnD'
 import { useFeedEditDialog } from '@/composables/useFeedEditDialog'
-import EditFeedDialog from '@/components/EditFeedDialog.vue'
+import DialogEditFeed from '@/components/dialog/DialogEditFeed.vue'
 import SidebarFeedItem from '@/components/sidebar/SidebarFeedItem.vue'
 import SidebarGroupHeader from '@/components/sidebar/SidebarGroupHeader.vue'
 import SidebarEmptyState from '@/components/sidebar/SidebarEmptyState.vue'
@@ -163,5 +163,5 @@ async function handleMarkAllReadByCategory(catId: number | null): Promise<void> 
     </ContextMenu>
   </SidebarContent>
 
-  <EditFeedDialog v-model:open="showEditFeed" :feed="editingFeed" @saved="closeEditFeed" />
+  <DialogEditFeed v-model:open="showEditFeed" :feed="editingFeed" @saved="closeEditFeed" />
 </template>

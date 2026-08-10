@@ -4,8 +4,11 @@
 每次任务结束必须运行 `pnpm typecheck` 和 `pnpm lint:fix`，并修复问题。
 
 ## 代码规范
-- 渲染进程（`src/renderer/`）中所有 import 一律使用 `@/` 别名（映射到 `src/renderer/src`），禁止使用相对路径（`./`、`../`）。
-- 例外：`components/ui/` 目录由 shadcn-vue 管理，其内部相对路径引用（如 `index.ts` 里的 `./Xxx.vue`）不手动修改。
+- 渲染进程 import 一律使用 `@/` 别名，禁止相对路径，`components/ui/` 目录内部除外
+- 组件命名：
+  - 功能相关组件使用 `components/<分组>/` 集中管理，分组名称使用 kebab-case 格式
+  - 未归组组件放 `components/` 顶层
+  - 组件名称使用 PascalCase 格式 = 分组名称 + 功能名，
 
 ## 最佳实践参考（Electron 官方文档）
 开发涉及 Electron 的功能/配置时，必须遵循官方最佳实践：
