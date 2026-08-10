@@ -1,5 +1,4 @@
 import type Database from 'better-sqlite3'
-import { DEFAULT_CATEGORIES, DEFAULT_FEEDS } from './defaultFeeds'
 
 export interface Migration {
   version: number
@@ -133,40 +132,12 @@ END;
 `
   },
   {
+    // 历史版本：曾在迁移内 seed 默认订阅源，因引用了 v8 才添加的列而存在顺序耦合。
+    // 已重构为迁移全部完成后统一 seed（见 database/seed.ts），此处保留空实现占位，
+    // 不删除已发布的版本号（已应用用户靠 _migrations 记录跳过，重跑会报错）。
     version: 5,
     name: 'seed-default-feeds',
-    up: (db) => {
-      // 已有订阅源则跳过，避免打扰已有数据的用户
-      const { count } = db.prepare('SELECT COUNT(*) AS count FROM feeds').get() as {
-        count: number
-      }
-      if (count > 0) return
-
-      const catStmt = db.prepare(
-        'INSERT OR IGNORE INTO categories (name, sort_order) VALUES (?, ?)'
-      )
-      const catLookup = db.prepare('SELECT id FROM categories WHERE name = ?')
-      const feedStmt = db.prepare(
-        'INSERT OR IGNORE INTO feeds (url, title, category_id, sort_order, adapter_id, adapter_params) VALUES (?, ?, ?, ?, ?, ?)'
-      )
-
-      // 按顺序建分类，保证侧边栏展示顺序稳定
-      DEFAULT_CATEGORIES.forEach((name, i) => {
-        catStmt.run(name, i)
-      })
-
-      DEFAULT_FEEDS.forEach((feed, i) => {
-        const cat = catLookup.get(feed.category) as { id: number } | undefined
-        feedStmt.run(
-          feed.url,
-          feed.title,
-          cat?.id ?? null,
-          i,
-          feed.adapterId ?? null,
-          feed.adapterParams ? JSON.stringify(feed.adapterParams) : null
-        )
-      })
-    }
+    up: () => {}
   },
   {
     version: 6,
@@ -231,6 +202,16 @@ CREATE TABLE IF NOT EXISTS article_translations (
     up: `
 ALTER TABLE feeds ADD COLUMN adapter_id TEXT;
 ALTER TABLE feeds ADD COLUMN adapter_params TEXT;
+`
+  },
+  {
+    version: 9,
+    name: 'create-app-state-table',
+    up: `
+CREATE TABLE IF NOT EXISTS _app_state (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
 `
   }
 ]
