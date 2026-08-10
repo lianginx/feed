@@ -44,13 +44,15 @@ export function registerAppProtocols(): void {
     try {
       const name = decodeURIComponent(request.url.slice('favicon://'.length))
 
-      // 内置路由图标：favicon://routes/{adapterId}（无扩展名，缓存按 {adapterId}.* 存储）
+      // 内置路由图标：favicon://routes/{adapterId}[.{ext}]
       if (name.startsWith('routes/')) {
-        const adapterId = name.slice('routes/'.length)
-        // 仅允许合法适配器 id（字母/数字/-），阻断路径穿越
-        if (!/^[\w-]+$/.test(adapterId)) {
+        const routeName = name.slice('routes/'.length)
+        const match = routeName.match(/^([\w-]+)(?:\.(png|jpg|jpeg|gif|svg|webp|ico))?$/)
+        // 仅允许合法适配器 id 和图片扩展名，阻断路径穿越
+        if (!match) {
           return new Response('Not Found', { status: 404 })
         }
+        const adapterId = match[1]
         const adapter = getAdapter(adapterId)
         if (!adapter) {
           return new Response('Not Found', { status: 404 })
@@ -66,6 +68,15 @@ export function registerAppProtocols(): void {
           return new Response('Not Found', { status: 404 })
         }
         return net.fetch(pathToFileURL(filePath).toString())
+      }
+
+      // 兼容旧版本 favicon://{feedId}.{ext} 记录：旧文件已迁移到统一缓存目录，
+      // 在订阅源下次刷新升级数据库记录前，仍直接从旧文件提供服务。
+      if (/^\d+\.(png|jpg|jpeg|gif|svg|webp|ico)$/.test(name)) {
+        const legacyFilePath = getCacheFile('favicon', name)
+        if (legacyFilePath) {
+          return net.fetch(pathToFileURL(legacyFilePath).toString())
+        }
       }
 
       // 订阅源图标：favicon://{base64url(源URL)}.{ext}（源 URL 内嵌可逆；磁盘文件为定长 hash）
