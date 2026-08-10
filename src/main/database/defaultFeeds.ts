@@ -9,10 +9,14 @@ export interface DefaultFeed {
   title: string
   url: string
   category: string
+  /** 内置路由适配器 ID（可选）；填写后该订阅源走内置路由抓取 */
+  adapterId?: string
+  /** 内置路由适配器参数 */
+  adapterParams?: Record<string, string>
 }
 
 /** 默认分类（按展示顺序排列） */
-export const DEFAULT_CATEGORIES: string[] = ['科技资讯', '新闻媒体', '博客', '开发技术']
+export const DEFAULT_CATEGORIES: string[] = ['科技资讯', '新闻媒体', '博客', '开发技术', '内置路由']
 
 /** 默认订阅源列表 */
 export const DEFAULT_FEEDS: DefaultFeed[] = [
@@ -39,5 +43,41 @@ export const DEFAULT_FEEDS: DefaultFeed[] = [
   { title: 'Jakub Krehel', url: 'http://jakub.kr/api/rss', category: '博客' },
   // 开发技术
   { title: 'Hacker News', url: 'https://news.ycombinator.com/rss', category: '开发技术' },
-  { title: 'HelloGitHub', url: 'https://hellogithub.com/rss', category: '开发技术' }
+  { title: 'HelloGitHub', url: 'https://hellogithub.com/rss', category: '开发技术' },
+  // 内置路由（展示内置路由功能，无需 RSS 地址也能订阅）
+  {
+    title: 'V2EX 热帖',
+    url: 'https://www.v2ex.com/api/topics/hot.json',
+    category: '内置路由',
+    adapterId: 'v2ex-hot',
+    adapterParams: {}
+  },
+  {
+    title: 'STN 工作室',
+    url: 'https://space.bilibili.com/7349/video',
+    category: '内置路由',
+    adapterId: 'bilibili-user-video',
+    adapterParams: { uid: '7349' }
+  },
+  {
+    title: '盗月社食遇记',
+    url: 'https://space.bilibili.com/99157282/video',
+    category: '内置路由',
+    adapterId: 'bilibili-user-video',
+    adapterParams: { uid: '99157282' }
+  },
+  {
+    title: '小约翰可汗',
+    url: 'https://space.bilibili.com/23947287/video',
+    category: '内置路由',
+    adapterId: 'bilibili-user-video',
+    adapterParams: { uid: '23947287' }
+  },
+  {
+    title: '智能路障',
+    url: 'https://space.bilibili.com/79577853/video',
+    category: '内置路由',
+    adapterId: 'bilibili-user-video',
+    adapterParams: { uid: '79577853' }
+  }
 ]
