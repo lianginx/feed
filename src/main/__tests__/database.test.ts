@@ -27,6 +27,12 @@ function init(db: Database.Database): void {
 }
 
 describe('database init', () => {
+  it('迁移版本号单调递增且唯一（防止复用/重排破坏已有用户数据库）', () => {
+    const versions = migrations.map((m) => m.version)
+    expect(versions).toEqual([...versions].sort((a, b) => a - b))
+    expect(new Set(versions).size).toBe(versions.length)
+  })
+
   it('在全新数据库上完整跑通迁移链并 seed 默认订阅源（含内置路由 adapter）', () => {
     const db = new Database(':memory:')
     init(db)

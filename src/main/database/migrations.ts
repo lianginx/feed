@@ -1,5 +1,11 @@
 import type Database from 'better-sqlite3'
 
+/**
+ * 迁移版本号使用规范（违反会破坏已有用户的数据库，导致 app 启动崩溃）：
+ * - 版本号单调递增，已发布的版本号一律不得复用、修改、删除、重排。
+ * - 若需变更既有结构，追加新迁移；禁止改动已发布的旧迁移。
+ */
+
 export interface Migration {
   version: number
   name: string
