@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
-import { useFeeds, type FeedItem } from '../composables/useFeeds'
+import { useFeeds, type FeedItem } from '@/composables/useFeeds'
 
 const { updateFeed, refreshSingleFeed } = useFeeds()
 
