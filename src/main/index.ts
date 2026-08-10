@@ -1,5 +1,9 @@
+// 副作用：必须在任何读取 userData 的模块（尤其 ./config）之前执行，确定目录并迁移老数据
+import './dataMigration'
+
 import { app, nativeTheme } from 'electron'
 import { electronApp } from '@electron-toolkit/utils'
+import { APP_METADATA } from '../shared/appMetadata'
 import { initializeDatabase, closeConnection } from './database'
 import { getConnection } from './database/connection'
 import { cleanupTranslations } from './services/translate/cache'
@@ -18,7 +22,7 @@ import { initAutoLaunch } from './services/autoLaunch'
 import { initProxy } from './services/proxy'
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.lianginx.feed')
+  electronApp.setAppUserModelId(APP_METADATA.appId)
 
   // 注册自定义协议和会话 hook
   registerAppProtocols()

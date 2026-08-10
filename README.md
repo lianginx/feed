@@ -94,11 +94,11 @@ xattr -cr /Applications/Feed.app
 ### 我的数据存在哪里？
 所有订阅和文章都保存在你电脑本地，数据完全属于你自己。数据库文件位置：
 
-| 平台    | 路径                                         |
-| ------- | -------------------------------------------- |
-| macOS   | `~/Library/Application Support/Feed/feed.db` |
-| Windows | `%APPDATA%\Feed\feed.db`                     |
-| Linux   | `~/.config/Feed/feed.db`                     |
+| 平台    | 路径                                                  |
+| ------- | ----------------------------------------------------- |
+| macOS   | `~/Library/Application Support/com.lianginx.feed/feed.db` |
+| Windows | `%APPDATA%\com.lianginx.feed\feed.db`                 |
+| Linux   | `~/.config/com.lianginx.feed/feed.db`                 |
 
 ### 如何从别的阅读器迁移？
 在旧阅读器里导出 OPML 文件 → 在本应用菜单里选择「导入 OPML」即可。以后想换工具，也可以随时「导出 OPML」把数据带走。

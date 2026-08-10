@@ -1,6 +1,8 @@
 {
   "name": "feed",
   "version": "0.13.3",
+  "productName": "Feed",
+  "appId": "com.lianginx.feed",
   "type": "module",
   "description": "An Electron application with Vue and TypeScript",
   "main": "./out/main/index.js",
