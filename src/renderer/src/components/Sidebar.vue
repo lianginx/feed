@@ -56,6 +56,7 @@ const {
   refreshAllFeeds
 } = useFeeds()
 const { selectedView, selectView, selectFeed, selectCategory } = useArticleView()
+const { markAllRead } = useArticles()
 
 const { showToast } = useToast()
 const { showAddCategory, handleEditCategory, handleDeleteCategory } = useAddCategoryDialog()
@@ -91,19 +92,19 @@ const showEditFeed = ref(false)
 const renamingFeedId = ref<number | null>(null)
 const renameFocused = ref(false)
 
-async function handleMarkAllRead(feedId?: number): Promise<void> {
-  const { markAllRead } = useArticles()
-  await markAllRead(feedId)
+async function handleMarkAllReadGlobal(): Promise<void> {
+  const ok = await confirm({
+    title: '全部标为已读',
+    message: '将把全部文章标记为已读，确定？',
+    confirmText: '全部标为已读'
+  })
+  if (!ok) return
+  await markAllRead()
 }
 
 async function handleMarkAllReadByCategory(catId: number | null): Promise<void> {
   await window.api.categories.markAllRead(catId)
   await loadFeeds()
-}
-
-async function handleRefreshCategory(catId: number | null, event: Event): Promise<void> {
-  event.stopPropagation()
-  await refreshCategoryFeeds(catId)
 }
 
 async function handleEditFeed(feedId: number): Promise<void> {
@@ -120,6 +121,10 @@ function handleFeedSaved(): void {
 
 function openFeedInBrowser(feed: FeedItem): void {
   window.open(feed.site_url || feed.url, '_blank')
+}
+
+function hideBrokenFavicon(e: Event): void {
+  ;(e.target as HTMLImageElement).style.display = 'none'
 }
 
 function handleRenameFeed(feedId: number): void {
@@ -173,21 +178,6 @@ async function handleDeleteFeed(feedId: number): Promise<void> {
   })
   if (!ok) return
   await deleteFeed(feedId)
-}
-
-async function handleMarkAllReadGlobal(): Promise<void> {
-  const ok = await confirm({
-    title: '全部标为已读',
-    message: '将把全部文章标记为已读，确定？',
-    confirmText: '全部标为已读'
-  })
-  if (!ok) return
-  await handleMarkAllRead()
-}
-
-async function handleRefreshFeed(feedId: number, event: Event): Promise<void> {
-  event.stopPropagation()
-  await refreshSingleFeed(feedId)
 }
 
 function openAddFeedWindow(): void {
@@ -430,11 +420,7 @@ const uncategorizedUnreadCount = computed(() =>
                                         :src="feed.favicon_url"
                                         alt=""
                                         class="w-full h-full object-contain"
-                                        @error="
-                                          (e: Event) => {
-                                            ;(e.target as HTMLImageElement).style.display = 'none'
-                                          }
-                                        "
+                                        @error="hideBrokenFavicon"
                                       />
                                       <span v-else class="text-sidebar-foreground/70">{{
                                         feed.title.charAt(0)
@@ -478,10 +464,10 @@ const uncategorizedUnreadCount = computed(() =>
                                 </SidebarMenuButton>
                               </ContextMenuTrigger>
                               <ContextMenuContent>
-                                <ContextMenuItem @select="handleMarkAllRead(feed.id)">
+                                <ContextMenuItem @select="markAllRead(feed.id)">
                                   全部标为已读
                                 </ContextMenuItem>
-                                <ContextMenuItem @select="handleRefreshFeed(feed.id, $event)">
+                                <ContextMenuItem @select.stop="refreshSingleFeed(feed.id)">
                                   刷新
                                 </ContextMenuItem>
                                 <ContextMenuItem @select="openFeedInBrowser(feed)">
@@ -512,7 +498,7 @@ const uncategorizedUnreadCount = computed(() =>
                     <ContextMenuItem @select="handleMarkAllReadByCategory(cat.id)">
                       全部标为已读
                     </ContextMenuItem>
-                    <ContextMenuItem @select="handleRefreshCategory(cat.id, $event)">
+                    <ContextMenuItem @select.stop="refreshCategoryFeeds(cat.id)">
                       刷新
                     </ContextMenuItem>
                     <ContextMenuSeparator />
@@ -614,11 +600,7 @@ const uncategorizedUnreadCount = computed(() =>
                                           :src="feed.favicon_url"
                                           alt=""
                                           class="w-full h-full object-contain"
-                                          @error="
-                                            (e: Event) => {
-                                              ;(e.target as HTMLImageElement).style.display = 'none'
-                                            }
-                                          "
+                                          @error="hideBrokenFavicon"
                                         />
                                         <span v-else class="text-sidebar-foreground/70">{{
                                           feed.title.charAt(0)
@@ -662,10 +644,10 @@ const uncategorizedUnreadCount = computed(() =>
                                   </SidebarMenuButton>
                                 </ContextMenuTrigger>
                                 <ContextMenuContent>
-                                  <ContextMenuItem @select="handleMarkAllRead(feed.id)">
+                                  <ContextMenuItem @select="markAllRead(feed.id)">
                                     全部标为已读
                                   </ContextMenuItem>
-                                  <ContextMenuItem @select="handleRefreshFeed(feed.id, $event)">
+                                  <ContextMenuItem @select.stop="refreshSingleFeed(feed.id)">
                                     刷新
                                   </ContextMenuItem>
                                   <ContextMenuItem @select="openFeedInBrowser(feed)">
@@ -697,7 +679,7 @@ const uncategorizedUnreadCount = computed(() =>
                     <ContextMenuItem @select="handleMarkAllReadByCategory(null)">
                       全部标为已读
                     </ContextMenuItem>
-                    <ContextMenuItem @select="handleRefreshCategory(null, $event)">
+                    <ContextMenuItem @select.stop="refreshCategoryFeeds(null)">
                       刷新
                     </ContextMenuItem>
                   </ContextMenuContent>
