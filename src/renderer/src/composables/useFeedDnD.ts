@@ -2,24 +2,23 @@ import { ref, reactive } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
 import { useFeeds, type FeedItem } from './useFeeds'
 
-// 侧边栏订阅源/分类的拖拽排序与折叠状态
+const dragFeedId = ref<number | null>(null)
+const dragOverFeedId = ref<number | null>(null)
+const dragOverCategoryId = ref<number | null | undefined>(undefined)
+const dropPosition = ref<'before' | 'after'>('after')
+const dragCategoryId = ref<number | null>(null)
+const dragOverCategorySortId = ref<number | null>(null)
+const categoryDropPosition = ref<'before' | 'after'>('after')
+const savedCollapsedCategories = reactive<Record<number, boolean>>({})
+const collapsedCategories = useLocalStorage<Record<number, boolean>>(
+  'sidebar.collapsedCategories',
+  {}
+)
+const uncategorizedCollapsed = useLocalStorage<boolean>('sidebar.uncategorizedCollapsed', false)
+
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useFeedDnD() {
   const { feeds, categories, loadFeeds } = useFeeds()
-
-  const dragFeedId = ref<number | null>(null)
-  const dragOverFeedId = ref<number | null>(null)
-  const dragOverCategoryId = ref<number | null>(null)
-  const dropPosition = ref<'before' | 'after'>('after')
-  const dragCategoryId = ref<number | null>(null)
-  const dragOverCategorySortId = ref<number | null>(null)
-  const categoryDropPosition = ref<'before' | 'after'>('after')
-  const savedCollapsedCategories = reactive<Record<number, boolean>>({})
-  const collapsedCategories = useLocalStorage<Record<number, boolean>>(
-    'sidebar.collapsedCategories',
-    {}
-  )
-  const uncategorizedCollapsed = useLocalStorage<boolean>('sidebar.uncategorizedCollapsed', false)
 
   function isCategoryCollapsed(catId: number): boolean {
     return collapsedCategories.value[catId] === true
@@ -49,7 +48,7 @@ export function useFeedDnD() {
     event.preventDefault()
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
     dragOverFeedId.value = feedId
-    dragOverCategoryId.value = null
+    dragOverCategoryId.value = undefined
     const el = event.currentTarget as HTMLElement
     const rect = el.getBoundingClientRect()
     dropPosition.value = event.clientY - rect.top < rect.height / 2 ? 'before' : 'after'
@@ -70,13 +69,13 @@ export function useFeedDnD() {
   }
 
   function onDragLeaveCategory(): void {
-    dragOverCategoryId.value = null
+    dragOverCategoryId.value = undefined
   }
 
   function onDragEnd(): void {
     dragFeedId.value = null
     dragOverFeedId.value = null
-    dragOverCategoryId.value = null
+    dragOverCategoryId.value = undefined
     dragOverCategorySortId.value = null
   }
 
@@ -139,7 +138,7 @@ export function useFeedDnD() {
 
   function onCategoryDragStart(catId: number, event: DragEvent): void {
     dragCategoryId.value = catId
-    dragOverCategoryId.value = null
+    dragOverCategoryId.value = undefined
     dragOverFeedId.value = null
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move'
@@ -159,7 +158,7 @@ export function useFeedDnD() {
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
     if (dragCategoryId.value === catId) return
     dragOverCategorySortId.value = catId
-    dragOverCategoryId.value = null
+    dragOverCategoryId.value = undefined
     dragOverFeedId.value = null
     const el = event.currentTarget as HTMLElement
     const rect = el.getBoundingClientRect()
