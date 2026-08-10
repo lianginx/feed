@@ -2,12 +2,14 @@
 import { onMounted, onUnmounted } from 'vue'
 import { useApp } from './composables/useApp'
 import { useFeeds } from './composables/useFeeds'
-import { useArticleView } from './composables/useArticleView'
 import { useMenuCommands } from './composables/useMenuCommands'
+import { useFeedsEvents } from './composables/useFeedsEvents'
+import { useAppEvents } from './composables/useAppEvents'
+import { useSyncEvents } from './composables/useSyncEvents'
 import { registerTabShortcut } from './composables/useTabShortcut'
 import { useAddCategoryDialog } from './composables/useAddCategoryDialog'
 import { useConfirmDialog } from './composables/useConfirmDialog'
-import { useSync, registerSyncListener } from './composables/useSync'
+import { useSync } from './composables/useSync'
 import { SidebarProvider, Sidebar } from '@/components/ui/sidebar'
 import SidebarNav from './components/Sidebar.vue'
 import ArticleList from './components/ArticleList.vue'
@@ -20,9 +22,11 @@ import SyncConflictDialog from './components/SyncConflictDialog.vue'
 
 const { loadSettings } = useApp()
 const { loadFeeds } = useFeeds()
-const { selectFeed } = useArticleView()
 
 useMenuCommands()
+useFeedsEvents()
+useAppEvents()
+useSyncEvents()
 registerTabShortcut()
 
 const {
@@ -41,11 +45,6 @@ const {
   resolveConfirm
 } = useConfirmDialog()
 const { pendingConflict, resolveConflict, loadStatus } = useSync()
-
-let stopSyncListener: (() => void) | null = null
-let stopConfigListener: (() => void) | null = null
-let stopOpmlListener: (() => void) | null = null
-let stopFeedsListener: (() => void) | null = null
 
 // 全局禁用浏览器默认右键菜单（自定义 ContextMenu 已自行处理 preventDefault）
 function onContextMenu(e: MouseEvent): void {
@@ -93,39 +92,12 @@ onMounted(async () => {
   observer.observe(document.body, { childList: true, subtree: true })
   await loadSettings()
   await loadFeeds()
-  // 注册同步状态监听，并加载上次同步时间；远端拉取后刷新订阅列表
-  stopSyncListener = registerSyncListener(() => {
-    void loadFeeds()
-  })
+  // 加载上次同步时间
   await loadStatus()
-
-  // 设置窗口变更后重载配置、OPML 导入后刷新订阅列表、添加订阅窗口完成后刷新并选中
-  stopConfigListener = window.api.config.onChanged(onConfigChanged)
-  stopOpmlListener = window.api.opml.onImported(onOpmlImported)
-  stopFeedsListener = window.api.feeds.onChanged(onFeedsChanged)
 })
-
-function onConfigChanged(): void {
-  void loadSettings()
-}
-
-function onOpmlImported(): void {
-  void loadFeeds()
-}
-
-async function onFeedsChanged(data: { feedId?: number }): Promise<void> {
-  await loadFeeds()
-  if (data.feedId) {
-    selectFeed(data.feedId)
-  }
-}
 
 onUnmounted(() => {
   document.removeEventListener('contextmenu', onContextMenu)
-  stopConfigListener?.()
-  stopOpmlListener?.()
-  stopSyncListener?.()
-  stopFeedsListener?.()
 })
 
 async function handleSyncConflictChoice(choice: 'local' | 'remote'): Promise<void> {

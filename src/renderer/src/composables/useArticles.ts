@@ -28,9 +28,6 @@ const articles = ref<ArticleItem[]>([])
 const currentArticle = ref<ArticleDetail | null>(null)
 const loading = ref(false)
 
-// 订阅源刷新完成时同步刷新文章列表：模块级单次注册
-let refreshReloadRegistered = false
-
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useArticles() {
   async function loadArticles(
@@ -190,38 +187,6 @@ export function useArticles() {
   function closeArticle(): void {
     currentArticle.value = null
   }
-
-  function registerRefreshReload(): void {
-    if (refreshReloadRegistered) return
-    refreshReloadRegistered = true
-    window.api.feeds.onRefreshProgress((data) => {
-      if (data.status !== 'complete') return
-      const { selectedFeedId, selectedCategoryId } = useFeeds()
-      const { isUnread, isStar, isToday } = useArticleView()
-      // 只重载与当前视图相关的订阅源完成事件
-      if (selectedFeedId.value !== null) {
-        if (data.feedId === selectedFeedId.value) {
-          void loadArticles(
-            selectedFeedId.value,
-            undefined,
-            isUnread.value,
-            isStar.value,
-            isToday.value
-          )
-        }
-      } else {
-        void loadArticles(
-          undefined,
-          selectedCategoryId.value,
-          isUnread.value,
-          isStar.value,
-          isToday.value
-        )
-      }
-    })
-  }
-
-  registerRefreshReload()
 
   return {
     articles,

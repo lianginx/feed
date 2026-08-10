@@ -32,28 +32,6 @@ const selectedCategoryId = ref<number | null | undefined>(undefined)
 const loading = ref(false)
 const refreshingFeedIds = ref<Set<number>>(new Set())
 
-// 订阅源刷新进度监听：模块级单次注册，避免被多个组件重复订阅
-let refreshListenerRegistered = false
-
-function registerRefreshListener(): void {
-  if (refreshListenerRegistered) return
-  refreshListenerRegistered = true
-  window.api.feeds.onRefreshProgress((data) => {
-    if (data.status === 'fetching') {
-      refreshingFeedIds.value = new Set(refreshingFeedIds.value).add(data.feedId)
-    } else {
-      const next = new Set(refreshingFeedIds.value)
-      next.delete(data.feedId)
-      refreshingFeedIds.value = next
-
-      // 刷新完成后重载列表，更新未读数
-      if (data.status === 'complete' || data.status === 'error') {
-        loadFeeds()
-      }
-    }
-  })
-}
-
 const filteredFeeds = computed(() => {
   if (selectedCategoryId.value === undefined) return feeds.value
   if (selectedCategoryId.value === null) return feeds.value.filter((f) => f.category_id === null)
@@ -110,25 +88,26 @@ export function useFeeds() {
     await window.api.feeds.updateSortOrder(items)
   }
 
-  async function refreshSingleFeed(feedId: number): Promise<boolean> {
-    refreshingFeedIds.value = new Set(refreshingFeedIds.value).add(feedId)
-    try {
-      const result = await window.api.feeds.refresh(feedId)
-      return result.success
-    } finally {
-      const next = new Set(refreshingFeedIds.value)
+  function refreshSingleFeed(feedId: number): void {
+    void window.api.feeds.refresh(feedId)
+  }
+
+  function refreshCategoryFeeds(catId: number | null): void {
+    feeds.value.filter((f) => f.category_id === catId).forEach((f) => refreshSingleFeed(f.id))
+  }
+
+  function refreshAllFeeds(): void {
+    feeds.value.forEach((f) => refreshSingleFeed(f.id))
+  }
+
+  function markRefreshing(feedId: number, active: boolean): void {
+    const next = new Set(refreshingFeedIds.value)
+    if (active) {
+      next.add(feedId)
+    } else {
       next.delete(feedId)
-      refreshingFeedIds.value = next
     }
-  }
-
-  async function refreshCategoryFeeds(catId: number | null): Promise<void> {
-    const targetFeeds = feeds.value.filter((f) => f.category_id === catId)
-    await Promise.allSettled(targetFeeds.map((f) => refreshSingleFeed(f.id)))
-  }
-
-  async function refreshAllFeeds(): Promise<void> {
-    await Promise.allSettled(feeds.value.map((f) => refreshSingleFeed(f.id)))
+    refreshingFeedIds.value = next
   }
 
   function selectFeed(id: number | null): void {
@@ -145,9 +124,6 @@ export function useFeeds() {
     }
   }
 
-  // 惰性单次注册，随应用生命周期存在，不随单个组件卸载而关闭
-  registerRefreshListener()
-
   return {
     categories,
     feeds,
@@ -157,6 +133,7 @@ export function useFeeds() {
     unreadCount,
     loading,
     refreshingFeedIds,
+    markRefreshing,
     loadFeeds,
     deleteFeed,
     updateFeed,

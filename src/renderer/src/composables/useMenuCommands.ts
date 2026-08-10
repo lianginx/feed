@@ -44,15 +44,15 @@ export function useMenuCommands(): void {
     stopMenuListeners.push(
       window.api.menu.onRefreshFeed(async () => {
         if (selectedFeedId.value) {
-          await refreshSingleFeed(selectedFeedId.value)
+          refreshSingleFeed(selectedFeedId.value)
         } else if (selectedCategoryId.value !== undefined) {
-          await refreshCategoryFeeds(selectedCategoryId.value)
+          refreshCategoryFeeds(selectedCategoryId.value)
         } else {
-          await refreshAllFeeds()
+          refreshAllFeeds()
         }
       }),
-      window.api.menu.onRefreshAllFeeds(async () => {
-        await refreshAllFeeds()
+      window.api.menu.onRefreshAllFeeds(() => {
+        refreshAllFeeds()
       }),
       window.api.menu.onMarkListRead(async () => {
         const isListContext =

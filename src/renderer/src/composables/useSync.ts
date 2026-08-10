@@ -14,15 +14,21 @@ export function useSync() {
     try {
       const result = await window.api.sync.run()
       if (result.success && result.data) {
-        lastResult.value = result.data
-        if (result.data.status === 'conflict') {
-          pendingConflict.value = true
-        }
+        applySyncResult(result.data)
         return result.data
       }
       return null
     } finally {
       syncing.value = false
+    }
+  }
+
+  function applySyncResult(result: SyncResult): void {
+    lastResult.value = result
+    if (result.status === 'conflict') {
+      pendingConflict.value = true
+    } else if (result.status === 'pushed' || result.status === 'pulled') {
+      lastSyncedAt.value = Date.now()
     }
   }
 
@@ -46,28 +52,9 @@ export function useSync() {
     syncing,
     lastResult,
     pendingConflict,
+    applySyncResult,
     runSync,
     resolveConflict,
     loadStatus
   }
-}
-
-/**
- * 注册主进程同步状态事件监听（在 App.vue 中调用一次）。
- * 更新共享状态；当从远端拉取数据后调用 onPulled 回调（用于刷新订阅列表）。
- * 返回取消订阅函数。
- */
-export function registerSyncListener(onPulled?: () => void): () => void {
-  return window.api.sync.onStatus((result) => {
-    lastResult.value = result
-    if (result.status === 'conflict') {
-      pendingConflict.value = true
-    } else if (result.status === 'pushed' || result.status === 'pulled') {
-      lastSyncedAt.value = Date.now()
-    }
-    // 远端数据已应用，刷新订阅列表（含新增/删除/排序变化）
-    if (result.status === 'pulled') {
-      onPulled?.()
-    }
-  })
 }

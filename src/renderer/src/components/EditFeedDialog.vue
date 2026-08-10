@@ -53,7 +53,7 @@ async function handleSubmit(): Promise<void> {
   submitting.value = true
   const result = await updateFeed(props.feed.id, { url: trimmed })
   if (result) {
-    await refreshSingleFeed(props.feed.id)
+    refreshSingleFeed(props.feed.id)
     emit('saved')
     close()
   }
