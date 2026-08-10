@@ -3,12 +3,12 @@ import { watch, ref, computed } from 'vue'
 import { Star, ExternalLink, Rss, ArrowUp, Languages } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
-import { useArticles } from '../composables/useArticles'
-import { useTitleInToolbar } from '../composables/useTitleInToolbar'
-import { useTranslate } from '../composables/useTranslate'
-import { sanitizeHtml } from '../utils/sanitize'
-import { dayjs } from '../utils/dayjs'
-import { estimateReadingTime } from '../utils/readingTime'
+import { useArticles } from '@/composables/useArticles'
+import { useTitleInToolbar } from '@/composables/useTitleInToolbar'
+import { useTranslate } from '@/composables/useTranslate'
+import { sanitizeHtml } from '@/utils/sanitize'
+import { dayjs } from '@/utils/dayjs'
+import { estimateReadingTime } from '@/utils/readingTime'
 
 const { currentArticle, toggleStar } = useArticles()
 const { translating, translated, shown, configured, toggle, refresh } = useTranslate()

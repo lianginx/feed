@@ -1,6 +1,6 @@
 import { onMounted, onUnmounted } from 'vue'
-import { useFeeds } from './useFeeds'
-import { useArticles } from './useArticles'
+import { useFeeds } from '@/composables/useFeeds'
+import { useArticles } from '@/composables/useArticles'
 
 /**
  * 订阅源相关的主进程事件接入（在 App.vue 中调用一次）：

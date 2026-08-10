@@ -1,5 +1,5 @@
-import '../assets/css/main.css'
+import '@/assets/css/main.css'
 import { createApp } from 'vue'
-import SettingsApp from './SettingsApp.vue'
+import SettingsApp from '@/settings/SettingsApp.vue'
 
 createApp(SettingsApp).mount('#app')

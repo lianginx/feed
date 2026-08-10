@@ -1,6 +1,6 @@
 import { onMounted, onUnmounted } from 'vue'
-import { useToast } from './useToast'
-import { useUpdateDialog } from './useUpdateDialog'
+import { useToast } from '@/composables/useToast'
+import { useUpdateDialog } from '@/composables/useUpdateDialog'
 
 /**
  * 自动更新逻辑：

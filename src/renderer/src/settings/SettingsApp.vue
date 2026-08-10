@@ -26,9 +26,9 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { useApp, type Theme } from '../composables/useApp'
-import { useSync } from '../composables/useSync'
-import type { SyncConfig, TranslateConfig, AdapterInfo, ProxyConfig } from '../types'
+import { useApp, type Theme } from '@/composables/useApp'
+import { useSync } from '@/composables/useSync'
+import type { SyncConfig, TranslateConfig, AdapterInfo, ProxyConfig } from '@/types'
 
 const {
   theme,

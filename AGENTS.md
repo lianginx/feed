@@ -3,6 +3,10 @@
 ## 质量检查
 每次任务结束必须运行 `pnpm typecheck` 和 `pnpm lint:fix`，并修复问题。
 
+## 代码规范
+- 渲染进程（`src/renderer/`）中所有 import 一律使用 `@/` 别名（映射到 `src/renderer/src`），禁止使用相对路径（`./`、`../`）。
+- 例外：`components/ui/` 目录由 shadcn-vue 管理，其内部相对路径引用（如 `index.ts` 里的 `./Xxx.vue`）不手动修改。
+
 ## 最佳实践参考（Electron 官方文档）
 开发涉及 Electron 的功能/配置时，必须遵循官方最佳实践：
 

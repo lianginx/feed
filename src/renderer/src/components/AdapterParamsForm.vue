@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import type { AdapterParam } from '../types'
+import type { AdapterParam } from '@/types'
 
 const props = defineProps<{
   params: AdapterParam[]

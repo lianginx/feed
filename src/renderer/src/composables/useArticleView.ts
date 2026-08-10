@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { useFeeds } from './useFeeds'
+import { useFeeds } from '@/composables/useFeeds'
 
 // 文章列表的视图与筛选状态：与侧边栏选中态解耦，跨组件共享
 const selectedView = ref<'all' | 'unread' | 'starred' | 'today' | undefined>('all')

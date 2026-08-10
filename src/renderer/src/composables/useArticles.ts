@@ -1,6 +1,6 @@
 import { ref } from 'vue'
-import { useFeeds } from './useFeeds'
-import { useArticleView } from './useArticleView'
+import { useFeeds } from '@/composables/useFeeds'
+import { useArticleView } from '@/composables/useArticleView'
 
 interface ArticleItem {
   id: number

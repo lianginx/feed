@@ -1,5 +1,5 @@
 import { ref, computed, watch } from 'vue'
-import type { SyncConfig, TranslateConfig, ProxyConfig } from '../types'
+import type { SyncConfig, TranslateConfig, ProxyConfig } from '@/types'
 
 export type Theme = 'light' | 'dark' | 'system'
 

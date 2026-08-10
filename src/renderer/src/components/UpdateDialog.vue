@@ -10,8 +10,8 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
-import { useUpdateDialog } from '../composables/useUpdateDialog'
-import { sanitizeHtml } from '../utils/sanitize'
+import { useUpdateDialog } from '@/composables/useUpdateDialog'
+import { sanitizeHtml } from '@/utils/sanitize'
 
 const { show, mode, info, percent, close, startDownload, install, openReleasePage } =
   useUpdateDialog()

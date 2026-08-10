@@ -1,8 +1,8 @@
 import { ref, computed, watch } from 'vue'
-import { useApp } from './useApp'
-import { useArticles } from './useArticles'
-import { useToast } from './useToast'
-import type { TranslateResult } from '../types'
+import { useApp } from '@/composables/useApp'
+import { useArticles } from '@/composables/useArticles'
+import { useToast } from '@/composables/useToast'
+import type { TranslateResult } from '@/types'
 
 /**
  * 文章翻译（模块级单例，多个组件共享同一份状态）。

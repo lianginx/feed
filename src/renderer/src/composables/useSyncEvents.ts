@@ -1,6 +1,6 @@
 import { onMounted, onUnmounted } from 'vue'
-import { useSync } from './useSync'
-import { useFeeds } from './useFeeds'
+import { useSync } from '@/composables/useSync'
+import { useFeeds } from '@/composables/useFeeds'
 
 /**
  * 同步相关的主进程事件接入（在 App.vue 中调用一次）：

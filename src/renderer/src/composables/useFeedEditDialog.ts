@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import type { FeedItem } from './useFeeds'
+import type { FeedItem } from '@/composables/useFeeds'
 
 const editingFeed = ref<FeedItem | null>(null)
 const showEditFeed = ref(false)

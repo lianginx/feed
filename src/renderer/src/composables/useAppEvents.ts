@@ -1,5 +1,5 @@
 import { onMounted, onUnmounted } from 'vue'
-import { useApp } from './useApp'
+import { useApp } from '@/composables/useApp'
 
 /**
  * 应用配置相关的主进程事件接入（在 App.vue 中调用一次）：

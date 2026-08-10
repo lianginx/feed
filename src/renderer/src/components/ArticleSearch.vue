@@ -2,10 +2,10 @@
 import { watch, ref, nextTick } from 'vue'
 import { Search, X } from '@lucide/vue'
 import { Input } from '@/components/ui/input'
-import { useArticles } from '../composables/useArticles'
-import { useFeeds } from '../composables/useFeeds'
-import { useArticleView } from '../composables/useArticleView'
-import { useSearchFocus } from '../composables/useSearchFocus'
+import { useArticles } from '@/composables/useArticles'
+import { useFeeds } from '@/composables/useFeeds'
+import { useArticleView } from '@/composables/useArticleView'
+import { useSearchFocus } from '@/composables/useSearchFocus'
 
 const { articles, reloadScope, search } = useArticles()
 const { selectedFeedId, selectedCategoryId } = useFeeds()

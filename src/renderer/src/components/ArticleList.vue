@@ -2,7 +2,7 @@
 import { watch, ref, computed } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { Star, Newspaper, BookOpen } from '@lucide/vue'
-import { dayjs } from '../utils/dayjs'
+import { dayjs } from '@/utils/dayjs'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   ContextMenu,
@@ -11,11 +11,11 @@ import {
   ContextMenuItem,
   ContextMenuSeparator
 } from '@/components/ui/context-menu'
-import { useArticles } from '../composables/useArticles'
-import { useFeeds } from '../composables/useFeeds'
-import { useArticleView } from '../composables/useArticleView'
-import ArticleSearch from './ArticleSearch.vue'
-import Button from './ui/button/Button.vue'
+import { useArticles } from '@/composables/useArticles'
+import { useFeeds } from '@/composables/useFeeds'
+import { useArticleView } from '@/composables/useArticleView'
+import ArticleSearch from '@/components/ArticleSearch.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 const { articles, currentArticle, loading, reloadScope, openArticle, toggleStar, toggleRead } =
   useArticles()

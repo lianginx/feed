@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { useToast } from './useToast'
+import { useToast } from '@/composables/useToast'
 
 /** 更新弹窗展示形态 */
 export type UpdateDialogMode = 'available' | 'preparing' | 'downloading' | 'downloaded'
