@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio'
 import { extname } from 'path'
 import { createHash } from 'crypto'
 import { getCacheFile, listCacheFiles, writeCacheFile } from './cache'
-import { getConnection } from '../database/connection'
+import { getConnection } from '@main/database/connection'
 
 /**
  * favicon 缓存采用「内容寻址」：

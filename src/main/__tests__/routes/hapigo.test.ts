@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { hapigoChangelogAdapter } from '../../services/routes/adapters/hapigo'
-import { fetchWithTimeout } from '../../services/http'
+import { hapigoChangelogAdapter } from '@main/services/routes/adapters/hapigo'
+import { fetchWithTimeout } from '@main/services/http'
 
 // 适配器 parse 会联网抓详情 .md 页（转正文），单测 mock 网络
 // 注意：详情页为并发抓取，mock 需按 URL 区分返回，不能用只生效一次的 mockImplementationOnce

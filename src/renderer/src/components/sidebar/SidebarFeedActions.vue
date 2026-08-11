@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { RefreshCw, Plus, ChevronsDownUp, ChevronsUpDown } from '@lucide/vue'
-import { Button } from '@/components/ui/button'
-import { useFeeds } from '@/composables/useFeeds'
-import { useFeedDnD } from '@/composables/useFeedDnD'
+import { Button } from '@renderer/components/ui/button'
+import { useFeeds } from '@renderer/composables/useFeeds'
+import { useFeedDnD } from '@renderer/composables/useFeedDnD'
 
 const { api } = window
 

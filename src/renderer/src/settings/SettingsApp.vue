@@ -15,20 +15,20 @@ import {
   Globe,
   Trash2
 } from '@lucide/vue'
-import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
-import { Input } from '@/components/ui/input'
+import { Button } from '@renderer/components/ui/button'
+import { Spinner } from '@renderer/components/ui/spinner'
+import { Input } from '@renderer/components/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
-import { useApp, type Theme } from '@/composables/useApp'
-import { useSync } from '@/composables/useSync'
-import type { SyncConfig, TranslateConfig, AdapterInfo, ProxyConfig } from '@/types'
+} from '@renderer/components/ui/select'
+import { Switch } from '@renderer/components/ui/switch'
+import { useApp, type Theme } from '@renderer/composables/useApp'
+import { useSync } from '@renderer/composables/useSync'
+import type { SyncConfig, TranslateConfig, AdapterInfo, ProxyConfig } from '@renderer/types'
 
 const {
   theme,

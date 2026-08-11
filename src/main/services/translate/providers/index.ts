@@ -1,7 +1,7 @@
-import type { TranslateConfig } from '../../../config'
+import type { TranslateConfig } from '@main/config'
 import type { Fetcher } from 'anylang/esm/utils/fetcher/types.js'
 import type { TranslatorInstanceMembers } from 'anylang/esm/translators/Translator.js'
-import { fetchWithTimeout } from '../../http'
+import { fetchWithTimeout } from '@main/services/http'
 import { BaiduTranslator } from './baidu'
 import { EdgeTranslator } from './edge'
 

@@ -7,11 +7,11 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
-import { useUpdateDialog } from '@/composables/useUpdateDialog'
-import { sanitizeHtml } from '@/utils/sanitize'
+} from '@renderer/components/ui/dialog'
+import { Button } from '@renderer/components/ui/button'
+import { Spinner } from '@renderer/components/ui/spinner'
+import { useUpdateDialog } from '@renderer/composables/useUpdateDialog'
+import { sanitizeHtml } from '@renderer/utils/sanitize'
 
 const { show, mode, info, percent, close, startDownload, install, openReleasePage } =
   useUpdateDialog()

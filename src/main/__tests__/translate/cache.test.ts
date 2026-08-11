@@ -5,7 +5,7 @@ import {
   getTranslation,
   saveTranslation,
   cleanupTranslations
-} from '../../services/translate/cache'
+} from '@main/services/translate/cache'
 
 /** 用 :memory: 手动建表（与 migration v7 同构） */
 function createDb(): Database.Database {

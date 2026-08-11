@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { htmlToText, firstImage } from '../../services/routes/core/extract'
+import { htmlToText, firstImage } from '@main/services/routes/core/extract'
 
 describe('extract 通用工具', () => {
   it('htmlToText 提取纯文本并压缩空白', () => {

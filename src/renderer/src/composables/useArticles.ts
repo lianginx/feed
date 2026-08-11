@@ -1,6 +1,6 @@
 import { ref } from 'vue'
-import { useFeeds } from '@/composables/useFeeds'
-import { useArticleView } from '@/composables/useArticleView'
+import { useFeeds } from '@renderer/composables/useFeeds'
+import { useArticleView } from '@renderer/composables/useArticleView'
 import type { Article, ArticleDetail } from '@shared/types/articles'
 
 const articles = ref<Article[]>([])

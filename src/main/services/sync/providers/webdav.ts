@@ -1,4 +1,4 @@
-import type { SyncConfig } from '../../../config'
+import type { SyncConfig } from '@main/config'
 import { SYNC_FILENAME, SYNC_DIR_NAME, authHeader, fetchWithTimeout } from './common'
 import type { SyncProvider } from './common'
 

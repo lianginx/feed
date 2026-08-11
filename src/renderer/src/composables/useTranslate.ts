@@ -1,8 +1,8 @@
 import { ref, computed, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import { useApp } from '@/composables/useApp'
-import { useArticles } from '@/composables/useArticles'
-import type { TranslateResult } from '@/types'
+import { useApp } from '@renderer/composables/useApp'
+import { useArticles } from '@renderer/composables/useArticles'
+import type { TranslateResult } from '@renderer/types'
 
 /**
  * 文章翻译（模块级单例，多个组件共享同一份状态）。

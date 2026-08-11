@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref, reactive, computed } from 'vue'
 import { Rss } from '@lucide/vue'
-import { useApp } from '@/composables/useApp'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Spinner } from '@/components/ui/spinner'
-import AdapterParamsForm from '@/components/AdapterParamsForm.vue'
-import type { AdapterInfo } from '@/types'
+import { useApp } from '@renderer/composables/useApp'
+import { Button } from '@renderer/components/ui/button'
+import { Input } from '@renderer/components/ui/input'
+import { Label } from '@renderer/components/ui/label'
+import { Spinner } from '@renderer/components/ui/spinner'
+import AdapterParamsForm from '@renderer/components/AdapterParamsForm.vue'
+import type { AdapterInfo } from '@renderer/types'
 
 const { loadSettings } = useApp()
 

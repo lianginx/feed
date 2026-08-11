@@ -1,29 +1,29 @@
 <script setup lang="ts">
-import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
+import { Collapsible, CollapsibleContent } from '@renderer/components/ui/collapsible'
 import {
   ContextMenu,
   ContextMenuTrigger,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator
-} from '@/components/ui/context-menu'
+} from '@renderer/components/ui/context-menu'
 import {
   SidebarHeader,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenuSub
-} from '@/components/ui/sidebar'
-import { useFeeds } from '@/composables/useFeeds'
-import { useAddCategoryDialog } from '@/composables/useAddCategoryDialog'
-import { useFeedDnD } from '@/composables/useFeedDnD'
-import { useFeedEditDialog } from '@/composables/useFeedEditDialog'
-import DialogEditFeed from '@/components/dialog/DialogEditFeed.vue'
-import SidebarFeedItem from '@/components/sidebar/SidebarFeedItem.vue'
-import SidebarGroupHeader from '@/components/sidebar/SidebarGroupHeader.vue'
-import SidebarEmptyState from '@/components/sidebar/SidebarEmptyState.vue'
-import SidebarFeedActions from '@/components/sidebar/SidebarFeedActions.vue'
-import SidebarViewSwitcher from '@/components/sidebar/SidebarViewSwitcher.vue'
+} from '@renderer/components/ui/sidebar'
+import { useFeeds } from '@renderer/composables/useFeeds'
+import { useAddCategoryDialog } from '@renderer/composables/useAddCategoryDialog'
+import { useFeedDnD } from '@renderer/composables/useFeedDnD'
+import { useFeedEditDialog } from '@renderer/composables/useFeedEditDialog'
+import DialogEditFeed from '@renderer/components/dialog/DialogEditFeed.vue'
+import SidebarFeedItem from '@renderer/components/sidebar/SidebarFeedItem.vue'
+import SidebarGroupHeader from '@renderer/components/sidebar/SidebarGroupHeader.vue'
+import SidebarEmptyState from '@renderer/components/sidebar/SidebarEmptyState.vue'
+import SidebarFeedActions from '@renderer/components/sidebar/SidebarFeedActions.vue'
+import SidebarViewSwitcher from '@renderer/components/sidebar/SidebarViewSwitcher.vue'
 
 const { categories, feeds, loadFeeds, refreshCategoryFeeds } = useFeeds()
 const { showAddCategory, handleEditCategory, handleDeleteCategory } = useAddCategoryDialog()

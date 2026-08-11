@@ -1,13 +1,13 @@
 import { protocol, net, session } from 'electron'
 import { pathToFileURL } from 'url'
-import { getCacheFile } from '../services/cache'
+import { getCacheFile } from '@main/services/cache'
 import {
   ensureCachedFaviconBySource,
   fileNameForSource,
   parseFaviconName,
   resolveAndCacheAdapterFavicon
-} from '../services/favicon'
-import { getAdapter } from '../services/routes'
+} from '@main/services/favicon'
+import { getAdapter } from '@main/services/routes'
 
 /**
  * 注册自定义协议和会话级别的 hook。

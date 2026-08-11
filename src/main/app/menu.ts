@@ -1,5 +1,5 @@
 import { app, ipcMain, Menu } from 'electron'
-import { envBool } from '../env'
+import { envBool } from '@main/env'
 import { getMainWindow } from './window'
 import { createSettingsWindow } from './settingsWindow'
 import { createAddFeedWindow } from './addFeedWindow'

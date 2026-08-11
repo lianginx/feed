@@ -1,7 +1,7 @@
 import { app } from 'electron'
 import { mkdir, unlink, writeFile } from 'fs/promises'
 import { join } from 'path'
-import { getSettings } from '../config'
+import { getSettings } from '@main/config'
 
 /**
  * Linux 下通过 XDG Autostart 实现开机自启的 .desktop 文件名

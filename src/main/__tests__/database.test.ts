@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3'
 import { describe, expect, it } from 'vitest'
-import { migrations } from '../database/migrations'
-import { seedDefaultFeeds } from '../database/seed'
+import { migrations } from '@main/database/migrations'
+import { seedDefaultFeeds } from '@main/database/seed'
 
 function init(db: Database.Database): void {
   db.exec(`

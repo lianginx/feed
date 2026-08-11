@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { extractPieces, packPieces, rebuildHtml } from '../../services/translate/html'
+import { extractPieces, packPieces, rebuildHtml } from '@main/services/translate/html'
 
 describe('extractPieces', () => {
   it('纯文本段落提取为单个可翻译单元', () => {

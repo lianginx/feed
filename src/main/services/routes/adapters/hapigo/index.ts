@@ -1,7 +1,7 @@
-import { fetchWithTimeout } from '../../../http'
-import { normalizeUrl } from '../../core/extract'
-import type { ParsedArticle, ParsedFeed } from '../../../rss'
-import type { FeedAdapter } from '../../core/types'
+import { fetchWithTimeout } from '@main/services/http'
+import { normalizeUrl } from '@main/services/routes/core/extract'
+import type { ParsedArticle, ParsedFeed } from '@main/services/rss'
+import type { FeedAdapter } from '@main/services/routes/core/types'
 
 /**
  * HapiGo 更新日志适配器。

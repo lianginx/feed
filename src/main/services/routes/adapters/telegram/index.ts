@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio'
-import { normalizeUrl } from '../../core/extract'
-import type { ParsedArticle, ParsedFeed } from '../../../rss'
-import type { AdapterParseContext, FeedAdapter } from '../../core/types'
+import { normalizeUrl } from '@main/services/routes/core/extract'
+import type { ParsedArticle, ParsedFeed } from '@main/services/rss'
+import type { AdapterParseContext, FeedAdapter } from '@main/services/routes/core/types'
 
 /**
  * Telegram 频道适配器——「参考 RSSHub 的 telegram/channel 路由设计，自写实现」。

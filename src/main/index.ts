@@ -3,7 +3,7 @@ import './dataMigration'
 
 import { app, nativeTheme } from 'electron'
 import { electronApp } from '@electron-toolkit/utils'
-import { APP_METADATA } from '../shared/appMetadata'
+import { APP_METADATA } from '@shared/appMetadata'
 import { initializeDatabase, closeConnection } from './database'
 import { getConnection } from './database/connection'
 import { cleanupTranslations } from './services/translate/cache'

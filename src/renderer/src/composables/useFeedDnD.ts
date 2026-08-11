@@ -1,6 +1,6 @@
 import { ref, reactive, computed } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
-import { useFeeds, type FeedItem } from '@/composables/useFeeds'
+import { useFeeds, type FeedItem } from '@renderer/composables/useFeeds'
 
 const dragFeedId = ref<number | null>(null)
 const dragOverFeedId = ref<number | null>(null)

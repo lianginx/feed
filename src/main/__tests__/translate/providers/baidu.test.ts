@@ -4,7 +4,7 @@ import {
   baiduErrorText,
   buildBaiduQuery,
   BaiduTranslator
-} from '../../../services/translate/providers/baidu'
+} from '@main/services/translate/providers/baidu'
 import type { Fetcher } from 'anylang/esm/utils/fetcher/types.js'
 
 describe('buildBaiduSign', () => {

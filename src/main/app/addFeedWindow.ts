@@ -1,7 +1,7 @@
 import { BrowserWindow, nativeTheme } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
-import { getSettings } from '../config'
+import { getSettings } from '@main/config'
 import { setupExternalNavigation } from './window'
 
 let addFeedWindow: BrowserWindow | null = null

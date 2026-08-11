@@ -1,5 +1,5 @@
-import { envBool, isEnvConfigured } from '../env'
-import { getSettings } from '../config'
+import { envBool, isEnvConfigured } from '@main/env'
+import { getSettings } from '@main/config'
 import { refreshAllFeeds } from './refresher'
 import { runSync } from './sync'
 

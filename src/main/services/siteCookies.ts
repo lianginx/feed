@@ -1,4 +1,4 @@
-import { getSettings } from '../config'
+import { getSettings } from '@main/config'
 import type { FeedAdapter } from './routes/core/types'
 
 /**

@@ -5,6 +5,12 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   main: {
+    resolve: {
+      alias: {
+        '@main': resolve('src/main'),
+        '@shared': resolve('src/shared')
+      }
+    },
     build: {
       // anylang 内部使用无扩展名 ESM 导入，Node 原生 ESM 无法解析（ERR_MODULE_NOT_FOUND），
       // 因此把它从 externalizeDeps 中排除，交给 vite 内联打包（其非顶层传递依赖会一并内联）。
@@ -16,6 +22,11 @@ export default defineConfig({
   // preload 编译为 CommonJS（.cjs）：沙盒 preload 不支持 ESM，
   // 项目为 ESM（"type": "module"）时默认输出 .mjs，需显式改为 cjs 才能开启沙盒（安全规则 #4）
   preload: {
+    resolve: {
+      alias: {
+        '@shared': resolve('src/shared')
+      }
+    },
     build: {
       rollupOptions: {
         output: {

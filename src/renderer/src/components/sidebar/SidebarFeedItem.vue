@@ -2,22 +2,22 @@
 import { ref } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { LoaderCircle, TriangleAlert } from '@lucide/vue'
-import { Input } from '@/components/ui/input'
+import { Input } from '@renderer/components/ui/input'
 import {
   ContextMenu,
   ContextMenuTrigger,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator
-} from '@/components/ui/context-menu'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar'
-import { useFeeds, type FeedItem } from '@/composables/useFeeds'
-import { useArticleView } from '@/composables/useArticleView'
-import { useArticles } from '@/composables/useArticles'
-import { useConfirmDialog } from '@/composables/useConfirmDialog'
-import { useFeedDnD } from '@/composables/useFeedDnD'
-import { useFeedEditDialog } from '@/composables/useFeedEditDialog'
+} from '@renderer/components/ui/context-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import { SidebarMenuButton, SidebarMenuItem } from '@renderer/components/ui/sidebar'
+import { useFeeds, type FeedItem } from '@renderer/composables/useFeeds'
+import { useArticleView } from '@renderer/composables/useArticleView'
+import { useArticles } from '@renderer/composables/useArticles'
+import { useConfirmDialog } from '@renderer/composables/useConfirmDialog'
+import { useFeedDnD } from '@renderer/composables/useFeedDnD'
+import { useFeedEditDialog } from '@renderer/composables/useFeedEditDialog'
 
 const props = defineProps<{
   feed: FeedItem

@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
-import { getConnection } from '../database/connection'
+import { getConnection } from '@main/database/connection'
 import { success, error } from './util'
-import { scheduleBadgeUpdate } from '../services/badge'
+import { scheduleBadgeUpdate } from '@main/services/badge'
 
 interface ArticleListParams {
   feedId?: number

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { telegramChannelAdapter } from '../../services/routes/adapters/telegram'
+import { telegramChannelAdapter } from '@main/services/routes/adapters/telegram'
 
 /** 组装一条 t.me/s/ 预览页消息：wrap 包裹 bubble 与日期/链接，container 拼成完整页面 */
 function wrapMessage(bubble: string, post: string = '1'): string {

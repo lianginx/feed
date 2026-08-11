@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { v2exAdapter } from '../../services/routes/adapters/v2ex'
+import { v2exAdapter } from '@main/services/routes/adapters/v2ex'
 
 /** 本地 JSON fixture（真实接口结构，不联网） */
 const SAMPLE = JSON.stringify([

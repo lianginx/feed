@@ -6,12 +6,12 @@ import electronUpdater from 'electron-updater'
 import { createWriteStream, createReadStream, existsSync, statSync } from 'fs'
 import { createHash } from 'crypto'
 import { join } from 'path'
-import { getMainWindow } from '../app/window'
-import { getSettings } from '../config'
-import { envBool, isEnvConfigured } from '../env'
+import { getMainWindow } from '@main/app/window'
+import { getSettings } from '@main/config'
+import { envBool, isEnvConfigured } from '@main/env'
 // UpdaterStatus 是主进程 / preload / 渲染进程的公共契约，统一在 src/shared/types 定义，
 // 供各进程 import type 引用（编译期擦除，无运行时泄漏）
-import type { UpdaterStatus } from '../../shared/types/updater'
+import type { UpdaterStatus } from '@shared/types/updater'
 
 const { autoUpdater } = electronUpdater
 

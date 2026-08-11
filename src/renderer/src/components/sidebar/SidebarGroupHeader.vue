@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { ChevronRight } from '@lucide/vue'
-import { CollapsibleTrigger } from '@/components/ui/collapsible'
-import { useFeeds } from '@/composables/useFeeds'
-import { useArticleView } from '@/composables/useArticleView'
-import { useFeedDnD } from '@/composables/useFeedDnD'
+import { CollapsibleTrigger } from '@renderer/components/ui/collapsible'
+import { useFeeds } from '@renderer/composables/useFeeds'
+import { useArticleView } from '@renderer/composables/useArticleView'
+import { useFeedDnD } from '@renderer/composables/useFeedDnD'
 
 const props = defineProps<{
   catId: number | null

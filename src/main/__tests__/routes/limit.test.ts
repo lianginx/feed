@@ -4,9 +4,9 @@ import {
   setConcurrency,
   getConcurrency,
   runWithHttpLimit
-} from '../../services/routes/core/limit'
-import { runAdapter } from '../../services/routes/core/runner'
-import type { FeedAdapter } from '../../services/routes/core/types'
+} from '@main/services/routes/core/limit'
+import { runAdapter } from '@main/services/routes/core/runner'
+import type { FeedAdapter } from '@main/services/routes/core/types'
 
 /** 每个用例结束恢复默认并发，避免污染其他测试文件（模块级单例） */
 afterEach(() => setConcurrency({ http: 6, browser: 2 }))

@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import type { SyncResult } from '@/types'
+import type { SyncResult } from '@renderer/types'
 
 // 模块级共享状态（多个组件共享同一份）
 const lastSyncedAt = ref<number | null>(null)

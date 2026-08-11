@@ -34,7 +34,7 @@ function loadDataMigration(opts: { isPackaged: boolean; renameThrows?: boolean }
     }
     return actual
   })
-  return import('../dataMigration').then(() => undefined)
+  return import('@main/dataMigration').then(() => undefined)
 }
 
 function setupAppData(legacyExists: boolean, targetExists: boolean): void {

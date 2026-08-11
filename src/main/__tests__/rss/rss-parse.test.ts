@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
-import { parseFeedXml, toFriendlyFeedError } from '../../services/rss'
+import { parseFeedXml, toFriendlyFeedError } from '@main/services/rss'
 
 /** 读取本地 fixture 文件（真实源样本，不联网） */
 function loadFixture(name: string): string {

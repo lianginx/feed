@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toBaiduCode, TARGET_LANGUAGES } from '../../services/translate/languages'
+import { toBaiduCode, TARGET_LANGUAGES } from '@main/services/translate/languages'
 
 describe('toBaiduCode', () => {
   it('百度特殊编码映射', () => {

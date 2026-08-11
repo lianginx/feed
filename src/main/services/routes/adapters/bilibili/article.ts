@@ -1,8 +1,8 @@
 import * as cheerio from 'cheerio'
-import { fetchWithTimeout, BROWSER_USER_AGENT } from '../../../http'
-import { normalizeUrl } from '../../core/extract'
-import type { ParsedArticle, ParsedFeed } from '../../../rss'
-import type { AdapterParseContext, FeedAdapter } from '../../core/types'
+import { fetchWithTimeout, BROWSER_USER_AGENT } from '@main/services/http'
+import { normalizeUrl } from '@main/services/routes/core/extract'
+import type { ParsedArticle, ParsedFeed } from '@main/services/rss'
+import type { AdapterParseContext, FeedAdapter } from '@main/services/routes/core/types'
 
 /** B 站 opus 专栏 feed 返回的条目结构（按需声明） */
 interface BiliOpusItem {

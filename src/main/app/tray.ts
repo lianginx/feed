@@ -1,7 +1,7 @@
 import { app, Tray, Menu, nativeImage } from 'electron'
 import { getMainWindow } from './window'
 import { createSettingsWindow } from './settingsWindow'
-import { refreshAllFeeds } from '../services/refresher'
+import { refreshAllFeeds } from '@main/services/refresher'
 import icon from '../../../resources/icon.png?asset'
 
 let tray: Tray | null = null

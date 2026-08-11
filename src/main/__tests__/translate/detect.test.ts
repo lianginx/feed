@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { detectLanguage, isSameLanguage } from '../../services/translate/detect'
+import { detectLanguage, isSameLanguage } from '@main/services/translate/detect'
 
 describe('detectLanguage', () => {
   it('简体中文 → zh', () => {

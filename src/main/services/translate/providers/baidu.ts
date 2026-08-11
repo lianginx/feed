@@ -2,7 +2,7 @@ import { createHash } from 'crypto'
 import { z } from 'zod'
 import { BaseTranslator } from 'anylang/esm/translators/BaseTranslator.js'
 import type { TranslatorOptions } from 'anylang/esm/translators/BaseTranslator.js'
-import { toBaiduCode } from '../languages'
+import { toBaiduCode } from '@main/services/translate/languages'
 
 /**
  * 百度翻译适配器（自定义 anylang 适配器）。

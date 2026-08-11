@@ -6,12 +6,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Spinner } from '@/components/ui/spinner'
-import { useFeeds, type FeedItem } from '@/composables/useFeeds'
+} from '@renderer/components/ui/dialog'
+import { Button } from '@renderer/components/ui/button'
+import { Input } from '@renderer/components/ui/input'
+import { Label } from '@renderer/components/ui/label'
+import { Spinner } from '@renderer/components/ui/spinner'
+import { useFeeds, type FeedItem } from '@renderer/composables/useFeeds'
 
 const { updateFeed, refreshSingleFeed } = useFeeds()
 

@@ -1,4 +1,4 @@
-import type { ParsedFeed } from '../rss'
+import type { ParsedFeed } from '@main/services/rss'
 import type { FetchPageOptions } from './core/fetcher/http'
 import type { BrowserFetchOptions, BrowserFetchResult } from './core/fetcher/browser'
 

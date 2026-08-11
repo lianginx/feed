@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Rss } from '@lucide/vue'
 import { toast } from 'vue-sonner'
-import { Button } from '@/components/ui/button'
-import { useFeeds } from '@/composables/useFeeds'
+import { Button } from '@renderer/components/ui/button'
+import { useFeeds } from '@renderer/composables/useFeeds'
 
 const { api } = window
 

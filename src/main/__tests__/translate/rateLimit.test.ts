@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createRateLimiter } from '../../services/translate/rateLimit'
+import { createRateLimiter } from '@main/services/translate/rateLimit'
 
 describe('createRateLimiter', () => {
   it('并发限制：同时执行的请求不超过 concurrency', async () => {

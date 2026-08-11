@@ -1,5 +1,5 @@
-import type { UpdaterStatus } from '../../shared/types/updater'
-import type { ArticleDetail, ArticleListResult } from '../../shared/types/articles'
+import type { UpdaterStatus } from '@shared/types/updater'
+import type { ArticleDetail, ArticleListResult } from '@shared/types/articles'
 
 interface ApiResponse<T = unknown> {
   success: boolean

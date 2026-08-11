@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { UpdaterStatus } from '../shared/types/updater'
+import type { UpdaterStatus } from '@shared/types/updater'
 
 /**
  * 订阅主进程事件：包裹回调并剥离 IpcRendererEvent，只透传业务数据，

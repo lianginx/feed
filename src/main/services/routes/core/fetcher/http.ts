@@ -1,4 +1,4 @@
-import { fetchWithTimeout, BROWSER_USER_AGENT } from '../../../http'
+import { fetchWithTimeout, BROWSER_USER_AGENT } from '@main/services/http'
 
 export interface FetchPageOptions {
   /** 附加请求头（如 Referer），合并进默认 UA */

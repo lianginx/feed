@@ -1,5 +1,5 @@
-import { getConnection } from '../../database/connection'
-import { getSettings, type TranslateConfig } from '../../config'
+import { getConnection } from '@main/database/connection'
+import { getSettings, type TranslateConfig } from '@main/config'
 import type { TranslatorInstanceMembers } from './providers'
 import { createTranslateProvider } from './providers'
 import { extractPieces, packPieces, rebuildHtml, type TranslateUnit } from './html'

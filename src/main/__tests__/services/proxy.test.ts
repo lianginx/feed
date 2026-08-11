@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { buildManualProxyUrl, proxyAgentFromRule } from '../../services/proxy'
-import type { ProxyConfig } from '../../config'
+import { buildManualProxyUrl, proxyAgentFromRule } from '@main/services/proxy'
+import type { ProxyConfig } from '@main/config'
 
 describe('全局网络代理', () => {
   it('buildManualProxyUrl：http / socks5 / 带认证 / 缺字段', () => {

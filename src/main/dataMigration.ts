@@ -1,7 +1,7 @@
 import { app } from 'electron'
 import { existsSync, renameSync } from 'fs'
 import { join } from 'path'
-import { APP_METADATA } from '../shared/appMetadata'
+import { APP_METADATA } from '@shared/appMetadata'
 
 /**
  * 应用数据目录初始化（副作用模块）。

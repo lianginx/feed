@@ -1,4 +1,4 @@
-import type { SyncConfig } from '../../../config'
+import type { SyncConfig } from '@main/config'
 import type { SyncProvider } from './common'
 import { GistProvider } from './gist'
 import { GiteeProvider } from './gitee'

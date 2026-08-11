@@ -1,4 +1,4 @@
-import { registerAdapter } from '../core/registry'
+import { registerAdapter } from '@main/services/routes/core/registry'
 import { v2exAdapter } from './v2ex'
 import { bilibiliUserArticle, bilibiliUserVideo } from './bilibili'
 import { telegramChannelAdapter } from './telegram'

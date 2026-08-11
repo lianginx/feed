@@ -1,8 +1,8 @@
 import { ipcMain } from 'electron'
-import { getConnection } from '../database/connection'
+import { getConnection } from '@main/database/connection'
 import { success, error } from './util'
-import { scheduleBadgeUpdate } from '../services/badge'
-import { scheduleSync } from '../services/sync'
+import { scheduleBadgeUpdate } from '@main/services/badge'
+import { scheduleSync } from '@main/services/sync'
 
 export function registerCategoryHandlers(): void {
   ipcMain.handle('categories:list', async () => {

@@ -1,4 +1,4 @@
-import store from '../../../config'
+import store from '@main/config'
 
 /** 同步文件在远端存储的文件名 */
 export const SYNC_FILENAME = 'feed-subscriptions.json'
@@ -77,4 +77,4 @@ export function authHeader(username: string, password: string): string {
 }
 
 // fetchWithTimeout 提取到共享 http 模块（同步载体与翻译提供商复用）
-export { fetchWithTimeout } from '../../http'
+export { fetchWithTimeout } from '@main/services/http'

@@ -1,9 +1,9 @@
 import { z } from 'zod'
 import { BaseTranslator } from 'anylang/esm/translators/BaseTranslator.js'
 import type { TranslatorOptions } from 'anylang/esm/translators/BaseTranslator.js'
-import { toEdgeCode } from '../languages'
-import { toDetectedLang } from '../detect'
-import type { DetectedLang } from '../detect'
+import { toEdgeCode } from '@main/services/translate/languages'
+import { toDetectedLang } from '@main/services/translate/detect'
+import type { DetectedLang } from '@main/services/translate/detect'
 
 /**
  * 微软 Edge 内置翻译适配器（免注册 / 免 API key，成本由微软承担）。

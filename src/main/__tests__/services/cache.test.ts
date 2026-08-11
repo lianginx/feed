@@ -7,7 +7,7 @@ import {
   resolveCachePath,
   clearCache,
   getCacheStats
-} from '../../services/cache'
+} from '@main/services/cache'
 
 // cache 模块内 app.getPath 在使用时调用（懒加载），node 测试环境 mock 掉 electron
 const app = vi.hoisted(() => ({

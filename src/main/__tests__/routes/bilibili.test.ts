@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { bilibiliUserArticle, bilibiliUserVideo } from '../../services/routes/adapters/bilibili'
-import { fetchWithTimeout } from '../../services/http'
+import { bilibiliUserArticle, bilibiliUserVideo } from '@main/services/routes/adapters/bilibili'
+import { fetchWithTimeout } from '@main/services/http'
 
 // 专栏适配器 parse 会联网抓 opus 详情页（补发布时间/正文），单测 mock 网络
 vi.mock('../../services/http', () => ({

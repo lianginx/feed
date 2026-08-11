@@ -1,6 +1,6 @@
 import { Agent, ProxyAgent, setGlobalDispatcher, type Dispatcher } from 'undici'
 import { session } from 'electron'
-import type { AppSettings, ProxyConfig } from '../config'
+import type { AppSettings, ProxyConfig } from '@main/config'
 
 /**
  * 全局网络代理管理。

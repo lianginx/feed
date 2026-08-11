@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import { runSync, resolveConflict, getLastSyncedAt } from '../services/sync'
+import { runSync, resolveConflict, getLastSyncedAt } from '@main/services/sync'
 import { success, error } from './util'
 
 export function registerSyncHandlers(): void {

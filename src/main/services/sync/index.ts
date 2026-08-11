@@ -1,6 +1,6 @@
-import store, { getSettings } from '../../config'
-import { getConnection } from '../../database/connection'
-import { getMainWindow } from '../../app/window'
+import store, { getSettings } from '@main/config'
+import { getConnection } from '@main/database/connection'
+import { getMainWindow } from '@main/app/window'
 import { createSyncProvider } from './providers'
 
 /** 同步快照的 JSON 结构（版本 1） */

@@ -5,7 +5,7 @@ import {
   getAdapterFaviconCached,
   resolveAndCacheAdapterFavicon,
   parseFaviconName
-} from '../../services/favicon'
+} from '@main/services/favicon'
 
 // favicon.ts 顶层 import electron 的 app（node 测试环境无 electron），mock 掉
 // 注意：mockUserData 在 vi.hoisted 工厂内初始化（不能引用模块级 import），

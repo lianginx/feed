@@ -1,4 +1,4 @@
-import type { SyncConfig } from '../../../config'
+import type { SyncConfig } from '@main/config'
 import {
   SYNC_FILENAME,
   SYNC_GIST_DESCRIPTION,

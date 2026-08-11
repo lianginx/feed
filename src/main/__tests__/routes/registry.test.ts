@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getAdapter, listAdapters, findAdaptersByDomain } from '../../services/routes/index'
+import { getAdapter, listAdapters, findAdaptersByDomain } from '@main/services/routes/index'
 
 describe('适配器注册表', () => {
   it('内置注册了 v2ex-hot', () => {

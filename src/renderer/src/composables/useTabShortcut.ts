@@ -1,5 +1,5 @@
 import { onUnmounted } from 'vue'
-import { useArticleView } from '@/composables/useArticleView'
+import { useArticleView } from '@renderer/composables/useArticleView'
 
 // Tab 键切换"只看未读"：应用级全局快捷键，在组件 setup 中调用，
 // 卸载时通过 onUnmounted 自动释放

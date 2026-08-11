@@ -1,6 +1,6 @@
 import { ref, type Ref } from 'vue'
-import { useConfirmDialog } from '@/composables/useConfirmDialog'
-import { useFeeds } from '@/composables/useFeeds'
+import { useConfirmDialog } from '@renderer/composables/useConfirmDialog'
+import { useFeeds } from '@renderer/composables/useFeeds'
 
 const showAddCategory = ref(false)
 const editCategoryData = ref<{ id: number; name: string } | null>(null)

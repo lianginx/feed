@@ -5,11 +5,11 @@ vi.mock('../../config', () => ({
   getSettings: vi.fn()
 }))
 
-import { getSettings } from '../../config'
-import { getCookiesForAdapter, parseCookieString } from '../../services/siteCookies'
-import type { FeedAdapter } from '../../services/routes/core/types'
-import { bilibiliUserVideo } from '../../services/routes/adapters/bilibili'
-import type { AppSettings } from '../../config'
+import { getSettings } from '@main/config'
+import { getCookiesForAdapter, parseCookieString } from '@main/services/siteCookies'
+import type { FeedAdapter } from '@main/services/routes/core/types'
+import { bilibiliUserVideo } from '@main/services/routes/adapters/bilibili'
+import type { AppSettings } from '@main/config'
 
 const FULL_COOKIE =
   'buvid3=abc; SESSDATA=token123; bili_jct=csrf456; DedeUserID=928915; buvid_fp=fp789; b_nut=100'

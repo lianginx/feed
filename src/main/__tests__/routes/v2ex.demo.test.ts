@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { runAdapter } from '../../services/routes/core/runner'
-import { v2exAdapter } from '../../services/routes/adapters/v2ex'
+import { runAdapter } from '@main/services/routes/core/runner'
+import { v2exAdapter } from '@main/services/routes/adapters/v2ex'
 
 /**
  * V2EX 适配器联网 Demo。

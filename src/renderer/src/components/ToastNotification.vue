@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Toaster } from '@/components/ui/sonner'
-import { useApp } from '@/composables/useApp'
+import { Toaster } from '@renderer/components/ui/sonner'
+import { useApp } from '@renderer/composables/useApp'
 
 const { resolvedTheme } = useApp()
 </script>

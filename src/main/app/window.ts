@@ -1,8 +1,8 @@
 import { BrowserWindow, nativeTheme, shell, type WebContents } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
-import { getSettings, updateSettings } from '../config'
-import { shouldLaunchHidden } from '../services/autoLaunch'
+import { getSettings, updateSettings } from '@main/config'
+import { shouldLaunchHidden } from '@main/services/autoLaunch'
 
 let mainWindow: BrowserWindow | null = null
 let quitting = false

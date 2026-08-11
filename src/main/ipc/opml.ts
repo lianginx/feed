@@ -1,9 +1,9 @@
 import { ipcMain, dialog } from 'electron'
 import { readFileSync, writeFileSync } from 'fs'
-import { getConnection } from '../database/connection'
-import { refreshSingleFeed } from '../services/refresher'
-import { scheduleSync } from '../services/sync'
-import { getMainWindow } from '../app/window'
+import { getConnection } from '@main/database/connection'
+import { refreshSingleFeed } from '@main/services/refresher'
+import { scheduleSync } from '@main/services/sync'
+import { getMainWindow } from '@main/app/window'
 import { success, error } from './util'
 import opml from 'opml'
 

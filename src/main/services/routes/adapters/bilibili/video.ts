@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio'
-import type { ParsedArticle, ParsedFeed } from '../../../rss'
-import type { AdapterParseContext, FeedAdapter } from '../../core/types'
+import type { ParsedArticle, ParsedFeed } from '@main/services/rss'
+import type { AdapterParseContext, FeedAdapter } from '@main/services/routes/core/types'
 
 /** 补全协议头：//xxx → https://xxx */
 function normalizeUrl(url: string): string {

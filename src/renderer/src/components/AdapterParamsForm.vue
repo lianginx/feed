@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+import { Input } from '@renderer/components/ui/input'
+import { Label } from '@renderer/components/ui/label'
+import { Switch } from '@renderer/components/ui/switch'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
-import type { AdapterParam } from '@/types'
+} from '@renderer/components/ui/select'
+import type { AdapterParam } from '@renderer/types'
 
 const props = defineProps<{
   params: AdapterParam[]

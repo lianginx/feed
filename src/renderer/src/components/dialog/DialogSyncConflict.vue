@@ -5,8 +5,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+} from '@renderer/components/ui/dialog'
+import { Button } from '@renderer/components/ui/button'
 
 withDefaults(
   defineProps<{

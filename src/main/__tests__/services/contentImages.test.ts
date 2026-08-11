@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeContentImages } from '../../services/contentImages'
+import { normalizeContentImages } from '@main/services/contentImages'
 
 describe('normalizeContentImages', () => {
   it('补全协议相对图片地址（// → https://）', () => {

@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
-import { translateArticle, testTranslate } from '../services/translate'
-import type { TranslateConfig } from '../config'
+import { translateArticle, testTranslate } from '@main/services/translate'
+import type { TranslateConfig } from '@main/config'
 import { success, error } from './util'
 
 export function registerTranslateHandlers(): void {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { runAdapter } from '../../services/routes/core/runner'
-import { bilibiliUserArticle } from '../../services/routes/adapters/bilibili'
+import { runAdapter } from '@main/services/routes/core/runner'
+import { bilibiliUserArticle } from '@main/services/routes/adapters/bilibili'
 
 /**
  * B 站专栏适配器联网 Demo（需网络）。

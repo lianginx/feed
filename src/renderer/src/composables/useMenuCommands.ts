@@ -1,11 +1,11 @@
 import { computed, onMounted, onUnmounted, watch } from 'vue'
-import { useSearchFocus } from '@/composables/useSearchFocus'
-import { useConfirmDialog } from '@/composables/useConfirmDialog'
-import { useFeeds } from '@/composables/useFeeds'
-import { useArticleView } from '@/composables/useArticleView'
-import { useArticles } from '@/composables/useArticles'
-import { useUpdater } from '@/composables/useUpdater'
-import { useTranslate } from '@/composables/useTranslate'
+import { useSearchFocus } from '@renderer/composables/useSearchFocus'
+import { useConfirmDialog } from '@renderer/composables/useConfirmDialog'
+import { useFeeds } from '@renderer/composables/useFeeds'
+import { useArticleView } from '@renderer/composables/useArticleView'
+import { useArticles } from '@renderer/composables/useArticles'
+import { useUpdater } from '@renderer/composables/useUpdater'
+import { useTranslate } from '@renderer/composables/useTranslate'
 
 export function useMenuCommands(): void {
   const { requestSearchFocus } = useSearchFocus()

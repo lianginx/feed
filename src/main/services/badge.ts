@@ -1,5 +1,5 @@
 import { app, Tray } from 'electron'
-import { getConnection } from '../database/connection'
+import { getConnection } from '@main/database/connection'
 
 let trayRef: Tray | null = null
 let badgeTimer: ReturnType<typeof setTimeout> | null = null

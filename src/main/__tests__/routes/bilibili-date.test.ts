@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseBiliDate } from '../../services/routes/adapters/bilibili/video'
+import { parseBiliDate } from '@main/services/routes/adapters/bilibili/video'
 
 describe('parseBiliDate（B 站空间页日期文本 → ISO，实测格式规律）', () => {
   const now = new Date('2026-08-07T10:00:00+08:00')

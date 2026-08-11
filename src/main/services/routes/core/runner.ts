@@ -1,4 +1,9 @@
-import type { AdapterRunResult, FeedAdapter, RunAdapterOptions, SourceRunner } from '../types'
+import type {
+  AdapterRunResult,
+  FeedAdapter,
+  RunAdapterOptions,
+  SourceRunner
+} from '@main/services/routes/types'
 import { fetchPage } from './fetcher/http'
 import { runWithBrowserLimit, runWithHttpLimit } from './limit'
 

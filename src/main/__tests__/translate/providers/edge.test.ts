@@ -3,7 +3,7 @@ import {
   EdgeTranslator,
   EDGE_AUTH_URL,
   EDGE_TRANSLATE_URL
-} from '../../../services/translate/providers/edge'
+} from '@main/services/translate/providers/edge'
 import type { Fetcher } from 'anylang/esm/utils/fetcher/types.js'
 
 /** 构造伪 fetcher：按 URL 分发响应，并可记录请求以便断言 */

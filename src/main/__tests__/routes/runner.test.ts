@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
-import { runAdapter, registerSource } from '../../services/routes/core/runner'
-import { v2exAdapter } from '../../services/routes/adapters/v2ex'
-import type { FeedAdapter } from '../../services/routes/core/types'
+import { runAdapter, registerSource } from '@main/services/routes/core/runner'
+import { v2exAdapter } from '@main/services/routes/adapters/v2ex'
+import type { FeedAdapter } from '@main/services/routes/core/types'
 
 const TOPIC = {
   id: 1,

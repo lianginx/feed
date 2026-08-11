@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import Database from 'better-sqlite3'
-import { persistParsedFeed, type ParsedFeedPersistContext } from '../../services/refresher'
+import { persistParsedFeed, type ParsedFeedPersistContext } from '@main/services/refresher'
 
 /** 用 :memory: 建最小表结构（与 migration v1/v2/v3 同构，persistParsedFeed 仅用到的列） */
 function createDb(): Database.Database {

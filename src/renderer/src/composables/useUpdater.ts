@@ -1,6 +1,6 @@
 import { onMounted, onUnmounted } from 'vue'
 import { toast } from 'vue-sonner'
-import { useUpdateDialog } from '@/composables/useUpdateDialog'
+import { useUpdateDialog } from '@renderer/composables/useUpdateDialog'
 
 /**
  * 自动更新逻辑：

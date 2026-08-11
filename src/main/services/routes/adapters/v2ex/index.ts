@@ -1,5 +1,5 @@
-import type { ParsedArticle, ParsedFeed } from '../../../rss'
-import type { FeedAdapter } from '../../core/types'
+import type { ParsedArticle, ParsedFeed } from '@main/services/rss'
+import type { FeedAdapter } from '@main/services/routes/core/types'
 
 /**
  * V2EX 热帖适配器——「参考 RSSHub 的 V2EX 路由设计，自写实现」。
