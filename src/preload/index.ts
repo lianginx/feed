@@ -10,7 +10,7 @@ function onChannel<A extends unknown[]>(
   channel: string,
   callback: (...args: A) => void
 ): () => void {
-  const listener = (_event: Electron.IpcRendererEvent, ...args: unknown[]): void =>
+  const listener = (_event: Electron.IpcRendererEvent, ...args: unknown[]) =>
     callback(...(args as A))
   ipcRenderer.on(channel, listener)
   return () => {
@@ -55,9 +55,8 @@ const api = {
     ): (() => void) => onChannel('feeds:refresh-progress', callback),
     /** 打开「添加订阅源」独立窗口 */
     openAddFeedWindow: () => ipcRenderer.invoke('feeds:openAddFeedWindow'),
-    /** 添加订阅源完成：通知主进程关闭窗口并刷新主窗口列表 */
-    notifyAdded: (feedId?: number) => ipcRenderer.invoke('feeds:notifyAdded', feedId),
-    /** 订阅源列表变更（添加完成）事件，返回取消订阅函数 */
+    onAddResult: (callback: (data: { success: boolean; error?: string }) => void): (() => void) =>
+      onChannel('feeds:add-result', callback),
     onChanged: (callback: (data: { feedId?: number }) => void): (() => void) =>
       onChannel('feeds:changed', callback)
   },
@@ -114,7 +113,7 @@ const api = {
       hasFeedContext: boolean
       isTranslated?: boolean
       translateConfigured?: boolean
-    }): void => ipcRenderer.send('menu:updateState', state),
+    }) => ipcRenderer.send('menu:updateState', state),
     onRefreshFeed: (callback: () => void): (() => void) => onChannel('menu:refreshFeed', callback),
     onRefreshAllFeeds: (callback: () => void): (() => void) =>
       onChannel('menu:refreshAllFeeds', callback),

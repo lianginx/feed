@@ -64,6 +64,7 @@ export function useFeeds() {
   async function deleteFeed(id: number): Promise<boolean> {
     const result = await window.api.feeds.delete(id)
     if (result.success) {
+      markRefreshing(id, false)
       if (selectedFeedId.value === id) selectedFeedId.value = null
       await loadFeeds()
       return true

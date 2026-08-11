@@ -6,8 +6,13 @@ import { setupExternalNavigation } from './window'
 
 let addFeedWindow: BrowserWindow | null = null
 
+/** 获取添加订阅源窗口实例（可能为 null，调用方需判空） */
+export function getAddFeedWindow(): BrowserWindow | null {
+  return addFeedWindow
+}
+
 /** 关闭添加订阅源窗口（添加完成后由主进程调用） */
-export function closeAddFeedWindow(): void {
+export function closeAddFeedWindow() {
   if (addFeedWindow && !addFeedWindow.isDestroyed()) {
     addFeedWindow.close()
   }
@@ -17,7 +22,7 @@ export function closeAddFeedWindow(): void {
  * 创建（或聚焦）独立的「添加订阅源」窗口。
  * 单例：已存在则显示并聚焦，否则新建；关闭即销毁。
  */
-export function createAddFeedWindow(): void {
+export function createAddFeedWindow() {
   if (addFeedWindow && !addFeedWindow.isDestroyed()) {
     if (addFeedWindow.isMinimized()) addFeedWindow.restore()
     addFeedWindow.show()
@@ -49,13 +54,9 @@ export function createAddFeedWindow(): void {
     }
   })
 
-  addFeedWindow.on('ready-to-show', () => {
-    addFeedWindow?.show()
-  })
+  addFeedWindow.on('ready-to-show', () => addFeedWindow?.show())
 
-  addFeedWindow.on('closed', () => {
-    addFeedWindow = null
-  })
+  addFeedWindow.on('closed', () => (addFeedWindow = null))
 
   // 外部链接统一在系统浏览器中打开，避免在 Electron 中新开窗体（与主窗口一致）
   setupExternalNavigation(addFeedWindow.webContents)

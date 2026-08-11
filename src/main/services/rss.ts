@@ -274,17 +274,3 @@ export async function parseFeed(url: string): Promise<ParsedFeed> {
   // 无标题时回退为订阅源地址（不可变，不修改 feed 对象）
   return { ...feed, title: feed.title || url }
 }
-
-/**
- * 验证 URL 是否为有效的 RSS/Atom 订阅源。
- */
-export async function validateFeed(
-  url: string
-): Promise<{ valid: boolean; title?: string; error?: string }> {
-  try {
-    const feed = await parseFeed(url)
-    return { valid: true, title: feed.title }
-  } catch (error) {
-    return { valid: false, error: toFriendlyFeedError(error) }
-  }
-}

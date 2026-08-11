@@ -1,16 +1,96 @@
 import { ipcMain } from 'electron'
 import { getMainWindow } from '@main/app/window'
-import { createAddFeedWindow, closeAddFeedWindow } from '@main/app/addFeedWindow'
+import { createAddFeedWindow, closeAddFeedWindow, getAddFeedWindow } from '@main/app/addFeedWindow'
 import { getConnection } from '@main/database/connection'
-import { parseFeed, validateFeed, toFriendlyFeedError } from '@main/services/rss'
-import { resolveAndCacheFavicon, refreshFeedFavicon } from '@main/services/favicon'
-import { refreshSingleFeed, persistParsedFeed } from '@main/services/refresher'
-import { getAdapter, listAdapters, runAdapter } from '@main/services/routes'
-import { getCookiesForAdapter } from '@main/services/siteCookies'
+import { toFriendlyFeedError } from '@main/services/rss'
+import { refreshFeedFavicon } from '@main/services/favicon'
+import { refreshSingleFeed } from '@main/services/refresher'
+import { getAdapter, listAdapters } from '@main/services/routes'
 import { scheduleSync } from '@main/services/sync'
 import { success, error } from './util'
 
-export function registerFeedHandlers(): void {
+function sendAddResult(data: { success: boolean; error?: string }) {
+  getAddFeedWindow()?.webContents.send('feeds:add-result', data)
+}
+
+function notifyFeedAdded(feedId: number) {
+  getMainWindow()?.webContents.send('feeds:changed', { feedId })
+  closeAddFeedWindow()
+}
+
+async function addRss(params: { url: string; title?: string; categoryId?: number }) {
+  try {
+    const db = getConnection()
+    const existing = db.prepare('SELECT id FROM feeds WHERE url = ?').get(params.url)
+    if (existing) {
+      sendAddResult({ success: false, error: '该订阅源已存在' })
+      return
+    }
+    const customTitle = params.title?.trim() ? 1 : 0
+    const title = params.title?.trim() || params.url
+    const feedId = db
+      .prepare('INSERT INTO feeds (url, title, custom_title, category_id) VALUES (?, ?, ?, ?)')
+      .run(params.url, title, customTitle, params.categoryId || null).lastInsertRowid as number
+
+    void refreshSingleFeed(feedId)
+    scheduleSync()
+    notifyFeedAdded(feedId)
+  } catch (e) {
+    sendAddResult({ success: false, error: (e as Error).message })
+  }
+}
+
+async function addAdapterSource(input: {
+  adapterId: string
+  params: Record<string, string>
+  title?: string
+  categoryId?: number
+}) {
+  try {
+    const adapter = getAdapter(input.adapterId)
+    if (!adapter) {
+      sendAddResult({ success: false, error: '适配器不存在' })
+      return
+    }
+    for (const p of adapter.params) {
+      if (p.required && !(input.params[p.key] ?? '').trim()) {
+        sendAddResult({ success: false, error: `请填写「${p.label}」` })
+        return
+      }
+    }
+
+    const url = adapter.buildUrl(input.params)
+    const db = getConnection()
+    const existing = db.prepare('SELECT id FROM feeds WHERE url = ?').get(url)
+    if (existing) {
+      sendAddResult({ success: false, error: '该订阅源已存在' })
+      return
+    }
+    const customTitle = input.title?.trim() ? 1 : 0
+    const title = input.title?.trim() || url
+    const feedId = db
+      .prepare(
+        `INSERT INTO feeds (url, title, custom_title, category_id, adapter_id, adapter_params)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        url,
+        title,
+        customTitle,
+        input.categoryId || null,
+        adapter.id,
+        JSON.stringify(input.params)
+      ).lastInsertRowid as number
+
+    void refreshSingleFeed(feedId)
+    scheduleSync()
+    notifyFeedAdded(feedId)
+  } catch (e) {
+    sendAddResult({ success: false, error: toFriendlyFeedError(e) })
+  }
+}
+
+export function registerFeedHandlers() {
   ipcMain.handle('feeds:list', async () => {
     try {
       const db = getConnection()
@@ -33,38 +113,9 @@ export function registerFeedHandlers(): void {
 
   ipcMain.handle(
     'feeds:add',
-    async (_event, params: { url: string; title?: string; categoryId?: number }) => {
-      try {
-        const validation = await validateFeed(params.url)
-        if (!validation.valid) {
-          return error(validation.error || '无法解析此订阅源')
-        }
-
-        const db = getConnection()
-        const title = params.title || validation.title || params.url
-
-        const result = db
-          .prepare('INSERT INTO feeds (url, title, category_id) VALUES (?, ?, ?)')
-          .run(params.url, title, params.categoryId || null)
-
-        const feedId = result.lastInsertRowid as number
-
-        try {
-          const feedData = await parseFeed(params.url)
-          const localUrl = await resolveAndCacheFavicon(feedData.link || null, feedData.image?.url)
-          if (localUrl) {
-            db.prepare('UPDATE feeds SET favicon_url = ? WHERE id = ?').run(localUrl, feedId)
-          }
-        } catch {
-          void 0
-        }
-
-        scheduleSync()
-
-        return success({ id: feedId })
-      } catch (e) {
-        return error((e as Error).message)
-      }
+    (_event, params: { url: string; title?: string; categoryId?: number }) => {
+      addRss(params)
+      return success(true)
     }
   )
 
@@ -89,7 +140,7 @@ export function registerFeedHandlers(): void {
 
   ipcMain.handle(
     'feeds:addAdapter',
-    async (
+    (
       _event,
       input: {
         adapterId: string
@@ -98,57 +149,8 @@ export function registerFeedHandlers(): void {
         categoryId?: number
       }
     ) => {
-      try {
-        const adapter = getAdapter(input.adapterId)
-        if (!adapter) {
-          return error('适配器不存在')
-        }
-        for (const p of adapter.params) {
-          if (p.required && !(input.params[p.key] ?? '').trim()) {
-            return error(`请填写「${p.label}」`)
-          }
-        }
-
-        const cookies = getCookiesForAdapter(adapter)
-        const result = await runAdapter(adapter, input.params, { cookies })
-        let parsed = result.feed
-        const meta = await adapter.fetchMeta?.(input.params, parsed)
-        if (meta) {
-          parsed = {
-            ...parsed,
-            title: meta.title ?? parsed.title,
-            description: meta.description ?? parsed.description,
-            image: meta.imageUrl ? { url: meta.imageUrl } : parsed.image
-          }
-        }
-
-        const db = getConnection()
-        const title = input.title || parsed.title || adapter.name
-        const feedId = db
-          .prepare(
-            `INSERT INTO feeds (url, title, site_url, category_id, adapter_id, adapter_params)
-             VALUES (?, ?, ?, ?, ?, ?)`
-          )
-          .run(
-            result.url,
-            title,
-            parsed.link || null,
-            input.categoryId || null,
-            adapter.id,
-            JSON.stringify(input.params)
-          ).lastInsertRowid as number
-
-        await persistParsedFeed(
-          feedId,
-          { url: result.url, custom_title: 0, favicon_url: null },
-          parsed
-        )
-
-        scheduleSync()
-        return success({ id: feedId })
-      } catch (e) {
-        return error(toFriendlyFeedError(e))
-      }
+      addAdapterSource(input)
+      return success(true)
     }
   )
 
@@ -242,12 +244,6 @@ export function registerFeedHandlers(): void {
 
   ipcMain.handle('feeds:openAddFeedWindow', async () => {
     createAddFeedWindow()
-    return success(true)
-  })
-
-  ipcMain.handle('feeds:notifyAdded', async (_event, feedId?: number) => {
-    closeAddFeedWindow()
-    getMainWindow()?.webContents.send('feeds:changed', { feedId: feedId ?? undefined })
     return success(true)
   })
 }

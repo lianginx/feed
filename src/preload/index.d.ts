@@ -111,14 +111,14 @@ interface FeedApi {
     url: string
     title?: string
     categoryId?: number
-  }) => Promise<ApiResponse<{ id: number }>>
+  }) => Promise<ApiResponse<boolean>>
   listAdapters: () => Promise<ApiResponse<AdapterInfo[]>>
   addAdapter: (input: {
     adapterId: string
     params: Record<string, string>
     title?: string
     categoryId?: number
-  }) => Promise<ApiResponse<{ id: number }>>
+  }) => Promise<ApiResponse<boolean>>
   update: (
     id: number,
     data: { title?: string; url?: string; categoryId?: number | null; customTitle?: number }
@@ -131,7 +131,7 @@ interface FeedApi {
   refresh: (feedId: number) => Promise<ApiResponse<boolean>>
   onRefreshProgress: (callback: (data: RefreshProgressEvent) => void) => () => void
   openAddFeedWindow: () => Promise<ApiResponse<boolean>>
-  notifyAdded: (feedId?: number) => Promise<ApiResponse<boolean>>
+  onAddResult: (callback: (data: { success: boolean; error?: string }) => void) => () => void
   onChanged: (callback: (data: { feedId?: number }) => void) => () => void
 }
 
