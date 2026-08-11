@@ -43,8 +43,10 @@ type：`feat` 新功能 / `fix` 修复 / `refactor` 重构 / `docs` 文档 / `st
 
 ## 发版规范（GitHub Release）
 <constraints>
-1. 发版唯一入口是推送 `v*` 标签（`git tag vX.Y.Z && git push origin vX.Y.Z`），由 CI（`.github/workflows/release.yml`）自动创建 draft、上传三平台安装包并正式发布。
-2. 禁止直接用 `gh release create` / `gh release edit` / `gh api .../releases` 创建或发布 Release，否则会绕过 CI、生成不带安装包的空 Release，并抢占 tag 导致 CI 产物无法发布。
-3. 发版前必须先检查该 tag 是否已有 Release（`gh release view vX.Y.Z`），若存在（尤其空壳的正式版或残留 draft），需先与用户确认清理，再重新走 tag 推送流程。
-4. 发布完成后用 `gh release view vX.Y.Z --json draft,assets` 验证：`draft` 为 `false` 且 `assets` 包含安装包；若失败需修复后再继续。
+1. 推送 `vX.Y.Z` tag 即触发 GitHub Actions（`.github/workflows/release.yml`）自动构建并发布，全程无需手动干预。
+2. 发版流程三步：
+   - 查残留：`gh release view vX.Y.Z` 存在则先与用户确认清理；
+   - 推 tag 等 CI 完成（publish job 成功即发布完成）：
+     `gh run watch $(gh run list --workflow release.yml --json databaseId,headBranch -q '.[] | select(.headBranch == "vX.Y.Z") | .databaseId' | head -1) --exit-status`
+   - 验证：`gh release view vX.Y.Z --json draft,assets`，确认 `draft` 为 `false` 且 assets 含安装包。
 </constraints>
