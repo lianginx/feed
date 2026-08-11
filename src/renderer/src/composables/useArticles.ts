@@ -1,42 +1,23 @@
 import { ref } from 'vue'
 import { useFeeds } from '@/composables/useFeeds'
 import { useArticleView } from '@/composables/useArticleView'
+import type { Article, ArticleDetail } from '@shared/types/articles'
 
-interface ArticleItem {
-  id: number
-  feed_id: number
-  title: string
-  author: string | null
-  summary: string | null
-  published_at: number | null
-  is_read: number
-  is_starred: number
-  url: string | null
-  feed_title: string
-  favicon_url?: string | null
-  cover_image?: string | null
-}
-
-interface ArticleDetail extends ArticleItem {
-  content: string | null
-  guid: string
-  site_url: string | null
-  created_at: number
-}
-
-const articles = ref<ArticleItem[]>([])
+const articles = ref<Article[]>([])
 const currentArticle = ref<ArticleDetail | null>(null)
 const loading = ref(false)
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useArticles() {
+  const { loadFeeds, selectedFeedId, selectedCategoryId } = useFeeds()
+  const { isUnread, isStar, isToday } = useArticleView()
+
   async function loadArticles(
     feedId?: number,
     categoryId?: number | null,
     isUnread?: boolean,
     isStar?: boolean,
     isToday?: boolean
-  ): Promise<void> {
+  ) {
     const loadingTimer = setTimeout(() => {
       loading.value = true
     }, 150)
@@ -61,7 +42,7 @@ export function useArticles() {
     }
   }
 
-  async function openArticle(id: number): Promise<void> {
+  async function openArticle(id: number) {
     const result = await window.api.articles.get(id)
     if (result.success && result.data) {
       currentArticle.value = result.data
@@ -70,14 +51,13 @@ export function useArticles() {
         if (readResult.success && readResult.data) {
           const item = articles.value.find((a) => a.id === id)
           if (item) item.is_read = readResult.data.is_read
-          const { loadFeeds } = useFeeds()
           await loadFeeds()
         }
       }
     }
   }
 
-  async function toggleStar(id: number): Promise<void> {
+  async function toggleStar(id: number) {
     const result = await window.api.articles.toggleStar(id)
     if (result.success && result.data) {
       const item = articles.value.find((a) => a.id === id)
@@ -88,7 +68,7 @@ export function useArticles() {
     }
   }
 
-  async function toggleRead(id: number): Promise<void> {
+  async function toggleRead(id: number) {
     const result = await window.api.articles.toggleRead(id)
     if (result.success && result.data) {
       const item = articles.value.find((a) => a.id === id)
@@ -96,54 +76,42 @@ export function useArticles() {
       if (currentArticle.value?.id === id) {
         currentArticle.value.is_read = result.data.is_read
       }
-      const { loadFeeds } = useFeeds()
       await loadFeeds()
     }
   }
 
-  async function markAllRead(feedId?: number): Promise<void> {
-    await window.api.articles.markAllRead(feedId)
+  function markAllLocalRead() {
     articles.value.forEach((a) => {
       a.is_read = 1
     })
-    const { loadFeeds } = useFeeds()
+  }
+
+  async function markAllRead(feedId?: number) {
+    await window.api.articles.markAllRead(feedId)
+    markAllLocalRead()
     await loadFeeds()
   }
 
-  async function markScopeRead(): Promise<void> {
-    const { selectedFeedId, selectedCategoryId } = useFeeds()
-    const { isStar, isToday } = useArticleView()
+  async function markScopeRead() {
     if (selectedFeedId.value !== null) {
       await markAllRead(selectedFeedId.value)
-    } else if (selectedCategoryId.value !== undefined) {
+      return
+    }
+    if (selectedCategoryId.value !== undefined) {
       await window.api.categories.markAllRead(selectedCategoryId.value)
-      articles.value.forEach((a) => {
-        a.is_read = 1
-      })
-      const { loadFeeds } = useFeeds()
-      await loadFeeds()
     } else if (isStar.value) {
       await window.api.articles.markAllRead(undefined, true)
-      articles.value.forEach((a) => {
-        a.is_read = 1
-      })
-      const { loadFeeds } = useFeeds()
-      await loadFeeds()
     } else if (isToday.value) {
       await window.api.articles.markAllRead(undefined, false, true)
-      articles.value.forEach((a) => {
-        a.is_read = 1
-      })
-      const { loadFeeds } = useFeeds()
-      await loadFeeds()
     } else {
       await markAllRead()
+      return
     }
+    markAllLocalRead()
+    await loadFeeds()
   }
 
-  async function reloadScope(): Promise<void> {
-    const { selectedFeedId, selectedCategoryId } = useFeeds()
-    const { isUnread, isStar, isToday } = useArticleView()
+  async function reloadScope() {
     if (selectedFeedId.value !== null) {
       await loadArticles(
         selectedFeedId.value,
@@ -165,9 +133,7 @@ export function useArticles() {
     }
   }
 
-  async function search(query: string): Promise<ArticleItem[]> {
-    const { selectedFeedId, selectedCategoryId } = useFeeds()
-    const { isUnread, isStar, isToday } = useArticleView()
+  async function search(query: string): Promise<Article[]> {
     const result = await window.api.articles.list({
       query,
       feedId: selectedFeedId.value ?? undefined,
@@ -182,7 +148,7 @@ export function useArticles() {
     return []
   }
 
-  function closeArticle(): void {
+  function closeArticle() {
     currentArticle.value = null
   }
 

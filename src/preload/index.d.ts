@@ -1,4 +1,5 @@
 import type { UpdaterStatus } from '../../shared/types/updater'
+import type { ArticleDetail, ArticleListResult } from '../../shared/types/articles'
 
 interface ApiResponse<T = unknown> {
   success: boolean
@@ -29,32 +30,6 @@ interface Category {
   name: string
   sort_order: number
   feed_count: number
-}
-
-interface Article {
-  id: number
-  feed_id: number
-  title: string
-  url: string | null
-  author: string | null
-  summary: string | null
-  published_at: number | null
-  is_read: number
-  is_starred: number
-  feed_title: string
-  favicon_url?: string | null
-  cover_image?: string | null
-}
-
-interface ArticleDetail extends Article {
-  content: string | null
-  guid: string
-  site_url: string | null
-  created_at: number
-}
-
-interface ArticleListResult {
-  articles: Article[]
 }
 
 /** 网络代理模式：auto=自动跟随系统代理，none=直连，manual=手动指定 */
