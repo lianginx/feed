@@ -5,7 +5,7 @@ import { useFeeds } from '@renderer/windows/main/composables/useFeeds'
 import { useMenuCommands } from '@renderer/windows/main/composables/useMenuCommands'
 import { useFeedsEvents } from '@renderer/windows/main/composables/useFeedsEvents'
 import { useAppEvents } from '@renderer/windows/main/composables/useAppEvents'
-import { useSyncEvents } from '@renderer/windows/main/composables/useSyncEvents'
+import { useSyncEvents } from '@renderer/shared/composables/useSyncEvents'
 import { registerTabShortcut } from '@renderer/windows/main/composables/useTabShortcut'
 import { useAddCategoryDialog } from '@renderer/windows/main/composables/useAddCategoryDialog'
 import { useConfirmDialog } from '@renderer/windows/main/composables/useConfirmDialog'
@@ -26,7 +26,12 @@ const { loadFeeds } = useFeeds()
 useMenuCommands()
 useFeedsEvents()
 useAppEvents()
-useSyncEvents()
+useSyncEvents((result) => {
+  // 远端数据已应用，刷新订阅列表（含新增/删除/排序变化）
+  if (result.status === 'pulled') {
+    loadFeeds()
+  }
+})
 registerTabShortcut()
 
 const {

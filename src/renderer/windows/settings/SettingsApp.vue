@@ -13,7 +13,9 @@ import {
   EyeOff,
   Languages,
   Globe,
-  Trash2
+  Trash2,
+  RefreshCw,
+  TriangleAlert
 } from '@lucide/vue'
 import { Button } from '@renderer/shared/components/ui/button'
 import { Spinner } from '@renderer/shared/components/ui/spinner'
@@ -28,7 +30,14 @@ import {
 import { Switch } from '@renderer/shared/components/ui/switch'
 import { useApp, type Theme } from '@renderer/shared/composables/useApp'
 import { useSync } from '@renderer/shared/composables/useSync'
-import type { SyncConfig, TranslateConfig, AdapterInfo, ProxyConfig } from '@renderer/shared/types'
+import { useSyncEvents } from '@renderer/shared/composables/useSyncEvents'
+import type {
+  SyncConfig,
+  TranslateConfig,
+  AdapterInfo,
+  ProxyConfig,
+  SyncResult
+} from '@renderer/shared/types'
 
 const {
   theme,
@@ -53,7 +62,7 @@ const {
   proxyConfig,
   setProxyConfig
 } = useApp()
-const { runSync } = useSync()
+const { runSync, syncing, lastSyncedAt, loadStatus } = useSync()
 
 const themes: { value: Theme; label: string }[] = [
   { value: 'system', label: '跟随系统' },
@@ -216,7 +225,7 @@ async function handleSaveProxy(): Promise<void> {
 }
 
 onMounted(() => {
-  void loadCacheStats()
+  loadCacheStats()
 })
 
 // ---------- 订阅源同步（本地编辑态，点「保存同步设置」后写入配置） ----------
@@ -228,6 +237,40 @@ const syncWebdavPasswordInput = ref(syncConfig.value.webdavPassword ?? '')
 const showWebdavPassword = ref(false)
 const syncSaved = ref(false)
 const syncError = ref<string | null>(null)
+const syncResultMsg = ref<string | null>(null)
+const syncResultIsError = ref(false)
+
+const syncStatusTexts: Record<SyncResult['status'], string> = {
+  disabled: '同步未启用，请先保存同步设置',
+  noop: '暂无变化，无需同步',
+  pushed: '已同步到云端',
+  pulled: '已从云端拉取最新数据',
+  conflict: '本地与云端均有改动，存在冲突，请在主窗口选择处理方式',
+  error: '同步失败'
+}
+
+function applySyncResultMsg(result: SyncResult | null): void {
+  if (!result) {
+    syncResultIsError.value = true
+    syncResultMsg.value = '同步失败：未知错误'
+    return
+  }
+  syncResultIsError.value = result.status === 'error'
+  syncResultMsg.value =
+    result.status === 'error' && result.error
+      ? `同步失败：${result.error}`
+      : syncStatusTexts[result.status]
+}
+
+async function handleManualSync(): Promise<void> {
+  syncResultMsg.value = null
+  applySyncResultMsg(await runSync())
+}
+
+function formatSyncTime(timestamp: number | null): string {
+  if (!timestamp) return '从未同步'
+  return new Date(timestamp).toLocaleString('zh-CN')
+}
 
 async function handleSaveSync(): Promise<void> {
   syncError.value = null
@@ -267,11 +310,13 @@ async function handleSaveSync(): Promise<void> {
   await setSyncConfig(partial)
   syncSaved.value = true
   // 配置变更后立即在后台执行一次同步，让设置立即可用
-  await runSync()
+  applySyncResultMsg(await runSync())
   setTimeout(() => {
     syncSaved.value = false
   }, 2000)
 }
+
+useSyncEvents()
 
 // ---------- 文章翻译（本地编辑态，点「保存翻译设置」后写入配置） ----------
 const translateProvider = ref<TranslateConfig['provider']>(translateConfig.value.provider)
@@ -422,6 +467,7 @@ async function handleLoginSite(adapter: AdapterInfo): Promise<void> {
 }
 
 onMounted(async () => {
+  loadStatus()
   await loadSettings()
   syncProvider.value = syncConfig.value.provider
   syncTokenInput.value = syncConfig.value.token ?? ''
@@ -695,6 +741,36 @@ onMounted(async () => {
               </Select>
             </div>
           </div>
+
+          <template v-if="syncProvider !== 'none'">
+            <div class="flex items-center justify-between gap-6 py-3">
+              <div class="min-w-0">
+                <div class="text-sm">上次同步</div>
+                <div class="mt-0.5 text-xs text-muted-foreground tabular-nums">
+                  {{ formatSyncTime(lastSyncedAt) }}
+                </div>
+              </div>
+              <Button variant="outline" size="sm" :disabled="syncing" @click="handleManualSync">
+                <Spinner v-if="syncing" />
+                <RefreshCw v-else class="size-3.5" />
+                {{ syncing ? '同步中…' : '立即同步' }}
+              </Button>
+            </div>
+            <div
+              v-if="syncResultMsg"
+              class="flex cursor-pointer items-center gap-1 rounded-lg px-3 py-1.5 text-xs"
+              :class="
+                syncResultIsError
+                  ? 'bg-destructive/5 text-destructive'
+                  : 'bg-primary/5 text-primary'
+              "
+              @click="syncResultMsg = null"
+            >
+              <TriangleAlert v-if="syncResultIsError" class="size-3" />
+              <CheckCircle2 v-else class="size-3" />
+              {{ syncResultMsg }}
+            </div>
+          </template>
 
           <template v-if="syncProvider === 'gist' || syncProvider === 'gitee'">
             <div class="flex items-center justify-between gap-6 py-3">
