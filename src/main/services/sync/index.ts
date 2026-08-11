@@ -1,6 +1,6 @@
+import { BrowserWindow } from 'electron'
 import store, { getSettings } from '@main/config'
 import { getConnection } from '@main/database/connection'
-import { getMainWindow } from '@main/app/window'
 import { createSyncProvider } from './providers'
 
 /** 同步快照的 JSON 结构（版本 1） */
@@ -219,9 +219,10 @@ function applySnapshot(snapshot: SyncSnapshot): void {
 // ---------- 通知渲染进程 ----------
 
 function notifyRenderer(result: SyncResult): void {
-  const win = getMainWindow()
-  if (win && !win.isDestroyed()) {
-    win.webContents.send('sync:status', result)
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send('sync:status', result)
+    }
   }
 }
 
