@@ -42,26 +42,25 @@ const unreadCount = computed(() => {
   return feeds.value.reduce((sum, f) => sum + f.unread_count, 0)
 })
 
-async function loadFeeds(): Promise<void> {
-  loading.value = true
-  try {
-    const [feedsResult, categoriesResult] = await Promise.all([
-      window.api.feeds.list(),
-      window.api.categories.list()
-    ])
-    if (feedsResult.success && feedsResult.data) {
-      feeds.value = feedsResult.data
-    }
-    if (categoriesResult.success && categoriesResult.data) {
-      categories.value = categoriesResult.data
-    }
-  } finally {
-    loading.value = false
-  }
-}
-
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useFeeds() {
+  async function loadFeeds() {
+    loading.value = true
+    try {
+      const [feedsResult, categoriesResult] = await Promise.all([
+        window.api.feeds.list(),
+        window.api.categories.list()
+      ])
+      if (feedsResult.success && feedsResult.data) {
+        feeds.value = feedsResult.data
+      }
+      if (categoriesResult.success && categoriesResult.data) {
+        categories.value = categoriesResult.data
+      }
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function deleteFeed(id: number): Promise<boolean> {
     const result = await window.api.feeds.delete(id)
     if (result.success) {
@@ -84,23 +83,39 @@ export function useFeeds() {
     return false
   }
 
-  async function updateSortOrder(items: { id: number; sort_order: number }[]): Promise<void> {
-    await window.api.feeds.updateSortOrder(items)
+  async function moveFeedToCategory(
+    feedId: number,
+    catId: number | null,
+    orderItems: { id: number; sort_order: number }[]
+  ) {
+    await window.api.feeds.update(feedId, { categoryId: catId })
+    await window.api.feeds.updateSortOrder(orderItems)
+    await loadFeeds()
   }
 
-  function refreshSingleFeed(feedId: number): void {
-    void window.api.feeds.refresh(feedId)
+  async function reorderFeeds(orderItems: { id: number; sort_order: number }[]) {
+    await window.api.feeds.updateSortOrder(orderItems)
+    await loadFeeds()
   }
 
-  function refreshCategoryFeeds(catId: number | null): void {
+  async function reorderCategories(orderItems: { id: number; sort_order: number }[]) {
+    await window.api.categories.updateSortOrder(orderItems)
+    await loadFeeds()
+  }
+
+  function refreshSingleFeed(feedId: number) {
+    window.api.feeds.refresh(feedId)
+  }
+
+  function refreshCategoryFeeds(catId: number | null) {
     feeds.value.filter((f) => f.category_id === catId).forEach((f) => refreshSingleFeed(f.id))
   }
 
-  function refreshAllFeeds(): void {
+  function refreshAllFeeds() {
     feeds.value.forEach((f) => refreshSingleFeed(f.id))
   }
 
-  function markRefreshing(feedId: number, active: boolean): void {
+  function markRefreshing(feedId: number, active: boolean) {
     const next = new Set(refreshingFeedIds.value)
     if (active) {
       next.add(feedId)
@@ -110,14 +125,14 @@ export function useFeeds() {
     refreshingFeedIds.value = next
   }
 
-  function selectFeed(id: number | null): void {
+  function selectFeed(id: number | null) {
     selectedFeedId.value = id
     if (id !== null) {
       selectedCategoryId.value = undefined
     }
   }
 
-  function selectCategory(id: number | null | undefined): void {
+  function selectCategory(id: number | null | undefined) {
     selectedCategoryId.value = id
     if (id !== undefined) {
       selectedFeedId.value = null
@@ -137,7 +152,9 @@ export function useFeeds() {
     loadFeeds,
     deleteFeed,
     updateFeed,
-    updateSortOrder,
+    moveFeedToCategory,
+    reorderFeeds,
+    reorderCategories,
     refreshSingleFeed,
     refreshCategoryFeeds,
     refreshAllFeeds,

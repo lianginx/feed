@@ -16,30 +16,29 @@ const collapsedCategories = useLocalStorage<Record<number, boolean>>(
 )
 const uncategorizedCollapsed = useLocalStorage<boolean>('sidebar.uncategorizedCollapsed', false)
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useFeedDnD() {
-  const { feeds, categories, loadFeeds } = useFeeds()
+  const { feeds, categories, moveFeedToCategory, reorderFeeds, reorderCategories } = useFeeds()
 
   function isCategoryCollapsed(catId: number): boolean {
     return collapsedCategories.value[catId] === true
   }
 
-  function toggleCategory(catId: number): void {
+  function toggleCategory(catId: number) {
     collapsedCategories.value[catId] = !collapsedCategories.value[catId]
   }
 
-  function toggleUncategorized(): void {
+  function toggleUncategorized() {
     uncategorizedCollapsed.value = !uncategorizedCollapsed.value
   }
 
-  function collapseAllCategories(): void {
+  function collapseAllCategories() {
     for (const c of categories.value) {
       collapsedCategories.value[c.id] = true
     }
     uncategorizedCollapsed.value = true
   }
 
-  function expandAllCategories(): void {
+  function expandAllCategories() {
     for (const c of categories.value) {
       collapsedCategories.value[c.id] = false
     }
@@ -55,7 +54,7 @@ export function useFeedDnD() {
     )
   })
 
-  function toggleAllCategories(): void {
+  function toggleAllCategories() {
     if (allCategoriesCollapsed.value) {
       expandAllCategories()
     } else {
@@ -67,7 +66,7 @@ export function useFeedDnD() {
     return feeds.value.filter((f) => f.category_id === catId)
   }
 
-  function onDragStart(feedId: number, event: DragEvent): void {
+  function onDragStart(feedId: number, event: DragEvent) {
     dragFeedId.value = feedId
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move'
@@ -75,7 +74,7 @@ export function useFeedDnD() {
     }
   }
 
-  function onDragOverFeed(feedId: number, event: DragEvent): void {
+  function onDragOverFeed(feedId: number, event: DragEvent) {
     event.preventDefault()
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
     dragOverFeedId.value = feedId
@@ -85,11 +84,11 @@ export function useFeedDnD() {
     dropPosition.value = event.clientY - rect.top < rect.height / 2 ? 'before' : 'after'
   }
 
-  function onDragLeaveFeed(): void {
+  function onDragLeaveFeed() {
     dragOverFeedId.value = null
   }
 
-  function onDragOverCategory(catId: number | null, event: DragEvent): void {
+  function onDragOverCategory(catId: number | null, event: DragEvent) {
     event.preventDefault()
     event.stopPropagation()
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
@@ -99,18 +98,18 @@ export function useFeedDnD() {
     dragOverFeedId.value = null
   }
 
-  function onDragLeaveCategory(): void {
+  function onDragLeaveCategory() {
     dragOverCategoryId.value = undefined
   }
 
-  function onDragEnd(): void {
+  function onDragEnd() {
     dragFeedId.value = null
     dragOverFeedId.value = null
     dragOverCategoryId.value = undefined
     dragOverCategorySortId.value = null
   }
 
-  async function onDropToCategory(catId: number | null, event: DragEvent): Promise<void> {
+  async function onDropToCategory(catId: number | null, event: DragEvent) {
     event.preventDefault()
     event.stopPropagation()
     const draggedId = dragFeedId.value
@@ -127,16 +126,10 @@ export function useFeedDnD() {
       ...catFeeds.map((f, i) => ({ id: f.id, sort_order: i })),
       { id: draggedId, sort_order: catFeeds.length }
     ]
-    await window.api.feeds.update(draggedId, { categoryId: catId })
-    await window.api.feeds.updateSortOrder(orderPayload)
-    await loadFeeds()
+    await moveFeedToCategory(draggedId, catId, orderPayload)
   }
 
-  async function onDropReorder(
-    catId: number | null,
-    targetFeedId: number,
-    event: DragEvent
-  ): Promise<void> {
+  async function onDropReorder(catId: number | null, targetFeedId: number, event: DragEvent) {
     event.preventDefault()
     event.stopPropagation()
     const draggedId = dragFeedId.value
@@ -150,9 +143,11 @@ export function useFeedDnD() {
       const insertAt = dropPosition.value === 'after' ? toIndex + 1 : toIndex
       const reordered = [...catFeeds]
       reordered.splice(insertAt, 0, draggedFeed)
-      await window.api.feeds.update(draggedId, { categoryId: catId })
-      await window.api.feeds.updateSortOrder(reordered.map((f, i) => ({ id: f.id, sort_order: i })))
-      await loadFeeds()
+      await moveFeedToCategory(
+        draggedId,
+        catId,
+        reordered.map((f, i) => ({ id: f.id, sort_order: i }))
+      )
       return
     }
 
@@ -163,11 +158,10 @@ export function useFeedDnD() {
     reordered.splice(insertAt, 0, moved)
 
     const orderPayload = reordered.map((f, i) => ({ id: f.id, sort_order: i }))
-    await window.api.feeds.updateSortOrder(orderPayload)
-    await loadFeeds()
+    await reorderFeeds(orderPayload)
   }
 
-  function onCategoryDragStart(catId: number, event: DragEvent): void {
+  function onCategoryDragStart(catId: number, event: DragEvent) {
     dragCategoryId.value = catId
     dragOverCategoryId.value = undefined
     dragOverFeedId.value = null
@@ -182,7 +176,7 @@ export function useFeedDnD() {
     }
   }
 
-  function onCategoryDragOver(catId: number, event: DragEvent): void {
+  function onCategoryDragOver(catId: number, event: DragEvent) {
     if (dragCategoryId.value === null) return
     event.preventDefault()
     event.stopPropagation()
@@ -196,11 +190,11 @@ export function useFeedDnD() {
     categoryDropPosition.value = event.clientY - rect.top < rect.height / 2 ? 'before' : 'after'
   }
 
-  function onCategoryDragLeave(): void {
+  function onCategoryDragLeave() {
     dragOverCategorySortId.value = null
   }
 
-  async function onCategoryDrop(catId: number, event: DragEvent): Promise<void> {
+  async function onCategoryDrop(catId: number, event: DragEvent) {
     const draggedId = dragCategoryId.value
     if (draggedId === null) return
     event.preventDefault()
@@ -217,14 +211,11 @@ export function useFeedDnD() {
     const insertAt = categoryDropPosition.value === 'after' ? targetInNew + 1 : targetInNew
     reordered.splice(insertAt, 0, moved)
 
-    await window.api.categories.updateSortOrder(
-      reordered.map((c, i) => ({ id: c.id, sort_order: i }))
-    )
-    await loadFeeds()
+    await reorderCategories(reordered.map((c, i) => ({ id: c.id, sort_order: i })))
     onCategoryDragEnd()
   }
 
-  function onCategoryDragEnd(): void {
+  function onCategoryDragEnd() {
     dragCategoryId.value = null
     dragOverCategorySortId.value = null
     // 恢复折叠状态
