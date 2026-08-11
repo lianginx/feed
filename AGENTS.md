@@ -43,11 +43,9 @@ type：`feat` 新功能 / `fix` 修复 / `refactor` 重构 / `docs` 文档 / `st
 
 ## 发版规范（GitHub Release）
 <constraints>
-1. 发版前必须先更新 `package.json` 的 `version` 为 `X.Y.Z` 并提交（`chore: 版本号升至 X.Y.Z`），tag 指向的代码必须包含该更新，禁止版本号滞后的发版。
-2. 推送 `vX.Y.Z` tag 即触发 GitHub Actions（`.github/workflows/release.yml`）自动构建并发布，全程无需手动干预。
-3. 发版流程三步：
-   - 查残留：`gh release view vX.Y.Z` 存在则先与用户确认清理；
-   - 推 tag 等 CI 完成（publish job 成功即发布完成）：
-     `gh run watch $(gh run list --workflow release.yml --json databaseId,headBranch -q '.[] | select(.headBranch == "vX.Y.Z") | .databaseId' | head -1) --exit-status`
-   - 验证：`gh release view vX.Y.Z --json draft,assets`，确认 `draft` 为 `false` 且 assets 含安装包。
+1. 发版前必须先更新 `package.json` 的 `version` 为 `X.Y.Z`，tag 指向的代码必须包含该更新，禁止版本号滞后的发版。
+2. 发版前必须查残留：`gh release view vX.Y.Z` 存在则先与用户确认清理
+3. 推送 `vX.Y.Z` tag 即触发 GitHub Actions 自动构建并发布，全程无需手动干预。
+4. 使用 `gh run watch <run-id> --exit-status` 等待 workflow 执行完成。
+5. 验证 `gh release view vX.Y.Z --json draft,assets`，确认 `draft` 为 `false` 且 assets 含安装包。
 </constraints>
