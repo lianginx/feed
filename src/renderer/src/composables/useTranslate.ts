@@ -1,7 +1,7 @@
 import { ref, computed, watch } from 'vue'
+import { toast } from 'vue-sonner'
 import { useApp } from '@/composables/useApp'
 import { useArticles } from '@/composables/useArticles'
-import { useToast } from '@/composables/useToast'
 import type { TranslateResult } from '@/types'
 
 /**
@@ -28,7 +28,6 @@ const shown = ref(false)
 export function useTranslate() {
   const { translateConfig } = useApp()
   const { currentArticle } = useArticles()
-  const { showToast } = useToast()
 
   /** 已配置凭据（渲染层复刻 createTranslateProvider 的完整性判断，两处需保持一致；
    *  因配置已由主进程下发到渲染层，本地 computed 免去额外 IPC，仍属合理做法） */
@@ -45,7 +44,7 @@ export function useTranslate() {
       // 展示前校验 articleId：翻译请求进行中切了文章，旧响应不落盘不展示
       if (currentArticle.value?.id !== articleId) return
       if (data.skipped) {
-        showToast('文章已为目标语言，无需翻译', 'info')
+        toast.info('文章已为目标语言，无需翻译')
         return
       }
       translated.value = {
@@ -56,10 +55,10 @@ export function useTranslate() {
       }
       shown.value = true
       if (data.degraded) {
-        showToast('部分段落翻译失败，已保留原文', 'info')
+        toast.info('部分段落翻译失败，已保留原文')
       }
     } else {
-      showToast(`翻译失败：${result.error || '未知错误'}`, 'error')
+      toast.error(`翻译失败：${result.error || '未知错误'}`)
     }
   }
 

@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { useToast } from '@/composables/useToast'
+import { toast } from 'vue-sonner'
 
 export type UpdateDialogMode = 'available' | 'preparing' | 'downloading' | 'downloaded'
 
@@ -34,8 +34,6 @@ export function useUpdateDialog(): {
   install: () => Promise<void>
   openReleasePage: () => Promise<void>
 } {
-  const { showToast } = useToast()
-
   function openAvailable(data: UpdateDialogInfo): void {
     info.value = { ...data }
     percent.value = 0
@@ -64,7 +62,7 @@ export function useUpdateDialog(): {
     percent.value = 0
     const res = await window.api.updater.download()
     if (!res.success) {
-      showToast(res.error || '下载失败', 'error')
+      toast.error(res.error || '下载失败')
       close()
     }
   }
@@ -72,7 +70,7 @@ export function useUpdateDialog(): {
   async function install(): Promise<void> {
     const res = await window.api.updater.install()
     if (!res.success) {
-      showToast(res.error || '安装失败', 'error')
+      toast.error(res.error || '安装失败')
     }
   }
 

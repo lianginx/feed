@@ -1,20 +1,19 @@
 <script setup lang="ts">
 import { Rss } from '@lucide/vue'
+import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
 import { useFeeds } from '@/composables/useFeeds'
-import { useToast } from '@/composables/useToast'
 
 const { api } = window
 
 const { loadFeeds } = useFeeds()
-const { showToast } = useToast()
 
 async function handleImportOpml(): Promise<void> {
   const result = await api.opml.import()
   if (result.success && result.data) {
     if ('canceled' in result.data && result.data.canceled) return
     if ('added' in result.data) {
-      showToast(`导入完成，新增 ${result.data.added} 个订阅源`)
+      toast.success(`导入完成，新增 ${result.data.added} 个订阅源`)
       await loadFeeds()
     }
   }

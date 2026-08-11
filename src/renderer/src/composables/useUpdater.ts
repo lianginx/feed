@@ -1,5 +1,5 @@
 import { onMounted, onUnmounted } from 'vue'
-import { useToast } from '@/composables/useToast'
+import { toast } from 'vue-sonner'
 import { useUpdateDialog } from '@/composables/useUpdateDialog'
 
 /**
@@ -12,7 +12,6 @@ import { useUpdateDialog } from '@/composables/useUpdateDialog'
  * - 提供 checkForUpdates() 供菜单「检查更新」调用
  */
 export function useUpdater(): { checkForUpdates: () => Promise<void> } {
-  const { showToast, showLoading, dismissToast } = useToast()
   const { openAvailable, setDownloading, openDownloaded } = useUpdateDialog()
 
   let stopStatus: (() => void) | undefined
@@ -22,22 +21,22 @@ export function useUpdater(): { checkForUpdates: () => Promise<void> } {
     // 自动检查（后台/启动时）不会走到这里，保持静默
     let loadingId: string | number | undefined
     const loadingTimer = window.setTimeout(() => {
-      loadingId = showLoading('正在检查更新…')
+      loadingId = toast.loading('正在检查更新…')
     }, 200)
 
     try {
       const res = await window.api.updater.check()
       if (res.success && res.data?.state === 'disabled') {
-        showToast('开发模式未启用自动更新', 'info')
+        toast.info('开发模式未启用自动更新')
         return
       }
       if (!res.success) {
-        showToast(res.error || '检查更新失败', 'error')
+        toast.error(res.error || '检查更新失败')
       }
     } finally {
       clearTimeout(loadingTimer)
       if (loadingId !== undefined) {
-        dismissToast(loadingId)
+        toast.dismiss(loadingId)
       }
     }
   }
@@ -66,10 +65,10 @@ export function useUpdater(): { checkForUpdates: () => Promise<void> } {
           break
         case 'not-available':
           // 已是最新：手动检查时以 toast 轻提示，不再弹窗打扰
-          showToast(`当前已是最新版本 v${status.currentVersion}`, 'info')
+          toast.info(`当前已是最新版本 v${status.currentVersion}`)
           break
         case 'error':
-          showToast(status.message || '更新出错', 'error')
+          toast.error(status.message || '更新出错')
           break
       }
     })
