@@ -61,8 +61,8 @@ export function createAddFeedWindow(): void {
   setupExternalNavigation(addFeedWindow.webContents)
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    addFeedWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/addfeed.html`)
+    addFeedWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/windows/addfeed/index.html`)
   } else {
-    addFeedWindow.loadFile(join(__dirname, '../renderer/addfeed.html'))
+    addFeedWindow.loadFile(join(__dirname, '../renderer/windows/addfeed/index.html'))
   }
 }

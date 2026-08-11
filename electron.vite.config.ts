@@ -39,8 +39,8 @@ export default defineConfig({
   renderer: {
     resolve: {
       alias: {
-        '@renderer': resolve('src/renderer/src'),
-        '@': resolve('src/renderer/src'),
+        '@renderer': resolve('src/renderer'),
+        '@': resolve('src/renderer'),
         '@shared': resolve('src/shared')
       }
     },
@@ -48,9 +48,9 @@ export default defineConfig({
     build: {
       rollupOptions: {
         input: {
-          index: resolve('src/renderer/index.html'),
-          settings: resolve('src/renderer/settings.html'),
-          addfeed: resolve('src/renderer/addfeed.html')
+          main: resolve('src/renderer/windows/main/index.html'),
+          settings: resolve('src/renderer/windows/settings/index.html'),
+          addfeed: resolve('src/renderer/windows/addfeed/index.html')
         }
       }
     }

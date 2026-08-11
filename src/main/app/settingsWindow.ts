@@ -54,8 +54,8 @@ export function createSettingsWindow(): void {
   setupExternalNavigation(settingsWindow.webContents)
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    settingsWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/settings.html`)
+    settingsWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/windows/settings/index.html`)
   } else {
-    settingsWindow.loadFile(join(__dirname, '../renderer/settings.html'))
+    settingsWindow.loadFile(join(__dirname, '../renderer/windows/settings/index.html'))
   }
 }
