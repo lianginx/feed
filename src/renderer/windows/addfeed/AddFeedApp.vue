@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref, reactive, computed } from 'vue'
-import { Rss } from '@lucide/vue'
+import { onMounted, onUnmounted, ref, reactive, computed, watch } from 'vue'
+import { Rss, CircleAlert } from '@lucide/vue'
 import { useApp } from '@renderer/shared/composables/useApp'
 import { Button } from '@renderer/shared/components/ui/button'
 import { Input } from '@renderer/shared/components/ui/input'
 import { Label } from '@renderer/shared/components/ui/label'
 import { Spinner } from '@renderer/shared/components/ui/spinner'
+import { Alert, AlertTitle } from '@renderer/shared/components/ui/alert'
 import AdapterParamsForm from '@renderer/windows/addfeed/components/AdapterParamsForm.vue'
 import type { AdapterInfo } from '@renderer/shared/types'
 
@@ -30,23 +31,48 @@ const canAddAdapter = computed(
   () => selectedAdapter.value !== undefined && !submittingAdapter.value
 )
 
+let stopAddResult: (() => void) | null = null
+let errorTimer: ReturnType<typeof setTimeout> | undefined
+
+function showError(message: string) {
+  error.value = message
+  clearTimeout(errorTimer)
+  errorTimer = setTimeout(() => {
+    error.value = ''
+    errorTimer = undefined
+  }, 4000)
+}
+
+watch(selectedId, () => (error.value = ''))
+
 onMounted(async () => {
   await loadSettings()
   const result = await window.api.feeds.listAdapters()
   if (result.success && result.data) {
     adapters.value = result.data
   }
+  stopAddResult = window.api.feeds.onAddResult((data) => {
+    if (data.success) return
+    showError(data.error || '未知错误')
+    submittingRss.value = false
+    submittingAdapter.value = false
+  })
+})
+
+onUnmounted(() => {
+  stopAddResult?.()
+  clearTimeout(errorTimer)
 })
 
 function faviconUrl(id: string): string {
   return `favicon://routes/${id}`
 }
 
-function selectRss(): void {
+function selectRss() {
   selectedId.value = RSS_ID
 }
 
-function selectAdapter(a: AdapterInfo): void {
+function selectAdapter(a: AdapterInfo) {
   selectedId.value = a.id
   // 切换路由时重置参数，只保留当前路由声明的字段；boolean 开关默认「是」
   const next: Record<string, string> = {}
@@ -56,7 +82,7 @@ function selectAdapter(a: AdapterInfo): void {
   adapterParams.value = next
 }
 
-async function handleAddRss(): Promise<void> {
+function handleAddRss() {
   error.value = ''
   const u = url.value.trim()
   if (!u) {
@@ -64,25 +90,13 @@ async function handleAddRss(): Promise<void> {
     return
   }
   submittingRss.value = true
-  try {
-    const result = await window.api.feeds.add({
-      url: u,
-      title: title.value.trim() || undefined
-    })
-    if (result.success && result.data) {
-      await window.api.feeds.refresh(result.data.id)
-      await window.api.feeds.notifyAdded(result.data.id)
-    } else {
-      error.value = `添加失败：${result.error || '未知错误'}`
-    }
-  } catch (e) {
-    error.value = `添加失败：${(e as Error).message}`
-  } finally {
-    submittingRss.value = false
-  }
+  window.api.feeds.add({
+    url: u,
+    title: title.value.trim() || undefined
+  })
 }
 
-async function handleAddAdapter(): Promise<void> {
+function handleAddAdapter() {
   error.value = ''
   const adapter = selectedAdapter.value
   if (!adapter) {
@@ -96,22 +110,10 @@ async function handleAddAdapter(): Promise<void> {
     }
   }
   submittingAdapter.value = true
-  try {
-    // Vue ref 的 value 是 reactive Proxy，IPC 无法克隆，需展开成普通对象
-    const result = await window.api.feeds.addAdapter({
-      adapterId: adapter.id,
-      params: { ...adapterParams.value }
-    })
-    if (result.success && result.data) {
-      await window.api.feeds.notifyAdded(result.data.id)
-    } else {
-      error.value = `添加失败：${result.error || '未知错误'}`
-    }
-  } catch (e) {
-    error.value = `添加失败：${(e as Error).message}`
-  } finally {
-    submittingAdapter.value = false
-  }
+  window.api.feeds.addAdapter({
+    adapterId: adapter.id,
+    params: { ...adapterParams.value }
+  })
 }
 </script>
 
@@ -259,7 +261,12 @@ async function handleAddAdapter(): Promise<void> {
         </div>
       </Transition>
 
-      <p v-if="error" class="mt-6 text-sm text-destructive">{{ error }}</p>
+      <Transition name="error" mode="out-in">
+        <Alert v-if="error" variant="destructive" class="mt-4">
+          <CircleAlert />
+          <AlertTitle>{{ error }}</AlertTitle>
+        </Alert>
+      </Transition>
     </main>
   </div>
 </template>
@@ -276,6 +283,19 @@ async function handleAddAdapter(): Promise<void> {
 }
 .params-enter-from,
 .params-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* 错误提示：淡入 + 轻微上移 */
+.error-enter-active,
+.error-leave-active {
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+.error-enter-from,
+.error-leave-to {
   opacity: 0;
   transform: translateY(-4px);
 }
