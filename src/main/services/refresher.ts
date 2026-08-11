@@ -109,7 +109,6 @@ export async function persistParsedFeed(
     }
   }
 
-  // 同步文章（去重 + 更新已有）
   const insertStmt = db.prepare(`
     INSERT OR IGNORE INTO articles (feed_id, guid, title, url, author, content, summary, published_at, cover_image)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -215,7 +214,6 @@ export async function refreshSingleFeed(feedId: number): Promise<RefreshResult> 
     return { feedId, success: false, error: '订阅源不存在', inserted: 0, updated: 0 }
   }
 
-  // 通知前端：开始刷新
   const win = getMainWindow()
   win?.webContents.send('feeds:refresh-progress', { feedId, status: 'fetching' })
 
@@ -232,7 +230,6 @@ export async function refreshSingleFeed(feedId: number): Promise<RefreshResult> 
       // 专栏等适配器会在 parse 内逐篇抓详情页补发布时间/完整正文（与添加时一致）
       const result = await runAdapter(adapter, params, { cookies })
       parsed = result.feed
-      // 适配器补充 UP 主等 feed 级元信息（标题/简介/头像）
       const meta = await adapter.fetchMeta?.(params, parsed)
       if (meta) {
         parsed = {
@@ -249,7 +246,6 @@ export async function refreshSingleFeed(feedId: number): Promise<RefreshResult> 
     // 更新 feed 元信息 + favicon + 入库（与 addAdapter 共用，避免重复抓取）
     const { inserted, updated } = await persistParsedFeed(feedId, feed, parsed)
 
-    // 通知前端：刷新完成
     win?.webContents.send('feeds:refresh-progress', {
       feedId,
       status: 'complete',
@@ -267,7 +263,6 @@ export async function refreshSingleFeed(feedId: number): Promise<RefreshResult> 
       "UPDATE feeds SET last_error = ?, error_count = error_count + 1, last_updated = strftime('%s','now') WHERE id = ?"
     ).run(friendlyError, feedId)
 
-    // 通知前端：刷新失败
     win?.webContents.send('feeds:refresh-progress', {
       feedId,
       status: 'error',

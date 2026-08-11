@@ -19,7 +19,6 @@ export function useResizable(
   let startSizes: number[] = []
   let cachedPanels: PanelConfig[] = [...panels.value]
 
-  // 当面板配置变化时重新初始化尺寸
   watch(panels, (newPanels) => {
     cachedPanels = [...newPanels]
     if (sizes.value.length !== newPanels.length) {

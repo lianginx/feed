@@ -19,7 +19,6 @@ export function createTray(): void {
     trayIcon.setTemplateImage(true)
     tray = new Tray(trayIcon.resize({ width: 16, height: 16 }))
   } else {
-    // Windows/Linux：菜单栏图标需较大尺寸保证清晰，系统会按需缩放
     tray = new Tray(trayIcon.resize({ width: 32, height: 32 }))
   }
 

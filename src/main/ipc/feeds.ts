@@ -35,7 +35,6 @@ export function registerFeedHandlers(): void {
     'feeds:add',
     async (_event, params: { url: string; title?: string; categoryId?: number }) => {
       try {
-        // 先验证 URL
         const validation = await validateFeed(params.url)
         if (!validation.valid) {
           return error(validation.error || '无法解析此订阅源')
@@ -44,14 +43,12 @@ export function registerFeedHandlers(): void {
         const db = getConnection()
         const title = params.title || validation.title || params.url
 
-        // 先插入订阅源，获取 id
         const result = db
           .prepare('INSERT INTO feeds (url, title, category_id) VALUES (?, ?, ?)')
           .run(params.url, title, params.categoryId || null)
 
         const feedId = result.lastInsertRowid as number
 
-        // 再解析 favicon 并缓存到本地
         try {
           const feedData = await parseFeed(params.url)
           const localUrl = await resolveAndCacheFavicon(feedData.link || null, feedData.image?.url)
@@ -62,7 +59,6 @@ export function registerFeedHandlers(): void {
           /* favicon 获取失败不影响添加 */
         }
 
-        // 订阅列表已变更，防抖触发自动同步
         scheduleSync()
 
         return success({ id: feedId })
@@ -72,7 +68,6 @@ export function registerFeedHandlers(): void {
     }
   )
 
-  // 内置路由列表（供前端「内置路由」入口选择）
   ipcMain.handle('feeds:listAdapters', async () => {
     try {
       const adapters = listAdapters().map((a) => ({
@@ -109,7 +104,6 @@ export function registerFeedHandlers(): void {
         if (!adapter) {
           return error('适配器不存在')
         }
-        // 必填参数校验
         for (const p of adapter.params) {
           if (p.required && !(input.params[p.key] ?? '').trim()) {
             return error(`请填写「${p.label}」`)
@@ -207,7 +201,6 @@ export function registerFeedHandlers(): void {
     try {
       const db = getConnection()
       db.transaction(() => {
-        // 删除关联的文章（包括 FTS 索引）
         db.prepare('DELETE FROM articles WHERE feed_id = ?').run(id)
         db.prepare('DELETE FROM feeds WHERE id = ?').run(id)
       })()
@@ -259,13 +252,11 @@ export function registerFeedHandlers(): void {
     }
   })
 
-  // 打开「添加订阅源」独立窗口（侧边栏按钮 / 菜单触发）
   ipcMain.handle('feeds:openAddFeedWindow', async () => {
     createAddFeedWindow()
     return success(true)
   })
 
-  // 添加订阅源完成：关闭添加窗口，并通知主窗口刷新列表（带上新 feedId 供选中）
   ipcMain.handle('feeds:notifyAdded', async (_event, feedId?: number) => {
     closeAddFeedWindow()
     getMainWindow()?.webContents.send('feeds:changed', { feedId: feedId ?? undefined })

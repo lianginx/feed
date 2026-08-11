@@ -11,7 +11,6 @@ const isToday = ref(false)
 export function useArticleView() {
   const { selectFeed: selectFeedScope, selectCategory: selectCategoryScope } = useFeeds()
 
-  // 选择侧边栏顶部全局视图（全部/未读/星标/今日）
   function selectView(view: 'all' | 'unread' | 'starred' | 'today'): void {
     selectFeedScope(null)
     selectCategoryScope(undefined)
@@ -21,7 +20,6 @@ export function useArticleView() {
     isToday.value = view === 'today'
   }
 
-  // 选择具体订阅源/分类
   function selectFeed(id: number | null): void {
     if (['unread', 'starred', 'today'].includes(selectedView.value ?? '')) {
       isUnread.value = false

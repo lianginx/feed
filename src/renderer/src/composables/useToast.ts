@@ -13,7 +13,6 @@ export function useToast() {
     return sonnerToast.loading(message)
   }
 
-  /** 关闭指定 id 的提示 */
   function dismissToast(id?: string | number): void {
     sonnerToast.dismiss(id)
   }

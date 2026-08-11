@@ -38,7 +38,6 @@ export function useTranslate() {
       : translateConfig.value.provider === 'edge'
   )
 
-  /** 执行翻译请求并落盘展示；forceRefresh=true 时忽略缓存强制重新翻译 */
   async function performTranslate(articleId: number, forceRefresh: boolean): Promise<void> {
     const result = await window.api.translate.article(articleId, undefined, forceRefresh)
     if (result.success && result.data) {
@@ -64,9 +63,7 @@ export function useTranslate() {
     }
   }
 
-  /** 切换译文 / 原文（翻译命中缓存）：原文 → 译文；译文 → 原文 */
   async function toggle(): Promise<void> {
-    // 译文显示中 → 切回原文
     if (shown.value) {
       shown.value = false
       return
@@ -83,7 +80,6 @@ export function useTranslate() {
     }
   }
 
-  /** 忽略缓存，强制重新翻译当前文章（不切回原文：译文状态下执行重译并继续显示译文） */
   async function refresh(): Promise<void> {
     const article = currentArticle.value
     if (!article || translating.value) return
@@ -96,7 +92,6 @@ export function useTranslate() {
     }
   }
 
-  // 切换文章时重置译文状态
   watch(currentArticle, () => {
     translated.value = null
     shown.value = false

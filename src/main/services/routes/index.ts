@@ -1,6 +1,5 @@
 import './adapters' // 触发内置适配器注册（副作用）
 
-// core 框架层对外 API
 export type {
   FeedAdapter,
   AdapterParam,

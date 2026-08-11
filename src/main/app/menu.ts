@@ -173,7 +173,6 @@ export function buildAppMenu(): void {
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 
-  // 渲染进程同步菜单状态（如是否选中文章/订阅源）
   ipcMain.on(
     'menu:updateState',
     (
@@ -195,12 +194,10 @@ export function buildAppMenu(): void {
       if (star) star.enabled = state.hasArticle
       if (refresh) refresh.enabled = state.hasFeedContext
       if (translate) {
-        // 未选中文章或未配置翻译凭据时禁用
         translate.enabled = Boolean(state.hasArticle && state.translateConfigured)
         translate.label = state.isTranslated ? '显示原文' : '翻译当前文章'
       }
       if (translateRefresh) {
-        // 强制重译（忽略缓存），始终不切回原文 → label 固定；需已选中文章 + 已配置凭据
         translateRefresh.enabled = Boolean(state.hasArticle && state.translateConfigured)
       }
     }

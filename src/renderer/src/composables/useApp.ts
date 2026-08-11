@@ -27,10 +27,8 @@ function applyTheme(t: 'light' | 'dark'): void {
   document.documentElement.setAttribute('data-theme', t)
 }
 
-// 监听主题变化
 watch(resolvedTheme, applyTheme, { immediate: true })
 
-// 监听系统主题变化
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
   if (theme.value === 'system') {
     // 直接读取实时 matchMedia，避免使用被缓存的 computed（其依赖不含 matchMedia，会返回过期值）
@@ -87,7 +85,6 @@ export function useApp() {
   }
 
   async function setSyncConfig(partial: Partial<SyncConfig>): Promise<void> {
-    // 空字符串视为未填写，存储时省略
     const next: SyncConfig = { ...syncConfig.value, ...partial }
     if (!next.token) delete next.token
     if (!next.webdavUrl) delete next.webdavUrl
@@ -98,7 +95,6 @@ export function useApp() {
   }
 
   async function setTranslateConfig(partial: Partial<TranslateConfig>): Promise<void> {
-    // 空字符串视为未填写，存储时省略（同 setSyncConfig 约定）
     const next: TranslateConfig = { ...translateConfig.value, ...partial }
     if (!next.baiduAppid) delete next.baiduAppid
     if (!next.baiduSecretKey) delete next.baiduSecretKey
@@ -106,7 +102,6 @@ export function useApp() {
     await window.api.config.update({ translate: next })
   }
 
-  /** 保存内置路由登录 Cookie（域名 → 整段 cookie），空值省略 */
   async function setSiteCookies(next: Record<string, string>): Promise<void> {
     const cleaned: Record<string, string> = {}
     for (const [domain, cookie] of Object.entries(next)) {
@@ -118,7 +113,6 @@ export function useApp() {
     await window.api.config.update({ siteCookies: cleaned })
   }
 
-  /** 保存全局网络代理设置 */
   async function setProxyConfig(partial: Partial<ProxyConfig>): Promise<void> {
     const next: ProxyConfig = { ...proxyConfig.value, ...partial }
     if (next.mode !== 'manual') {

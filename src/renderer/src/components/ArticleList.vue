@@ -24,18 +24,16 @@ const { selectedView, isUnread, isStar, isToday } = useArticleView()
 
 const parentRef = ref<HTMLElement | null>(null)
 
-// 当选择的订阅源或筛选条件变化时重新加载
 watch(
   [selectedFeedId, selectedCategoryId, isUnread, isStar, isToday],
   () => {
-    currentArticle.value = null // 切换时关闭文章详情
-    parentRef.value?.scrollTo(0, 0) // 滚动到顶部
+    currentArticle.value = null
+    parentRef.value?.scrollTo(0, 0)
     reloadScope()
   },
   { immediate: true }
 )
 
-// 虚拟滚动
 const virtualizer = useVirtualizer(
   computed(() => ({
     count: articles.value.length,
@@ -72,7 +70,6 @@ function toggleUnreadFilter(): void {
       </Button>
     </div>
 
-    <!-- 文章列表 -->
     <div ref="parentRef" class="flex-1 overflow-y-auto">
       <div v-if="loading && articles.length === 0" class="space-y-2 p-4">
         <Skeleton class="h-20 w-full" />
@@ -102,7 +99,6 @@ function toggleUnreadFilter(): void {
               transform: `translateY(${row.start}px)`
             }"
           >
-            <!-- 文章条目：悬浮行 + 圆角 hover，无分隔线 -->
             <div v-if="row.index < articles.length" class="h-full px-3 pb-2">
               <ContextMenu>
                 <ContextMenuTrigger class="block h-full">

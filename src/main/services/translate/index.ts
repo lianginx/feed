@@ -114,7 +114,6 @@ export async function translateArticle(
 
   const throttle = createProviderThrottle(provider)
 
-  // 标题翻译（单独请求，与正文分离）
   let translatedTitle = article.title
   let titleRequestCount = 0
   if (article.title.trim()) {
@@ -130,7 +129,6 @@ export async function translateArticle(
     translatedTitle = t ?? article.title
   }
 
-  // 正文打包（复用已提取的文本节点）
   const batches = packPieces(pieces, provider.getLengthLimit())
   if (titleRequestCount + batches.length > MAX_REQUESTS) {
     throw new Error('文章段落过多，超出单篇翻译请求上限（20 次）')
@@ -176,7 +174,6 @@ export async function translateArticle(
     offset += batch.length
   }
 
-  // 重建 HTML（原位回填文本节点，标签/结构零改动）
   const rebuilt = rebuildHtml({ $, units, allUnits, translations, isFullDocument })
   degraded = degraded || rebuilt.degraded
 
@@ -229,7 +226,6 @@ async function translateWithRetry(
       return await throttle(() => provider.translateBatch(texts, from, to))
     } catch (e) {
       const err = e as BaiduApiError
-      // 确定性错误（retryable === false）直接抛出
       if (err?.retryable === false) throw e
       attempt++
       if (attempt > maxRetries) {

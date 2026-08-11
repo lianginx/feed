@@ -29,7 +29,6 @@ function mapArticle(topic: V2exTopic): ParsedArticle {
     link: topic.url,
     // 正文用渲染后的 HTML；V2EX 无封面图
     content: topic.content_rendered || undefined,
-    // 摘要用纯文本 content
     contentSnippet: topic.content,
     summary: topic.content,
     pubDate: new Date(topic.created * 1000).toISOString(),

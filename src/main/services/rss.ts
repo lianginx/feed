@@ -42,7 +42,6 @@ export interface ParsedArticle {
  * 按常见状态码分类，避免 403/404 等语义不同但共用同一条文案误导用户。
  */
 export function friendlyStatusText(status: number): string {
-  // 4xx 客户端错误
   if (status === 401) {
     return '401 网站要求登录或授权，请确认订阅源是否需要登录'
   }
@@ -64,7 +63,6 @@ export function friendlyStatusText(status: number): string {
   if (status >= 400 && status < 500) {
     return status + ' 订阅源请求无效，请检查地址是否正确'
   }
-  // 5xx 服务端错误
   if (status >= 500) {
     return status + ' 服务器暂时不可用，请稍后重试'
   }
@@ -89,19 +87,15 @@ export function toFriendlyFeedError(error: unknown): string {
   if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
     return '域名解析失败，请检查订阅源地址是否正确'
   }
-  // 连接被拒绝
   if (code === 'ECONNREFUSED') {
     return '连接被拒绝，网站可能已下线或屏蔽了访问'
   }
-  // 连接被重置/中断
   if (code === 'ECONNRESET' || /socket hang up/i.test(message)) {
     return '网络连接被中断，请检查网络后重试'
   }
-  // 网络不可达/离线
   if (code === 'ENETUNREACH' || code === 'EHOSTUNREACH' || code === 'ENETDOWN') {
     return '网络不可达，请检查网络连接'
   }
-  // TLS/证书错误
   if (
     code === 'CERT_HAS_EXPIRED' ||
     code === 'DEPTH_ZERO_SELF_SIGNED_CERT' ||
@@ -109,17 +103,14 @@ export function toFriendlyFeedError(error: unknown): string {
   ) {
     return '网站证书校验失败，可能存在安全风险'
   }
-  // 超时
   if (code === 'ETIMEDOUT' || /timed out|timeout|timeout of/i.test(message)) {
     return '请求超时，请检查网络或稍后重试'
   }
-  // HTTP 状态码错误
   const statusMatch = message.match(/Status code (\d+)/)
   if (statusMatch) {
     const status = Number(statusMatch[1])
     return friendlyStatusText(status)
   }
-  // XML/解析错误
   if (/Failed to parse|Unable to parse|Feed not recognized|Not a feed|XML/i.test(message)) {
     return '内容解析失败，可能不是有效的 RSS 订阅源'
   }

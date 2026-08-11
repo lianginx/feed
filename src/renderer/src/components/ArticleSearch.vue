@@ -28,7 +28,6 @@ async function focusSearch(): Promise<void> {
   }
 }
 
-// 菜单触发的搜索聚焦（⌘F）
 watch(focusSignal, focusSearch)
 
 async function handleSearch(): Promise<void> {
@@ -57,7 +56,6 @@ function onSearchBlur(): void {
   // 暂时不折叠
 }
 
-// 切换订阅源/分类/筛选时清空搜索
 watch([selectedFeedId, selectedCategoryId, isUnread, isStar, isToday], () => {
   searchQuery.value = ''
 })

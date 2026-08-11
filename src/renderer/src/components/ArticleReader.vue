@@ -44,7 +44,6 @@ function scrollToTop(): void {
   contentRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-// 切换文章时滚动回顶部
 watch(currentArticle, () => {
   if (contentRef.value) {
     contentRef.value.scrollTop = 0
@@ -90,7 +89,6 @@ const displayContent = computed(() => {
 
 <template>
   <div class="relative h-full flex flex-col overflow-hidden">
-    <!-- 空状态 - 未选中文章 -->
     <div
       v-if="!currentArticle"
       class="flex-1 flex items-center justify-center"
@@ -116,7 +114,6 @@ const displayContent = computed(() => {
       </div>
     </div>
 
-    <!-- 文章内容 - 已选中文章 -->
     <template v-else>
       <div
         ref="contentRef"
@@ -226,7 +223,6 @@ const displayContent = computed(() => {
         </article>
       </div>
 
-      <!-- 返回顶部：悬浮右下角，滚动超过阈值后出现 -->
       <Transition name="back-to-top">
         <Button
           v-if="showBackToTop"

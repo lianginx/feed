@@ -24,13 +24,10 @@ import { initProxy } from './services/proxy'
 app.whenReady().then(() => {
   electronApp.setAppUserModelId(APP_METADATA.appId)
 
-  // 注册自定义协议和会话 hook
   registerAppProtocols()
 
-  // 构建菜单
   buildAppMenu()
 
-  // 初始化数据库
   initializeDatabase()
   // 启动时兜底清理过期译文缓存（低频率；平时写入侧已节流）
   cleanupTranslations(getConnection())
@@ -41,25 +38,19 @@ app.whenReady().then(() => {
   // 统一校验 IPC 调用来源（安全规则 #17）
   guardIpcHandlers()
 
-  // 注册 IPC 处理器
   registerAllHandlers()
   registerUpdaterHandlers()
 
-  // 初始化自动更新（非开发模式）
   initUpdater()
 
-  // 初始化开机自动启动（非开发模式，按配置注册登录项）
   initAutoLaunch()
 
-  // 应用全局网络代理（Node fetch + 浏览器抓取）
   initProxy(getSettings())
 
-  // 创建窗口和托盘
   createWindow()
   createTray()
   setTrayRef(getTrayRef())
 
-  // 主题变化监听
   nativeTheme.on('updated', () => {
     const savedTheme = getSettings().theme
     if (savedTheme === 'system') {
@@ -71,10 +62,8 @@ app.whenReady().then(() => {
     }
   })
 
-  // 初始未读徽标（先显示当前状态）
   scheduleBadgeUpdate()
 
-  // 启动定时刷新（后台拉取最新数据）
   startScheduler()
 
   app.on('activate', () => {

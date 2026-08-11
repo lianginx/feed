@@ -110,7 +110,6 @@ export function useArticles() {
     await loadFeeds()
   }
 
-  // 把当前选中的订阅源/分类范围的文章全部标为已读
   async function markScopeRead(): Promise<void> {
     const { selectedFeedId, selectedCategoryId } = useFeeds()
     const { isStar, isToday } = useArticleView()
@@ -142,7 +141,6 @@ export function useArticles() {
     }
   }
 
-  // 按当前选中的订阅源/分类/筛选重新加载文章
   async function reloadScope(): Promise<void> {
     const { selectedFeedId, selectedCategoryId } = useFeeds()
     const { isUnread, isStar, isToday } = useArticleView()

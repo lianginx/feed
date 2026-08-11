@@ -231,7 +231,6 @@ const syncError = ref<string | null>(null)
 
 async function handleSaveSync(): Promise<void> {
   syncError.value = null
-  // 校验所选载体的必填项
   if (syncProvider.value === 'gist' || syncProvider.value === 'gitee') {
     if (!syncTokenInput.value.trim()) {
       syncError.value = '请填写访问 Token'
@@ -397,7 +396,6 @@ async function handleSaveSiteCookies(): Promise<void> {
 const siteLoggingIn = ref(false)
 const siteLoginMsg = ref('')
 
-/** 用内置浏览器登录站点：弹登录窗口，成功后回填 cookie 输入框 */
 async function handleLoginSite(adapter: AdapterInfo): Promise<void> {
   if (!adapter.cookieDomain || !adapter.loginUrl) return
   siteLoggingIn.value = true
@@ -425,14 +423,12 @@ async function handleLoginSite(adapter: AdapterInfo): Promise<void> {
 
 onMounted(async () => {
   await loadSettings()
-  // 用已保存的配置回填同步编辑态
   syncProvider.value = syncConfig.value.provider
   syncTokenInput.value = syncConfig.value.token ?? ''
   syncWebdavUrlInput.value = syncConfig.value.webdavUrl ?? ''
   syncWebdavUsernameInput.value = syncConfig.value.webdavUsername ?? ''
   syncWebdavPasswordInput.value = syncConfig.value.webdavPassword ?? ''
   syncSaved.value = false
-  // 用已保存的配置回填翻译编辑态
   translateProvider.value = translateConfig.value.provider
   translateAppidInput.value = translateConfig.value.baiduAppid ?? ''
   translateSecretKeyInput.value = translateConfig.value.baiduSecretKey ?? ''
@@ -440,11 +436,9 @@ onMounted(async () => {
   translateSaved.value = false
   translateTestResult.value = null
 
-  // 用已保存的配置回填网络代理编辑态
   initProxyInputs()
   proxySaved.value = false
 
-  // 加载内置路由 Cookie 配置：只展示需要登录 cookie 的适配器
   const adapterResult = await window.api.feeds.listAdapters()
   if (adapterResult.success && adapterResult.data) {
     siteCookieAdapters.value = adapterResult.data.filter((a) => a.cookieDomain)
@@ -464,7 +458,6 @@ onMounted(async () => {
     <!-- 顶部可拖拽区域（macOS hiddenInset 透明标题栏需要它才能拖动窗口） -->
     <div class="absolute inset-x-0 top-0 z-10 h-10 shrink-0" style="app-region: drag" />
 
-    <!-- 左侧导航 -->
     <nav class="flex w-44 shrink-0 flex-col gap-2 pt-8 px-1">
       <button
         v-for="item in navItems"
@@ -479,10 +472,8 @@ onMounted(async () => {
       </button>
     </nav>
 
-    <!-- 内容区 -->
     <main class="min-w-0 flex-1 overflow-y-auto p-8 bg-card rounded-xl">
       <div v-if="activeSection === 'general'">
-        <!-- 外观 -->
         <section>
           <h2 class="text-sm font-semibold text-foreground mb-1">外观</h2>
           <div class="flex items-center justify-between gap-6 py-3">
@@ -502,7 +493,6 @@ onMounted(async () => {
           </div>
         </section>
 
-        <!-- 内容 -->
         <section class="mt-8">
           <h2 class="text-sm font-semibold text-foreground mb-1">内容</h2>
           <div class="flex items-center justify-between gap-6 py-3">
@@ -535,7 +525,6 @@ onMounted(async () => {
           </div>
         </section>
 
-        <!-- 更新 -->
         <section class="mt-8">
           <h2 class="text-sm font-semibold text-foreground mb-1">更新</h2>
           <div class="flex items-center justify-between gap-6 py-3">
@@ -573,7 +562,6 @@ onMounted(async () => {
           </div>
         </section>
 
-        <!-- 网络 -->
         <section class="mt-8">
           <h2 class="text-sm font-semibold text-foreground mb-1">网络</h2>
           <div class="flex items-center justify-between gap-6 py-3">
@@ -656,7 +644,6 @@ onMounted(async () => {
         </section>
       </div>
 
-      <!-- 启动 -->
       <div v-else-if="activeSection === 'startup'">
         <section>
           <h2 class="text-sm font-semibold text-foreground mb-1">启动</h2>

@@ -43,7 +43,6 @@ export function setupExternalNavigation(webContents: WebContents): void {
     return { action: 'deny' }
   })
 
-  // 拦截应用内导航到外部 URL 的链接，改为在系统浏览器中打开
   webContents.on('will-navigate', (event, url) => {
     // 开发模式下放行 Vite 开发服务器自身的导航（如 HMR 全量刷新）
     if (
@@ -115,7 +114,6 @@ export function createWindow(): void {
   mainWindow.on('resize', saveBounds)
   mainWindow.on('move', saveBounds)
 
-  // 关闭时最小化到托盘
   mainWindow.on('close', (event) => {
     if (mainWindow) {
       updateSettings({ windowBounds: mainWindow.getBounds() })
@@ -127,7 +125,6 @@ export function createWindow(): void {
     }
   })
 
-  // 外部链接统一在系统浏览器中打开（主窗口与设置窗口共用同一套逻辑）
   setupExternalNavigation(mainWindow.webContents)
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {

@@ -12,7 +12,6 @@ export function getConnection(): Database.Database {
 
   // 启用 WAL 模式提升并发性能
   db.pragma('journal_mode = WAL')
-  // 启用外键约束
   db.pragma('foreign_keys = ON')
 
   return db

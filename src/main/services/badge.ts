@@ -35,12 +35,10 @@ export function scheduleBadgeUpdate(): void {
  * 更新所有系统徽标（Dock + 菜单栏图标）。
  */
 function updateBadge(count: number): void {
-  // macOS Dock 徽标
   if (process.platform === 'darwin') {
     app.dock?.setBadge(count > 0 ? String(count) : '')
   }
 
-  // macOS 菜单栏图标标题（显示在图标旁边）
   if (trayRef && process.platform === 'darwin') {
     trayRef.setTitle(count > 0 ? String(count) : '')
     trayRef.setToolTip(count > 0 ? `Feed - ${count} 条未读` : 'Feed')

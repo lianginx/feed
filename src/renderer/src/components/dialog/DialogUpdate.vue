@@ -89,14 +89,11 @@ const installText = computed(() => (isMac ? '退出并打开安装包' : '重启
       <!-- eslint-enable vue/no-v-html -->
 
       <DialogFooter>
-        <!-- 发现新版本：取消 / 打开下载页 / 下载并安装 -->
         <template v-if="mode === 'available'">
           <Button variant="outline" @click="close">取消</Button>
           <Button variant="outline" @click="openReleasePage">打开下载页</Button>
           <Button @click="startDownload">下载并安装</Button>
         </template>
-
-        <!-- 准备中：点击后立即反馈（下载不可取消，弹窗暂不可关闭） -->
         <template v-else-if="mode === 'preparing'">
           <Button variant="outline" @click="openReleasePage">打开下载页</Button>
           <Button class="relative min-w-28 overflow-hidden disabled:opacity-100" disabled>
@@ -108,7 +105,6 @@ const installText = computed(() => (isMac ? '退出并打开安装包' : '重启
           </Button>
         </template>
 
-        <!-- 下载中：主按钮禁用并内嵌进度条 + 百分比 -->
         <template v-else-if="mode === 'downloading'">
           <Button variant="outline" @click="openReleasePage">打开下载页</Button>
           <Button class="relative min-w-28 overflow-hidden disabled:opacity-100" disabled>
@@ -123,7 +119,6 @@ const installText = computed(() => (isMac ? '退出并打开安装包' : '重启
           </Button>
         </template>
 
-        <!-- 下载完成：取消 / 打开下载页 / 退出并安装 -->
         <template v-else-if="mode === 'downloaded'">
           <Button variant="outline" @click="close">取消</Button>
           <Button variant="outline" @click="openReleasePage">打开下载页</Button>

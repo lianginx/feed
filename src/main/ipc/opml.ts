@@ -90,7 +90,6 @@ function importFeeds(entries: FeedEntry[]): { total: number; added: number; skip
 
   doImport()
 
-  // 订阅列表已变更，防抖触发自动同步
   scheduleSync()
 
   return { total: entries.length, added: newEntries.length, skipped: skippedDuplicates }
@@ -179,7 +178,6 @@ export function registerOpmlHandlers(): void {
       const entries = collectFeeds(body.subs)
       const importResult = importFeeds(entries)
 
-      // 通知主窗口刷新订阅列表
       if (importResult.added > 0) {
         getMainWindow()?.webContents.send('opml:imported')
       }

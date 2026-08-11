@@ -51,25 +51,21 @@ export function registerCategoryHandlers(): void {
       const db = getConnection()
       let feedCount = 0
       db.transaction(() => {
-        // 查出该分类下所有订阅源 ID
         const feedIds: { id: number }[] = db
           .prepare('SELECT id FROM feeds WHERE category_id = ?')
           .all(id) as { id: number }[]
         feedCount = feedIds.length
 
         if (feedCount > 0) {
-          // 批量删除这些订阅源下的所有文章
           const placeholders = feedIds.map(() => '?').join(',')
           db.prepare(`DELETE FROM articles WHERE feed_id IN (${placeholders})`).run(
             ...feedIds.map((f) => f.id)
           )
-          // 批量删除这些订阅源
           db.prepare(`DELETE FROM feeds WHERE id IN (${placeholders})`).run(
             ...feedIds.map((f) => f.id)
           )
         }
 
-        // 删除分类本身
         db.prepare('DELETE FROM categories WHERE id = ?').run(id)
       })()
       scheduleSync()

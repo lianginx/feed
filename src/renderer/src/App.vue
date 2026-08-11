@@ -92,7 +92,6 @@ onMounted(async () => {
   observer.observe(document.body, { childList: true, subtree: true })
   await loadSettings()
   await loadFeeds()
-  // 加载上次同步时间
   await loadStatus()
 })
 

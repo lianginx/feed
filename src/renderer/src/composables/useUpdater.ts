@@ -17,7 +17,6 @@ export function useUpdater(): { checkForUpdates: () => Promise<void> } {
 
   let stopStatus: (() => void) | undefined
 
-  /** 手动检查更新（菜单触发） */
   async function checkForUpdates(): Promise<void> {
     // 检查期间显示持续提示，避免「点了没反应」的错觉；
     // 自动检查（后台/启动时）不会走到这里，保持静默

@@ -120,7 +120,6 @@ async function handleAddAdapter(): Promise<void> {
     <!-- 顶部可拖拽区域（macOS hiddenInset 透明标题栏） -->
     <div class="absolute inset-x-0 top-0 z-10 h-10 shrink-0" style="app-region: drag" />
 
-    <!-- 左侧源导航 -->
     <nav class="flex w-44 shrink-0 flex-col gap-1 pt-10 px-1">
       <div class="px-3 pb-1 text-[11px] uppercase tracking-wide text-foreground/45">订阅源</div>
       <button
@@ -168,10 +167,8 @@ async function handleAddAdapter(): Promise<void> {
       </button>
     </nav>
 
-    <!-- 右侧配置卡片 -->
     <main class="min-w-0 flex-1 overflow-y-auto p-8 bg-card rounded-xl">
       <Transition name="params" mode="out-in">
-        <!-- RSS 订阅源 -->
         <div v-if="isRssSelected" key="rss">
           <h2 class="text-sm font-semibold text-foreground mb-1">RSS 订阅源</h2>
           <p class="mb-6 text-xs text-muted-foreground">订阅任意 RSS / Atom 地址</p>
@@ -205,7 +202,6 @@ async function handleAddAdapter(): Promise<void> {
           </div>
         </div>
 
-        <!-- 内置路由 -->
         <div v-else-if="selectedAdapter" :key="selectedAdapter.id">
           <div class="mb-6 flex items-center gap-3">
             <span

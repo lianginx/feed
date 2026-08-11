@@ -10,7 +10,6 @@ import { applyProxySettings } from '../services/proxy'
 import { success, error } from './util'
 
 export function registerSettingsHandlers(): void {
-  // 本地缓存占用统计（按命名空间）
   ipcMain.handle('cache:stats', async () => {
     try {
       return success(getCacheStats())
@@ -36,7 +35,6 @@ export function registerSettingsHandlers(): void {
     }
   })
 
-  // 用内置浏览器登录站点：弹真实登录窗口，登录成功后自动保存该域 cookie
   ipcMain.handle(
     'settings:loginSite',
     async (_event, input: { domain: string; loginUrl: string; loginCookieNames?: string[] }) => {
@@ -65,7 +63,6 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle('config:update', async (_event, settings: Partial<AppSettings>) => {
     try {
       const updated = updateSettings(settings)
-      // 主题变更：同步到原生窗口
       if (settings.theme !== undefined) {
         nativeTheme.themeSource = settings.theme
         const wins = BrowserWindow.getAllWindows()
@@ -76,20 +73,16 @@ export function registerSettingsHandlers(): void {
           wins[0].setBackgroundColor(isDark ? '#0a0a0a' : '#fafafa')
         }
       }
-      // 如果更新了刷新间隔，重启调度器
       if (settings.updateInterval !== undefined) {
         startScheduler()
       }
-      // 如果更新了自动检查更新相关设置，重建定时器
       if (settings.autoCheckUpdate !== undefined || settings.updateCheckInterval !== undefined) {
         refreshAutoCheckTimer()
       }
-      // 如果更新了开机自动启动相关设置，立即应用登录项注册
       if (settings.autoLaunch !== undefined || settings.launchHidden !== undefined) {
         const { autoLaunch, launchHidden } = getSettings()
         void applyAutoLaunch(autoLaunch, launchHidden)
       }
-      // 如果更新了网络代理设置，立即应用（Node fetch + 浏览器抓取）
       if (settings.proxy !== undefined) {
         void applyProxySettings(getSettings())
       }
