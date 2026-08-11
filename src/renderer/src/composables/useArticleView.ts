@@ -7,7 +7,6 @@ const isUnread = ref(false)
 const isStar = ref(false)
 const isToday = ref(false)
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useArticleView() {
   const { selectFeed: selectFeedScope, selectCategory: selectCategoryScope } = useFeeds()
 

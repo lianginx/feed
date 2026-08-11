@@ -39,7 +39,6 @@ watch(
   }
 )
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const isEditing = () => props.editCategoryId !== undefined
 
 function close(): void {

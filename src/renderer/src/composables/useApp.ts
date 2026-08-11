@@ -36,7 +36,6 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
   }
 })
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useApp() {
   async function loadSettings(): Promise<void> {
     const result = await window.api.config.get()

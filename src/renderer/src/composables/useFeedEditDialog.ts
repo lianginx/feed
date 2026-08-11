@@ -4,7 +4,6 @@ import type { FeedItem } from '@/composables/useFeeds'
 const editingFeed = ref<FeedItem | null>(null)
 const showEditFeed = ref(false)
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useFeedEditDialog() {
   function open(feed: FeedItem): void {
     editingFeed.value = feed

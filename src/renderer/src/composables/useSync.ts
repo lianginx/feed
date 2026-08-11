@@ -7,7 +7,6 @@ const syncing = ref(false)
 const lastResult = ref<SyncResult | null>(null)
 const pendingConflict = ref(false)
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useSync() {
   async function runSync(): Promise<SyncResult | null> {
     syncing.value = true

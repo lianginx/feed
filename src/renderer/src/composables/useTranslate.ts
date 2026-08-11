@@ -24,7 +24,6 @@ const translated = ref<{
 } | null>(null)
 const shown = ref(false)
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useTranslate() {
   const { translateConfig } = useApp()
   const { currentArticle } = useArticles()
