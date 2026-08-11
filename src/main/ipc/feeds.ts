@@ -10,7 +10,10 @@ import { scheduleSync } from '@main/services/sync'
 import { success, error } from './util'
 
 function sendAddResult(data: { success: boolean; error?: string }) {
-  getAddFeedWindow()?.webContents.send('feeds:add-result', data)
+  const win = getAddFeedWindow()
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('feeds:add-result', data)
+  }
 }
 
 function notifyFeedAdded(feedId: number) {
@@ -36,7 +39,7 @@ async function addRss(params: { url: string; title?: string; categoryId?: number
     scheduleSync()
     notifyFeedAdded(feedId)
   } catch (e) {
-    sendAddResult({ success: false, error: (e as Error).message })
+    sendAddResult({ success: false, error: toFriendlyFeedError(e) })
   }
 }
 
