@@ -84,7 +84,7 @@ function importFeeds(entries: FeedEntry[]): { total: number; added: number; skip
       const result = db
         .prepare('INSERT INTO feeds (url, title, site_url, category_id) VALUES (?, ?, ?, ?)')
         .run(entry.url, entry.title || entry.url, entry.siteUrl || null, categoryId)
-      refreshSingleFeed(result.lastInsertRowid as number).catch(() => {})
+      void refreshSingleFeed(result.lastInsertRowid as number)
     }
   })
 

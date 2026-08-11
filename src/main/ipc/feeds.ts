@@ -56,7 +56,7 @@ export function registerFeedHandlers(): void {
             db.prepare('UPDATE feeds SET favicon_url = ? WHERE id = ?').run(localUrl, feedId)
           }
         } catch {
-          /* favicon 获取失败不影响添加 */
+          void 0
         }
 
         scheduleSync()
@@ -87,7 +87,6 @@ export function registerFeedHandlers(): void {
     }
   })
 
-  // 添加适配站点：真实验证抓取后入库（adapter_id + adapter_params）
   ipcMain.handle(
     'feeds:addAdapter',
     async (
@@ -110,10 +109,8 @@ export function registerFeedHandlers(): void {
           }
         }
 
-        // 真实验证：构建 URL → 抓取 → 解析为 ParsedFeed（只抓这一次）
         const cookies = getCookiesForAdapter(adapter)
         const result = await runAdapter(adapter, input.params, { cookies })
-        // 适配器可补充 UP 主等 feed 级元信息（如专栏的 UP 主名/头像）
         let parsed = result.feed
         const meta = await adapter.fetchMeta?.(input.params, parsed)
         if (meta) {
@@ -141,7 +138,6 @@ export function registerFeedHandlers(): void {
             JSON.stringify(input.params)
           ).lastInsertRowid as number
 
-        // 直接用本次抓取结果更新元信息 + favicon + 入库（不再二次抓取，减风控风险）
         await persistParsedFeed(
           feedId,
           { url: result.url, custom_title: 0, favicon_url: null },
@@ -239,17 +235,9 @@ export function registerFeedHandlers(): void {
     }
   })
 
-  ipcMain.handle('feeds:refresh', async (_event, feedId: number) => {
-    try {
-      const result = await refreshSingleFeed(feedId)
-      if (result.success) {
-        return success(result)
-      } else {
-        return error(result.error || '刷新失败')
-      }
-    } catch (e) {
-      return error((e as Error).message)
-    }
+  ipcMain.handle('feeds:refresh', (_event, feedId: number) => {
+    refreshSingleFeed(feedId)
+    return success(true)
   })
 
   ipcMain.handle('feeds:openAddFeedWindow', async () => {
