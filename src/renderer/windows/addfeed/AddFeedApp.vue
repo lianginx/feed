@@ -8,6 +8,7 @@ import { Label } from '@renderer/shared/components/ui/label'
 import { Spinner } from '@renderer/shared/components/ui/spinner'
 import { Alert, AlertTitle } from '@renderer/shared/components/ui/alert'
 import AdapterParamsForm from '@renderer/windows/addfeed/components/AdapterParamsForm.vue'
+import { isValidRssUrl } from '@renderer/windows/addfeed/utils/url'
 import type { AdapterInfo } from '@renderer/shared/types'
 
 const { loadSettings } = useApp()
@@ -46,17 +47,17 @@ function showError(message: string) {
 watch(selectedId, () => (error.value = ''))
 
 onMounted(async () => {
-  await loadSettings()
-  const result = await window.api.feeds.listAdapters()
-  if (result.success && result.data) {
-    adapters.value = result.data
-  }
   stopAddResult = window.api.feeds.onAddResult((data) => {
     if (data.success) return
     showError(data.error || '未知错误')
     submittingRss.value = false
     submittingAdapter.value = false
   })
+  await loadSettings()
+  const result = await window.api.feeds.listAdapters()
+  if (result.success && result.data) {
+    adapters.value = result.data
+  }
 })
 
 onUnmounted(() => {
@@ -87,6 +88,10 @@ function handleAddRss() {
   const u = url.value.trim()
   if (!u) {
     error.value = '请输入 RSS 地址'
+    return
+  }
+  if (!isValidRssUrl(u)) {
+    error.value = '请输入有效的 RSS 地址'
     return
   }
   submittingRss.value = true
