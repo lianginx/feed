@@ -1,6 +1,6 @@
 # Feed — 简洁的 RSS 阅读器
 
-一个清爽、专注阅读的桌面端 RSS / Atom 订阅阅读器，支持 macOS / Windows / Linux。把你喜欢的博客、新闻、漫画站点聚合到一个地方，安静地读，告别一个个开网页。
+一个清爽、专注阅读的桌面端 RSS / Atom 订阅阅读器，正式支持 macOS，Windows / Linux 提供实验性支持。把你喜欢的博客、新闻、漫画站点聚合到一个地方，安静地读，告别一个个开网页。
 
 ![主界面](docs/screenshots/main.png)
 
@@ -19,14 +19,14 @@
 
 到 [GitHub Releases](https://github.com/lianginx/feed/releases) 下载对应平台的安装包：
 
-| 平台    | 安装包                                       |
-| ------- | -------------------------------------------- |
-| macOS   | `Feed-<版本号>.dmg`                          |
-| Windows | `feed-<版本号>-setup.exe`                    |
-| Linux   | `Feed-<版本号>.AppImage`（另有 `.deb` 可选） |
+| 平台    | 安装包                                       | 支持级别     |
+| ------- | -------------------------------------------- | ------------ |
+| macOS   | `Feed-<版本号>.dmg`                          | 正式支持     |
+| Windows | `feed-<版本号>-setup.exe`                    | 实验性支持   |
+| Linux   | `Feed-<版本号>.AppImage`（另有 `.deb` 可选） | 实验性支持   |
 
 > [!NOTE]
-> 应用主要在 macOS 上开发和测试，Windows / Linux 版本目前可正常使用，但部分体验（如菜单栏交互、窗口样式）尚未精细打磨，如有问题欢迎在 [Issues](https://github.com/lianginx/feed/issues) 反馈。
+> 应用主要在 macOS 上开发和测试，**macOS 是唯一正式支持平台**。Windows / Linux 版本会随每次发版自动构建产物，功能可正常使用，但属于**实验性支持**：不承诺修复平台特有 bug，作者当前精力有限，问题反馈响应可能不及时。
 
 > [!WARNING]
 > **macOS 首次打开可能被系统拦截**：应用目前未做 Apple 签名和公证，Gatekeeper 会提示无法验证开发者，也可能出现下面两种情况：
