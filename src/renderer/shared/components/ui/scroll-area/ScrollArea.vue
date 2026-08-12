@@ -7,12 +7,17 @@ import { ScrollAreaCorner, ScrollAreaRoot, ScrollAreaViewport } from 'reka-ui'
 import { cn } from '@/shared/lib/utils'
 import ScrollBar from './ScrollBar.vue'
 
-const props = defineProps<
-  ScrollAreaRootProps & {
-    class?: HTMLAttributes['class']
-    viewportClass?: HTMLAttributes['class']
+const props = withDefaults(
+  defineProps<
+    ScrollAreaRootProps & {
+      class?: HTMLAttributes['class']
+      viewportClass?: HTMLAttributes['class']
+    }
+  >(),
+  {
+    type: 'scroll'
   }
->()
+)
 
 const emit = defineEmits<{
   scroll: [event: Event]
