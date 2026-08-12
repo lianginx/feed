@@ -7,6 +7,7 @@ import { Input } from '@renderer/shared/components/ui/input'
 import { Label } from '@renderer/shared/components/ui/label'
 import { Spinner } from '@renderer/shared/components/ui/spinner'
 import { Alert, AlertTitle } from '@renderer/shared/components/ui/alert'
+import { ScrollArea } from '@renderer/shared/components/ui/scroll-area'
 import AdapterParamsForm from '@renderer/windows/addfeed/components/AdapterParamsForm.vue'
 import { isValidRssUrl } from '@renderer/windows/addfeed/utils/url'
 import type { AdapterInfo } from '@renderer/shared/types'
@@ -174,104 +175,108 @@ function handleAddAdapter() {
       </button>
     </nav>
 
-    <main class="min-w-0 flex-1 overflow-y-auto p-8 bg-card rounded-xl">
-      <Transition name="params" mode="out-in">
-        <div v-if="isRssSelected" key="rss">
-          <h2 class="text-sm font-semibold text-foreground mb-1">RSS 订阅源</h2>
-          <p class="mb-6 text-xs text-muted-foreground">订阅任意 RSS / Atom 地址</p>
-          <div class="grid gap-4">
-            <div class="grid gap-1.5">
-              <Label for="addfeed-url">RSS 地址</Label>
-              <Input
-                id="addfeed-url"
-                v-model="url"
-                type="url"
-                placeholder="https://example.com/feed.xml"
-                @keyup.enter="handleAddRss"
-              />
+    <main class="min-w-0 flex-1">
+      <ScrollArea class="h-full rounded-xl bg-card">
+        <div class="p-8">
+          <Transition name="params" mode="out-in">
+            <div v-if="isRssSelected" key="rss">
+              <h2 class="text-sm font-semibold text-foreground mb-1">RSS 订阅源</h2>
+              <p class="mb-6 text-xs text-muted-foreground">订阅任意 RSS / Atom 地址</p>
+              <div class="grid gap-4">
+                <div class="grid gap-1.5">
+                  <Label for="addfeed-url">RSS 地址</Label>
+                  <Input
+                    id="addfeed-url"
+                    v-model="url"
+                    type="url"
+                    placeholder="https://example.com/feed.xml"
+                    @keyup.enter="handleAddRss"
+                  />
+                </div>
+                <div class="grid gap-1.5">
+                  <Label for="addfeed-title">标题（可选）</Label>
+                  <Input
+                    id="addfeed-title"
+                    v-model="title"
+                    type="text"
+                    placeholder="自动获取"
+                    @keyup.enter="handleAddRss"
+                  />
+                </div>
+                <div class="flex justify-end pt-2">
+                  <Button :disabled="!url.trim() || submittingRss" @click="handleAddRss">
+                    <Spinner v-if="submittingRss" />
+                    {{ submittingRss ? '添加中…' : '添加' }}
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div class="grid gap-1.5">
-              <Label for="addfeed-title">标题（可选）</Label>
-              <Input
-                id="addfeed-title"
-                v-model="title"
-                type="text"
-                placeholder="自动获取"
-                @keyup.enter="handleAddRss"
-              />
+
+            <div v-else-if="selectedAdapter" :key="selectedAdapter.id">
+              <div class="mb-6 flex items-center gap-3">
+                <span
+                  class="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted text-xs font-semibold"
+                >
+                  <img
+                    v-if="!failedIcons.has(selectedAdapter.id)"
+                    :src="faviconUrl(selectedAdapter.id)"
+                    alt=""
+                    class="h-full w-full object-contain"
+                    loading="lazy"
+                    @error="failedIcons.add(selectedAdapter.id)"
+                  />
+                  <span v-else class="text-muted-foreground">
+                    {{ (selectedAdapter.name || '?').charAt(0) }}
+                  </span>
+                </span>
+                <div class="min-w-0">
+                  <h2 class="text-sm font-semibold text-foreground">{{ selectedAdapter.name }}</h2>
+                  <p
+                    v-if="selectedAdapter.description"
+                    class="mt-0.5 truncate text-xs text-muted-foreground"
+                  >
+                    {{ selectedAdapter.description }}
+                  </p>
+                </div>
+                <span class="ml-auto flex shrink-0 gap-1.5">
+                  <span
+                    v-if="selectedAdapter.needsBrowser"
+                    class="text-[11px] text-muted-foreground/70"
+                  >
+                    需浏览器
+                  </span>
+                  <span
+                    v-if="selectedAdapter.cookieDomain"
+                    class="text-[11px] text-muted-foreground/70"
+                  >
+                    需登录
+                  </span>
+                </span>
+              </div>
+
+              <div class="grid gap-4">
+                <AdapterParamsForm v-model="adapterParams" :params="selectedAdapter.params" />
+                <p v-if="selectedAdapter.cookieDomain" class="text-xs text-muted-foreground">
+                  该路由可能需要登录 Cookie，可在「设置 → 内置路由」中配置。
+                </p>
+                <div class="flex justify-end pt-2">
+                  <Button :disabled="!canAddAdapter" @click="handleAddAdapter">
+                    <Spinner v-if="submittingAdapter" />
+                    {{ submittingAdapter ? '添加中…' : '添加' }}
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div class="flex justify-end pt-2">
-              <Button :disabled="!url.trim() || submittingRss" @click="handleAddRss">
-                <Spinner v-if="submittingRss" />
-                {{ submittingRss ? '添加中…' : '添加' }}
-              </Button>
-            </div>
-          </div>
+          </Transition>
+
+          <Transition name="error" mode="out-in">
+            <Alert v-if="error" variant="destructive" class="mt-4">
+              <CircleAlert />
+              <AlertTitle>{{ error }}</AlertTitle>
+            </Alert>
+          </Transition>
         </div>
-
-        <div v-else-if="selectedAdapter" :key="selectedAdapter.id">
-          <div class="mb-6 flex items-center gap-3">
-            <span
-              class="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted text-xs font-semibold"
-            >
-              <img
-                v-if="!failedIcons.has(selectedAdapter.id)"
-                :src="faviconUrl(selectedAdapter.id)"
-                alt=""
-                class="h-full w-full object-contain"
-                loading="lazy"
-                @error="failedIcons.add(selectedAdapter.id)"
-              />
-              <span v-else class="text-muted-foreground">
-                {{ (selectedAdapter.name || '?').charAt(0) }}
-              </span>
-            </span>
-            <div class="min-w-0">
-              <h2 class="text-sm font-semibold text-foreground">{{ selectedAdapter.name }}</h2>
-              <p
-                v-if="selectedAdapter.description"
-                class="mt-0.5 truncate text-xs text-muted-foreground"
-              >
-                {{ selectedAdapter.description }}
-              </p>
-            </div>
-            <span class="ml-auto flex shrink-0 gap-1.5">
-              <span
-                v-if="selectedAdapter.needsBrowser"
-                class="text-[11px] text-muted-foreground/70"
-              >
-                需浏览器
-              </span>
-              <span
-                v-if="selectedAdapter.cookieDomain"
-                class="text-[11px] text-muted-foreground/70"
-              >
-                需登录
-              </span>
-            </span>
-          </div>
-
-          <div class="grid gap-4">
-            <AdapterParamsForm v-model="adapterParams" :params="selectedAdapter.params" />
-            <p v-if="selectedAdapter.cookieDomain" class="text-xs text-muted-foreground">
-              该路由可能需要登录 Cookie，可在「设置 → 内置路由」中配置。
-            </p>
-            <div class="flex justify-end pt-2">
-              <Button :disabled="!canAddAdapter" @click="handleAddAdapter">
-                <Spinner v-if="submittingAdapter" />
-                {{ submittingAdapter ? '添加中…' : '添加' }}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-
-      <Transition name="error" mode="out-in">
-        <Alert v-if="error" variant="destructive" class="mt-4">
-          <CircleAlert />
-          <AlertTitle>{{ error }}</AlertTitle>
-        </Alert>
-      </Transition>
+      </ScrollArea>
     </main>
   </div>
 </template>
