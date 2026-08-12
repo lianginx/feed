@@ -10,6 +10,7 @@ import {
 } from '@renderer/shared/components/ui/dialog'
 import { Button } from '@renderer/shared/components/ui/button'
 import { Spinner } from '@renderer/shared/components/ui/spinner'
+import { ScrollArea } from '@renderer/shared/components/ui/scroll-area'
 import { useUpdateDialog } from '@renderer/windows/main/composables/useUpdateDialog'
 import { sanitizeHtml } from '@renderer/windows/main/utils/sanitize'
 
@@ -80,12 +81,17 @@ const installText = computed(() => (isMac ? '退出并打开安装包' : '重启
 
       <!-- 更新日志（GitHub Atom 源返回 HTML，已由 sanitizeHtml（DOMPurify）净化） -->
       <!-- eslint-disable vue/no-v-html -- 内容已由 sanitizeHtml（DOMPurify）净化 -->
-      <div
+      <ScrollArea
         v-if="hasNotes"
-        v-highlight
-        class="release-notes max-h-75 overflow-y-auto rounded-md border bg-muted/40 p-3 prose prose-sm prose-neutral max-w-none dark:prose-invert"
-        v-html="renderedNotes"
-      />
+        class="release-notes max-h-75 rounded-md border bg-muted/40"
+        viewport-class="max-h-75"
+      >
+        <div
+          v-highlight
+          class="p-3 prose prose-sm prose-neutral max-w-none dark:prose-invert"
+          v-html="renderedNotes"
+        />
+      </ScrollArea>
       <!-- eslint-enable vue/no-v-html -->
 
       <DialogFooter>

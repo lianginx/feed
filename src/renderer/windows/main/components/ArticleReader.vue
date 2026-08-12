@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { watch, ref, computed } from 'vue'
+import { watch, ref, computed, useTemplateRef } from 'vue'
 import { Star, ExternalLink, Rss, ArrowUp, Languages } from '@lucide/vue'
 import { Button } from '@renderer/shared/components/ui/button'
 import { Spinner } from '@renderer/shared/components/ui/spinner'
+import { ScrollArea } from '@renderer/shared/components/ui/scroll-area'
 import { useArticles } from '@renderer/windows/main/composables/useArticles'
 import { useTitleInToolbar } from '@renderer/windows/main/composables/useTitleInToolbar'
 import { useTranslate } from '@renderer/windows/main/composables/useTranslate'
@@ -28,7 +29,8 @@ const displayTitle = computed(() =>
 )
 
 // 标题滚出视野后放进顶栏（类似 macOS 原生标题）
-const contentRef = ref<HTMLElement | null>(null)
+const scrollAreaRef = useTemplateRef<InstanceType<typeof ScrollArea>>('scrollArea')
+const contentRef = computed<HTMLElement | null>(() => scrollAreaRef.value?.viewport ?? null)
 const toolbarRef = ref<HTMLElement | null>(null)
 const { titleInToolbar } = useTitleInToolbar(contentRef, toolbarRef, currentArticle)
 
@@ -37,16 +39,17 @@ const BACK_TO_TOP_THRESHOLD = 400
 const showBackToTop = ref(false)
 
 function onContentScroll(): void {
-  showBackToTop.value = (contentRef.value?.scrollTop ?? 0) > BACK_TO_TOP_THRESHOLD
+  showBackToTop.value = (scrollAreaRef.value?.viewport?.scrollTop ?? 0) > BACK_TO_TOP_THRESHOLD
 }
 
 function scrollToTop(): void {
-  contentRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
+  scrollAreaRef.value?.viewport?.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 watch(currentArticle, () => {
-  if (contentRef.value) {
-    contentRef.value.scrollTop = 0
+  const viewport = scrollAreaRef.value?.viewport
+  if (viewport) {
+    viewport.scrollTop = 0
     showBackToTop.value = false
   }
 })
@@ -115,9 +118,10 @@ const displayContent = computed(() => {
     </div>
 
     <template v-else>
-      <div
-        ref="contentRef"
-        class="flex-1 overflow-y-auto overscroll-contain"
+      <ScrollArea
+        ref="scrollArea"
+        class="flex-1"
+        viewport-class="overscroll-contain"
         @scroll="onContentScroll"
       >
         <div
@@ -221,7 +225,7 @@ const displayContent = computed(() => {
           <!-- eslint-enable vue/no-v-html -->
           <div v-else class="text-muted-foreground text-sm">暂无内容</div>
         </article>
-      </div>
+      </ScrollArea>
 
       <Transition name="back-to-top">
         <Button

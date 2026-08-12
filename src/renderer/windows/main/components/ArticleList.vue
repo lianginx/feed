@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { watch, ref, computed } from 'vue'
+import { watch, computed, useTemplateRef } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { Star, Newspaper, BookOpen } from '@lucide/vue'
 import { dayjs } from '@renderer/windows/main/utils/dayjs'
 import { Skeleton } from '@renderer/shared/components/ui/skeleton'
+import { ScrollArea } from '@renderer/shared/components/ui/scroll-area'
 import {
   ContextMenu,
   ContextMenuTrigger,
@@ -22,13 +23,13 @@ const { articles, currentArticle, loading, reloadScope, openArticle, toggleStar,
 const { selectedFeedId, selectedCategoryId } = useFeeds()
 const { selectedView, isUnread, isStar, isToday } = useArticleView()
 
-const parentRef = ref<HTMLElement | null>(null)
+const scrollAreaRef = useTemplateRef<InstanceType<typeof ScrollArea>>('scrollArea')
 
 watch(
   [selectedFeedId, selectedCategoryId, isUnread, isStar, isToday],
   () => {
     currentArticle.value = null
-    parentRef.value?.scrollTo(0, 0)
+    scrollAreaRef.value?.viewport?.scrollTo(0, 0)
     reloadScope()
   },
   { immediate: true }
@@ -37,7 +38,7 @@ watch(
 const virtualizer = useVirtualizer(
   computed(() => ({
     count: articles.value.length,
-    getScrollElement: () => parentRef.value,
+    getScrollElement: () => scrollAreaRef.value?.viewport ?? null,
     estimateSize: () => 128,
     overscan: 10
   }))
@@ -70,7 +71,7 @@ function toggleUnreadFilter(): void {
       </Button>
     </div>
 
-    <div ref="parentRef" class="flex-1 overflow-y-auto">
+    <ScrollArea ref="scrollArea" class="flex-1 min-h-0">
       <div v-if="loading && articles.length === 0" class="space-y-2 p-4">
         <Skeleton class="h-20 w-full" />
         <Skeleton class="h-20 w-full" />
@@ -191,6 +192,6 @@ function toggleUnreadFilter(): void {
           <span class="mt-4">已经到底了</span>
         </div>
       </template>
-    </div>
+    </ScrollArea>
   </div>
 </template>
