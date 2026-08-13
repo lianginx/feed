@@ -154,150 +154,167 @@ async function onClickNewArticles(): Promise<void> {
       </Button>
     </div>
 
-    <button
-      v-if="newArticleCount > 0"
-      class="mx-3 mb-2 flex shrink-0 items-center justify-center gap-1.5 rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
-      @click="onClickNewArticles"
-    >
-      <ArrowUp class="size-3.5" />
-      有 {{ newArticleCount }} 篇新文章
-    </button>
-
-    <ScrollArea ref="scrollArea" class="flex-1 min-h-0" @scroll="onViewportScroll">
-      <div v-if="loading && articles.length === 0" class="space-y-2 p-4">
-        <Skeleton class="h-20 w-full" />
-        <Skeleton class="h-20 w-full" />
-        <Skeleton class="h-20 w-full" />
-      </div>
-      <div
-        v-else-if="articles.length === 0"
-        class="flex flex-col items-center justify-center h-48 gap-2 text-muted-foreground"
-      >
-        <div class="size-10 rounded-full bg-muted flex items-center justify-center">
-          <Newspaper class="size-5 text-muted-foreground/60" />
+    <div class="relative flex-1 min-h-0">
+      <ScrollArea ref="scrollArea" class="h-full" @scroll="onViewportScroll">
+        <div v-if="loading && articles.length === 0" class="space-y-2 p-4">
+          <Skeleton class="h-20 w-full" />
+          <Skeleton class="h-20 w-full" />
+          <Skeleton class="h-20 w-full" />
         </div>
-        <p class="text-sm">暂无文章</p>
-      </div>
-      <template v-else>
-        <div :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
-          <div
-            v-for="row in virtualizer.getVirtualItems()"
-            :key="rows[row.index]?.key ?? `row-${row.index}`"
-            :style="{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: `${row.size}px`,
-              transform: `translateY(${row.start}px)`
-            }"
-          >
+        <div
+          v-else-if="articles.length === 0"
+          class="flex flex-col items-center justify-center h-48 gap-2 text-muted-foreground"
+        >
+          <div class="size-10 rounded-full bg-muted flex items-center justify-center">
+            <Newspaper class="size-5 text-muted-foreground/60" />
+          </div>
+          <p class="text-sm">暂无文章</p>
+        </div>
+        <template v-else>
+          <div :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
             <div
-              v-if="rows[row.index]?.type === 'date'"
-              class="h-full px-3 flex items-end pb-1.5 text-xs font-semibold text-muted-foreground/70"
+              v-for="row in virtualizer.getVirtualItems()"
+              :key="rows[row.index]?.key ?? `row-${row.index}`"
+              :style="{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: `${row.size}px`,
+                transform: `translateY(${row.start}px)`
+              }"
             >
-              {{ (rows[row.index] as DateRow).label }}
-            </div>
-            <div v-else-if="rows[row.index]?.type === 'article'" class="h-full px-3 pb-2">
-              <ContextMenu>
-                <ContextMenuTrigger class="block h-full">
-                  <button
-                    class="w-full h-full text-left rounded-lg p-3 transition-colors hover:bg-accent"
-                    :class="{
-                      'bg-accent': (rows[row.index] as ArticleRow).article.id === currentArticle?.id
-                    }"
-                    @click="openArticle((rows[row.index] as ArticleRow).article.id)"
-                    @dblclick="openInBrowser((rows[row.index] as ArticleRow).article.url)"
-                  >
-                    <div class="flex items-start gap-3 h-full">
-                      <div class="flex-1 min-w-0 h-full flex flex-col">
-                        <div>
-                          <div class="flex items-center gap-1.5">
-                            <Star
-                              v-if="(rows[row.index] as ArticleRow).article.is_starred"
-                              class="w-3 h-3 text-starred shrink-0 fill-starred"
-                            />
-                            <h3
-                              class="line-clamp-2 text-sm font-semibold"
+              <div
+                v-if="rows[row.index]?.type === 'date'"
+                class="h-full px-3 flex items-end pb-1.5 text-xs font-semibold text-muted-foreground/70"
+              >
+                {{ (rows[row.index] as DateRow).label }}
+              </div>
+              <div v-else-if="rows[row.index]?.type === 'article'" class="h-full px-3 pb-2">
+                <ContextMenu>
+                  <ContextMenuTrigger class="block h-full">
+                    <button
+                      class="w-full h-full text-left rounded-lg p-3 transition-colors hover:bg-accent"
+                      :class="{
+                        'bg-accent':
+                          (rows[row.index] as ArticleRow).article.id === currentArticle?.id
+                      }"
+                      @click="openArticle((rows[row.index] as ArticleRow).article.id)"
+                      @dblclick="openInBrowser((rows[row.index] as ArticleRow).article.url)"
+                    >
+                      <div class="flex items-start gap-3 h-full">
+                        <div class="flex-1 min-w-0 h-full flex flex-col">
+                          <div>
+                            <div class="flex items-center gap-1.5">
+                              <Star
+                                v-if="(rows[row.index] as ArticleRow).article.is_starred"
+                                class="w-3 h-3 text-starred shrink-0 fill-starred"
+                              />
+                              <h3
+                                class="line-clamp-2 text-sm font-semibold"
+                                :class="
+                                  (rows[row.index] as ArticleRow).article.is_read
+                                    ? 'text-muted-foreground/80'
+                                    : 'text-foreground'
+                                "
+                              >
+                                {{ (rows[row.index] as ArticleRow).article.title }}
+                              </h3>
+                            </div>
+                            <p
+                              v-if="(rows[row.index] as ArticleRow).article.summary"
+                              class="text-xs mt-1 truncate"
                               :class="
                                 (rows[row.index] as ArticleRow).article.is_read
                                   ? 'text-muted-foreground/80'
-                                  : 'text-foreground'
+                                  : 'text-muted-foreground'
                               "
                             >
-                              {{ (rows[row.index] as ArticleRow).article.title }}
-                            </h3>
+                              {{ (rows[row.index] as ArticleRow).article.summary }}
+                            </p>
                           </div>
-                          <p
-                            v-if="(rows[row.index] as ArticleRow).article.summary"
-                            class="text-xs mt-1 truncate"
+                          <div
+                            class="flex items-center gap-3 mt-auto text-xs overflow-hidden"
                             :class="
                               (rows[row.index] as ArticleRow).article.is_read
-                                ? 'text-muted-foreground/80'
-                                : 'text-muted-foreground'
+                                ? 'text-muted-foreground/40'
+                                : 'text-muted-foreground/60'
                             "
                           >
-                            {{ (rows[row.index] as ArticleRow).article.summary }}
-                          </p>
+                            <span class="truncate min-w-0">
+                              {{ (rows[row.index] as ArticleRow).article.feed_title }}
+                            </span>
+                            <span
+                              v-if="(rows[row.index] as ArticleRow).article.published_at"
+                              class="shrink-0"
+                            >
+                              {{
+                                dayjs(
+                                  (rows[row.index] as ArticleRow).article.published_at! * 1000
+                                ).fromNow()
+                              }}
+                            </span>
+                          </div>
                         </div>
-                        <div
-                          class="flex items-center gap-3 mt-auto text-xs overflow-hidden"
+                        <img
+                          v-if="(rows[row.index] as ArticleRow).article.cover_image"
+                          :src="(rows[row.index] as ArticleRow).article.cover_image ?? undefined"
+                          class="h-full aspect-square rounded-md object-cover shrink-0 bg-muted ring-1 ring-inset ring-black/10 dark:ring-white/10"
                           :class="
-                            (rows[row.index] as ArticleRow).article.is_read
-                              ? 'text-muted-foreground/40'
-                              : 'text-muted-foreground/60'
+                            (rows[row.index] as ArticleRow).article.is_read ? 'opacity-60' : ''
                           "
-                        >
-                          <span class="truncate min-w-0">
-                            {{ (rows[row.index] as ArticleRow).article.feed_title }}
-                          </span>
-                          <span
-                            v-if="(rows[row.index] as ArticleRow).article.published_at"
-                            class="shrink-0"
-                          >
-                            {{
-                              dayjs(
-                                (rows[row.index] as ArticleRow).article.published_at! * 1000
-                              ).fromNow()
-                            }}
-                          </span>
-                        </div>
+                          loading="lazy"
+                          @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
+                        />
                       </div>
-                      <img
-                        v-if="(rows[row.index] as ArticleRow).article.cover_image"
-                        :src="(rows[row.index] as ArticleRow).article.cover_image ?? undefined"
-                        class="h-full aspect-square rounded-md object-cover shrink-0 bg-muted ring-1 ring-inset ring-black/10 dark:ring-white/10"
-                        :class="(rows[row.index] as ArticleRow).article.is_read ? 'opacity-60' : ''"
-                        loading="lazy"
-                        @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
-                      />
-                    </div>
-                  </button>
-                </ContextMenuTrigger>
-                <ContextMenuContent>
-                  <ContextMenuItem @select="toggleRead((rows[row.index] as ArticleRow).article.id)">
-                    {{ (rows[row.index] as ArticleRow).article.is_read ? '标记未读' : '标为已读' }}
-                  </ContextMenuItem>
-                  <ContextMenuItem @select="toggleStar((rows[row.index] as ArticleRow).article.id)">
-                    {{ (rows[row.index] as ArticleRow).article.is_starred ? '取消星标' : '星标' }}
-                  </ContextMenuItem>
-                  <ContextMenuSeparator />
-                  <ContextMenuItem
-                    v-if="(rows[row.index] as ArticleRow).article.url"
-                    @select="openInBrowser((rows[row.index] as ArticleRow).article.url)"
-                  >
-                    在浏览器中打开
-                  </ContextMenuItem>
-                </ContextMenuContent>
-              </ContextMenu>
+                    </button>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent>
+                    <ContextMenuItem
+                      @select="toggleRead((rows[row.index] as ArticleRow).article.id)"
+                    >
+                      {{
+                        (rows[row.index] as ArticleRow).article.is_read ? '标记未读' : '标为已读'
+                      }}
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                      @select="toggleStar((rows[row.index] as ArticleRow).article.id)"
+                    >
+                      {{ (rows[row.index] as ArticleRow).article.is_starred ? '取消星标' : '星标' }}
+                    </ContextMenuItem>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem
+                      v-if="(rows[row.index] as ArticleRow).article.url"
+                      @select="openInBrowser((rows[row.index] as ArticleRow).article.url)"
+                    >
+                      在浏览器中打开
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="h-20 flex items-center justify-center gap-2 text-xs text-muted-foreground/70">
-          <Spinner v-if="loadingMore" class="size-4" />
-          <span v-else-if="!hasMore">已经到底了</span>
-        </div>
-      </template>
-    </ScrollArea>
+          <div class="h-20 flex items-center justify-center gap-2 text-xs text-muted-foreground/70">
+            <Spinner v-if="loadingMore" class="size-4" />
+            <span v-else-if="!hasMore">已经到底了</span>
+          </div>
+        </template>
+      </ScrollArea>
+      <div class="absolute left-1/2 top-2 z-10 -translate-x-1/2">
+        <Transition
+          enter-active-class="animate-in fade-in slide-in-from-top-2 duration-200 ease-out"
+          leave-active-class="animate-out fade-out slide-out-to-top-2 duration-150 ease-in"
+        >
+          <button
+            v-if="newArticleCount > 0"
+            class="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-md transition-colors hover:bg-primary/90 active:scale-[0.96]"
+            @click="onClickNewArticles"
+          >
+            <ArrowUp class="size-3.5" />
+            查看 {{ newArticleCount }} 篇新文章
+          </button>
+        </Transition>
+      </div>
+    </div>
   </div>
 </template>
