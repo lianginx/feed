@@ -186,7 +186,7 @@ async function onClickNewArticles(): Promise<void> {
             >
               <div
                 v-if="rows[row.index]?.type === 'date'"
-                class="h-full px-3 flex items-end pb-1.5 text-xs font-semibold text-muted-foreground/70"
+                class="h-full pl-6 pr-3 flex items-end pb-1.5 text-xs font-semibold text-muted-foreground/70"
               >
                 {{ (rows[row.index] as DateRow).label }}
               </div>
