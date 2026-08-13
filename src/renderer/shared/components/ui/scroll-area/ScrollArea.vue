@@ -39,7 +39,10 @@ function onViewportScroll(event: Event): void {
 </script>
 
 <template>
-  <ScrollAreaRoot v-bind="delegatedProps" :class="cn('relative overflow-hidden', props.class)">
+  <ScrollAreaRoot
+    v-bind="delegatedProps"
+    :class="cn('relative isolate overflow-hidden', props.class)"
+  >
     <ScrollAreaViewport
       ref="viewport"
       :class="cn('h-full w-full rounded-[inherit]', props.viewportClass)"

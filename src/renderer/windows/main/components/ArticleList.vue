@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { watch, computed, useTemplateRef, nextTick } from 'vue'
-import { useVirtualizer } from '@tanstack/vue-virtual'
-import type { VirtualItem } from '@tanstack/vue-virtual'
-import { Star, Newspaper, BookOpen, ArrowUp } from '@lucide/vue'
+import { watch, computed, ref, useTemplateRef, nextTick } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
+import { Star, Newspaper, BookOpen, ArrowUp, ChevronDown } from '@lucide/vue'
 import { dayjs, formatRelativeDay } from '@renderer/windows/main/utils/dayjs'
 import { Skeleton } from '@renderer/shared/components/ui/skeleton'
 import { ScrollArea } from '@renderer/shared/components/ui/scroll-area'
@@ -42,19 +41,36 @@ const { selectedView, isUnread, isStar, isToday } = useArticleView()
 
 const scrollAreaRef = useTemplateRef<InstanceType<typeof ScrollArea>>('scrollArea')
 
-interface DateRow {
-  type: 'date'
-  key: string
+const stuckDates = ref<Set<string>>(new Set())
+const headerEls = new Map<string, HTMLElement>()
+
+function setHeaderRef(el: Element | ComponentPublicInstance | null, dateKey: string): void {
+  if (el instanceof HTMLElement) headerEls.set(dateKey, el)
+  else headerEls.delete(dateKey)
+}
+
+function updateStuckHeaders(): void {
+  const viewport = scrollAreaRef.value?.viewport
+  if (!viewport) return
+  if (viewport.scrollTop <= 0) {
+    if (stuckDates.value.size > 0) stuckDates.value = new Set()
+    return
+  }
+  const vTop = viewport.getBoundingClientRect().top
+  const next = new Set<string>()
+  for (const [dateKey, el] of headerEls) {
+    if (el.getBoundingClientRect().top <= vTop) next.add(dateKey)
+  }
+  if (next.size !== stuckDates.value.size || [...next].some((k) => !stuckDates.value.has(k))) {
+    stuckDates.value = next
+  }
+}
+
+interface ArticleGroup {
+  dateKey: string
   label: string
+  articles: Article[]
 }
-
-interface ArticleRow {
-  type: 'article'
-  key: string
-  article: Article
-}
-
-type ListRow = DateRow | ArticleRow
 
 function formatDateLabel(date: string): string {
   const today = dayjs().format('YYYY-MM-DD')
@@ -64,45 +80,40 @@ function formatDateLabel(date: string): string {
   return `${d.month() + 1}月${d.date()}日`
 }
 
-const rows = computed<ListRow[]>(() => {
-  const result: ListRow[] = []
-  let lastLabel = ''
+const collapsedDates = ref<Set<string>>(new Set())
+
+function isDateCollapsed(dateKey: string): boolean {
+  return collapsedDates.value.has(dateKey)
+}
+
+function toggleDateCollapse(dateKey: string): void {
+  const next = new Set(collapsedDates.value)
+  if (next.has(dateKey)) next.delete(dateKey)
+  else next.add(dateKey)
+  collapsedDates.value = next
+  void ensureFilled()
+}
+
+const groups = computed<ArticleGroup[]>(() => {
+  const result: ArticleGroup[] = []
+  let last: ArticleGroup | null = null
   for (const article of articles.value) {
     const date = article.published_at ? dayjs(article.published_at * 1000).format('YYYY-MM-DD') : ''
-    const label = date ? formatDateLabel(date) : '未知时间'
-    if (label !== lastLabel) {
-      result.push({ type: 'date', key: `date-${label}`, label })
-      lastLabel = label
+    const dateKey = date || 'unknown'
+    if (!last || last.dateKey !== dateKey) {
+      last = { dateKey, label: date ? formatDateLabel(date) : '未知时间', articles: [] }
+      result.push(last)
     }
-    result.push({ type: 'article', key: `article-${article.id}`, article })
+    last.articles.push(article)
   }
   return result
 })
-
-const virtualizer = useVirtualizer(
-  computed(() => ({
-    count: rows.value.length,
-    getScrollElement: () => scrollAreaRef.value?.viewport ?? null,
-    estimateSize: (index: number) => (rows.value[index]?.type === 'date' ? 30 : 128),
-    overscan: 10
-  }))
-)
-
-interface VirtualListRow extends VirtualItem {
-  row: ListRow
-}
-
-const virtualRows = computed<VirtualListRow[]>(() =>
-  virtualizer.value
-    .getVirtualItems()
-    .map((v) => ({ ...v, row: rows.value[v.index] }))
-    .filter((v): v is VirtualListRow => v.row !== undefined)
-)
 
 function onViewportScroll(): void {
   const el = scrollAreaRef.value?.viewport
   if (!el) return
   atTop.value = el.scrollTop < TOP_THRESHOLD
+  updateStuckHeaders()
   if (el.scrollTop + el.clientHeight >= el.scrollHeight - 200) {
     void loadMore()
   }
@@ -121,6 +132,7 @@ watch(
   () => {
     currentArticle.value = null
     searchQuery.value = ''
+    collapsedDates.value = new Set()
     scrollAreaRef.value?.viewport?.scrollTo(0, 0)
     void reloadFirstPage()
   },
@@ -180,88 +192,83 @@ async function onClickNewArticles(): Promise<void> {
           <p class="text-sm">暂无文章</p>
         </div>
         <template v-else>
-          <div :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
+          <div v-for="group in groups" :key="group.dateKey" class="mb-6">
             <div
-              v-for="vr in virtualRows"
-              :key="vr.row.key"
-              :style="{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: `${vr.size}px`,
-                transform: `translateY(${vr.start}px)`
-              }"
+              :ref="(el) => setHeaderRef(el, group.dateKey)"
+              class="sticky top-0 z-10 flex items-end gap-1 select-none bg-background px-6 py-2 text-xs font-semibold text-muted-foreground/90 transition-colors hover:text-foreground"
+              :class="{ 'shadow-sm': stuckDates.has(group.dateKey) }"
+              @click="toggleDateCollapse(group.dateKey)"
             >
+              <span class="flex-1">{{ group.label }}</span>
+              <ChevronDown
+                class="size-3.5 transition-transform duration-150"
+                :class="{ '-rotate-90': isDateCollapsed(group.dateKey) }"
+              />
+            </div>
+            <template v-if="!isDateCollapsed(group.dateKey)">
               <div
-                v-if="vr.row.type === 'date'"
-                class="h-full pl-6 pr-3 flex items-end pb-1.5 text-xs font-semibold text-muted-foreground/70"
+                v-for="article in group.articles"
+                :key="`article-${article.id}`"
+                class="px-3 transition-colors hover:bg-accent/60"
+                :class="{ 'bg-accent': article.id === currentArticle?.id }"
               >
-                {{ vr.row.label }}
-              </div>
-              <div v-else class="h-full px-3 pb-2">
                 <ContextMenu>
-                  <ContextMenuTrigger class="block h-full">
+                  <ContextMenuTrigger class="block">
                     <button
-                      class="w-full h-full text-left rounded-lg p-3 transition-colors hover:bg-accent"
-                      :class="{
-                        'bg-accent': vr.row.article.id === currentArticle?.id
-                      }"
-                      @click="openArticle(vr.row.article.id)"
-                      @dblclick="openInBrowser(vr.row.article.url)"
+                      class="w-full h-32 text-left px-3 py-3 border-b border-border/40"
+                      @click="openArticle(article.id)"
+                      @dblclick="openInBrowser(article.url)"
                     >
                       <div class="flex items-start gap-3 h-full">
                         <div class="flex-1 min-w-0 h-full flex flex-col">
                           <div>
                             <div class="flex items-center gap-1.5">
                               <Star
-                                v-if="vr.row.article.is_starred"
+                                v-if="article.is_starred"
                                 class="w-3 h-3 text-starred shrink-0 fill-starred"
                               />
                               <h3
                                 class="line-clamp-2 text-sm font-semibold"
                                 :class="
-                                  vr.row.article.is_read
-                                    ? 'text-muted-foreground/80'
-                                    : 'text-foreground'
+                                  article.is_read ? 'text-muted-foreground/80' : 'text-foreground'
                                 "
                               >
-                                {{ vr.row.article.title }}
+                                {{ article.title }}
                               </h3>
                             </div>
                             <p
-                              v-if="vr.row.article.summary"
+                              v-if="article.summary"
                               class="text-xs mt-1 truncate"
                               :class="
-                                vr.row.article.is_read
+                                article.is_read
                                   ? 'text-muted-foreground/80'
                                   : 'text-muted-foreground'
                               "
                             >
-                              {{ vr.row.article.summary }}
+                              {{ article.summary }}
                             </p>
                           </div>
                           <div
                             class="flex items-center gap-3 mt-auto text-xs overflow-hidden"
                             :class="
-                              vr.row.article.is_read
+                              article.is_read
                                 ? 'text-muted-foreground/40'
                                 : 'text-muted-foreground/60'
                             "
                           >
                             <span class="truncate min-w-0">
-                              {{ vr.row.article.feed_title }}
+                              {{ article.feed_title }}
                             </span>
-                            <span v-if="vr.row.article.published_at" class="shrink-0">
-                              {{ formatRelativeDay(vr.row.article.published_at) }}
+                            <span v-if="article.published_at" class="shrink-0">
+                              {{ formatRelativeDay(article.published_at) }}
                             </span>
                           </div>
                         </div>
                         <img
-                          v-if="vr.row.article.cover_image"
-                          :src="vr.row.article.cover_image ?? undefined"
+                          v-if="article.cover_image"
+                          :src="article.cover_image ?? undefined"
                           class="h-full aspect-square rounded-md object-cover shrink-0 bg-muted ring-1 ring-inset ring-black/10 dark:ring-white/10"
-                          :class="vr.row.article.is_read ? 'opacity-60' : ''"
+                          :class="article.is_read ? 'opacity-60' : ''"
                           loading="lazy"
                           @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
                         />
@@ -269,23 +276,20 @@ async function onClickNewArticles(): Promise<void> {
                     </button>
                   </ContextMenuTrigger>
                   <ContextMenuContent>
-                    <ContextMenuItem @select="toggleRead(vr.row.article.id)">
-                      {{ vr.row.article.is_read ? '标记未读' : '标为已读' }}
+                    <ContextMenuItem @select="toggleRead(article.id)">
+                      {{ article.is_read ? '标记未读' : '标为已读' }}
                     </ContextMenuItem>
-                    <ContextMenuItem @select="toggleStar(vr.row.article.id)">
-                      {{ vr.row.article.is_starred ? '取消星标' : '星标' }}
+                    <ContextMenuItem @select="toggleStar(article.id)">
+                      {{ article.is_starred ? '取消星标' : '星标' }}
                     </ContextMenuItem>
                     <ContextMenuSeparator />
-                    <ContextMenuItem
-                      v-if="vr.row.article.url"
-                      @select="openInBrowser(vr.row.article.url)"
-                    >
+                    <ContextMenuItem v-if="article.url" @select="openInBrowser(article.url)">
                       在浏览器中打开
                     </ContextMenuItem>
                   </ContextMenuContent>
                 </ContextMenu>
               </div>
-            </div>
+            </template>
           </div>
           <div class="h-20 flex items-center justify-center gap-2 text-xs text-muted-foreground/70">
             <Spinner v-if="loadingMore" class="size-4" />
