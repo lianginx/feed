@@ -1,5 +1,5 @@
 import type { UpdaterStatus } from '@shared/types/updater'
-import type { ArticleDetail, ArticleListResult } from '@shared/types/articles'
+import type { ArticleDetail, ArticleListParams, ArticleListResult } from '@shared/types/articles'
 
 interface ApiResponse<T = unknown> {
   success: boolean
@@ -147,14 +147,7 @@ interface CategoryApi {
 }
 
 interface ArticleApi {
-  list: (params: {
-    feedId?: number
-    categoryId?: number | null
-    isUnread?: boolean
-    isStar?: boolean
-    isToday?: boolean
-    query?: string
-  }) => Promise<ApiResponse<ArticleListResult>>
+  list: (params: ArticleListParams) => Promise<ApiResponse<ArticleListResult>>
   get: (id: number) => Promise<ApiResponse<ArticleDetail>>
   toggleRead: (id: number) => Promise<ApiResponse<{ id: number; is_read: number }>>
   markAllRead: (

@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { UpdaterStatus } from '@shared/types/updater'
+import type { ArticleListParams } from '@shared/types/articles'
 
 /**
  * 订阅主进程事件：包裹回调并剥离 IpcRendererEvent，只透传业务数据，
@@ -70,14 +71,7 @@ const api = {
       ipcRenderer.invoke('categories:updateSortOrder', items)
   },
   articles: {
-    list: (params: {
-      feedId?: number
-      categoryId?: number | null
-      isUnread?: boolean
-      isStar?: boolean
-      isToday?: boolean
-      query?: string
-    }) => ipcRenderer.invoke('articles:list', params),
+    list: (params: ArticleListParams) => ipcRenderer.invoke('articles:list', params),
     get: (id: number) => ipcRenderer.invoke('articles:get', id),
     toggleRead: (id: number) => ipcRenderer.invoke('articles:toggleRead', id),
     markAllRead: (feedId?: number, isStar?: boolean, isToday?: boolean) =>

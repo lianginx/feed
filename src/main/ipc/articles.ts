@@ -2,15 +2,7 @@ import { ipcMain } from 'electron'
 import { getConnection } from '@main/database/connection'
 import { success, error } from './util'
 import { scheduleBadgeUpdate } from '@main/services/badge'
-
-interface ArticleListParams {
-  feedId?: number
-  categoryId?: number | null
-  isUnread?: boolean
-  isStar?: boolean
-  isToday?: boolean
-  query?: string
-}
+import type { ArticleListCursor, ArticleListParams } from '@shared/types/articles'
 
 function buildArticleConditions(params: ArticleListParams): {
   conditions: string[]
@@ -57,9 +49,10 @@ export function registerArticleHandlers(): void {
         const terms = query.split(/\s+/).filter(Boolean)
         if (terms.every((t) => t.length >= 3)) {
           // 词长 ≥3：用 FTS5 MATCH（trigram 索引），避免前导通配符 LIKE 的全表扫描；
-          // 每个词用双引号包裹并转义，防止用户输入破坏 MATCH 查询语法
+          // 每个词用双引号包裹并转义，防止用户输入破坏 MATCH 查询语法。
+          // 注意：MATCH 语法不认表别名，必须用真实表名 articles_fts
           queryParams.match = terms.map((t) => `"${t.replace(/"/g, '""')}"`).join(' OR ')
-          conditions.push('fts MATCH @match')
+          conditions.push('articles_fts MATCH @match')
         } else {
           // 短词（<3 字符）trigram 无法索引匹配，降级为 LIKE 子串查询
           terms.forEach((term, i) => {
@@ -71,12 +64,29 @@ export function registerArticleHandlers(): void {
         }
       }
 
+      // 游标分页：排序为 published_at DESC, id DESC，游标是上一页最后一条（最旧），
+      // 下一页取比游标更旧的行。SQLite 中 NULL 在 DESC 排序时排最后，游标非空时需包含全部 NULL 行
+      if (params.cursor) {
+        if (params.cursor.publishedAt === null) {
+          conditions.push('a.published_at IS NULL AND a.id < @cursorId')
+          queryParams.cursorId = params.cursor.id
+        } else {
+          conditions.push(
+            '(a.published_at < @cursorPub OR (a.published_at = @cursorPub AND a.id < @cursorId) OR a.published_at IS NULL)'
+          )
+          queryParams.cursorPub = params.cursor.publishedAt
+          queryParams.cursorId = params.cursor.id
+        }
+      }
+
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
       const fromClause = query
         ? 'FROM articles_fts fts\n        JOIN articles a ON a.id = fts.rowid\n        JOIN feeds f ON a.feed_id = f.id'
         : 'FROM articles a\n        JOIN feeds f ON a.feed_id = f.id'
 
-      const articles = db
+      const limit = Math.min(Math.max(params.limit ?? 60, 1), 200)
+      // 多取一条判断是否还有下一页
+      const rows = db
         .prepare(
           `
         SELECT a.id, a.feed_id, a.title, a.author, a.summary, a.published_at, a.is_read, a.is_starred, a.url, a.cover_image,
@@ -84,13 +94,20 @@ export function registerArticleHandlers(): void {
         ${fromClause}
         ${whereClause}
         ORDER BY a.published_at DESC, a.id DESC
-        LIMIT 500
+        LIMIT ${limit + 1}
       `
         )
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .all(queryParams) as any[]
 
-      return success({ articles })
+      const hasMore = rows.length > limit
+      const page = hasMore ? rows.slice(0, limit) : rows
+      const last = page[page.length - 1] as { published_at: number | null; id: number } | undefined
+      const nextCursor: ArticleListCursor | null = last
+        ? { publishedAt: last.published_at, id: last.id }
+        : null
+
+      return success({ articles: page, hasMore, nextCursor })
     } catch (e) {
       return error((e as Error).message)
     }

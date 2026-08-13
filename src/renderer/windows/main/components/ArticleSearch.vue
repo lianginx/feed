@@ -3,15 +3,10 @@ import { watch, ref, nextTick } from 'vue'
 import { Search, X } from '@lucide/vue'
 import { Input } from '@renderer/shared/components/ui/input'
 import { useArticles } from '@renderer/windows/main/composables/useArticles'
-import { useFeeds } from '@renderer/windows/main/composables/useFeeds'
-import { useArticleView } from '@renderer/windows/main/composables/useArticleView'
 import { useSearchFocus } from '@renderer/windows/main/composables/useSearchFocus'
 
-const { articles, reloadScope, search } = useArticles()
-const { selectedFeedId, selectedCategoryId } = useFeeds()
-const { isUnread, isStar, isToday } = useArticleView()
+const { searchQuery, applySearch } = useArticles()
 
-const searchQuery = ref('')
 const searchExpanded = ref(true)
 const searchInput = ref<{ $el: Element } | null>(null)
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -30,35 +25,14 @@ async function focusSearch(): Promise<void> {
 
 watch(focusSignal, focusSearch)
 
-async function handleSearch(): Promise<void> {
-  const q = searchQuery.value.trim()
-  if (!q) {
-    await reloadScope()
-    return
-  }
-  const results = await search(q)
-  if (results) {
-    articles.value = results
-  }
-}
-
 function onSearchInput(): void {
   if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(handleSearch, 300)
+  searchTimer = setTimeout(() => applySearch(searchQuery.value), 300)
 }
 
 function clearSearch(): void {
-  searchQuery.value = ''
-  handleSearch()
+  applySearch('')
 }
-
-function onSearchBlur(): void {
-  // 暂时不折叠
-}
-
-watch([selectedFeedId, selectedCategoryId, isUnread, isStar, isToday], () => {
-  searchQuery.value = ''
-})
 </script>
 
 <template>
@@ -83,7 +57,6 @@ watch([selectedFeedId, selectedCategoryId, isUnread, isStar, isToday], () => {
         class="h-full w-full pl-8 pr-8 rounded-md bg-muted/70 border-transparent shadow-none transition-colors hover:bg-muted focus:bg-muted"
         @input="onSearchInput"
         @keyup.escape="clearSearch"
-        @blur="onSearchBlur"
       />
       <button
         v-if="searchQuery"
