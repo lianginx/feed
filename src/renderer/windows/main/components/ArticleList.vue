@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { watch, computed, useTemplateRef, nextTick } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
+import type { VirtualItem } from '@tanstack/vue-virtual'
 import { Star, Newspaper, BookOpen, ArrowUp } from '@lucide/vue'
-import { dayjs } from '@renderer/windows/main/utils/dayjs'
+import { dayjs, formatRelativeDay } from '@renderer/windows/main/utils/dayjs'
 import { Skeleton } from '@renderer/shared/components/ui/skeleton'
 import { ScrollArea } from '@renderer/shared/components/ui/scroll-area'
 import { Spinner } from '@renderer/shared/components/ui/spinner'
@@ -63,7 +64,6 @@ function formatDateLabel(date: string): string {
   return `${d.month() + 1}月${d.date()}日`
 }
 
-/** 文章行之间插入日期标题行，形成扁平行列表（日期行/文章行高度不同，需区分估算） */
 const rows = computed<ListRow[]>(() => {
   const result: ListRow[] = []
   let lastLabel = ''
@@ -88,7 +88,17 @@ const virtualizer = useVirtualizer(
   }))
 )
 
-/** 滚动位置：更新顶部状态并触发加载下一页 */
+interface VirtualListRow extends VirtualItem {
+  row: ListRow
+}
+
+const virtualRows = computed<VirtualListRow[]>(() =>
+  virtualizer.value
+    .getVirtualItems()
+    .map((v) => ({ ...v, row: rows.value[v.index] }))
+    .filter((v): v is VirtualListRow => v.row !== undefined)
+)
+
 function onViewportScroll(): void {
   const el = scrollAreaRef.value?.viewport
   if (!el) return
@@ -98,7 +108,6 @@ function onViewportScroll(): void {
   }
 }
 
-/** 内容不足以填满视口时自动加载下一页，保证分页能触发 */
 async function ensureFilled(): Promise<void> {
   if (loadingMore.value || !hasMore.value) return
   await nextTick()
@@ -173,96 +182,86 @@ async function onClickNewArticles(): Promise<void> {
         <template v-else>
           <div :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
             <div
-              v-for="row in virtualizer.getVirtualItems()"
-              :key="rows[row.index]?.key ?? `row-${row.index}`"
+              v-for="vr in virtualRows"
+              :key="vr.row.key"
               :style="{
                 position: 'absolute',
                 top: 0,
                 left: 0,
                 width: '100%',
-                height: `${row.size}px`,
-                transform: `translateY(${row.start}px)`
+                height: `${vr.size}px`,
+                transform: `translateY(${vr.start}px)`
               }"
             >
               <div
-                v-if="rows[row.index]?.type === 'date'"
+                v-if="vr.row.type === 'date'"
                 class="h-full pl-6 pr-3 flex items-end pb-1.5 text-xs font-semibold text-muted-foreground/70"
               >
-                {{ (rows[row.index] as DateRow).label }}
+                {{ vr.row.label }}
               </div>
-              <div v-else-if="rows[row.index]?.type === 'article'" class="h-full px-3 pb-2">
+              <div v-else class="h-full px-3 pb-2">
                 <ContextMenu>
                   <ContextMenuTrigger class="block h-full">
                     <button
                       class="w-full h-full text-left rounded-lg p-3 transition-colors hover:bg-accent"
                       :class="{
-                        'bg-accent':
-                          (rows[row.index] as ArticleRow).article.id === currentArticle?.id
+                        'bg-accent': vr.row.article.id === currentArticle?.id
                       }"
-                      @click="openArticle((rows[row.index] as ArticleRow).article.id)"
-                      @dblclick="openInBrowser((rows[row.index] as ArticleRow).article.url)"
+                      @click="openArticle(vr.row.article.id)"
+                      @dblclick="openInBrowser(vr.row.article.url)"
                     >
                       <div class="flex items-start gap-3 h-full">
                         <div class="flex-1 min-w-0 h-full flex flex-col">
                           <div>
                             <div class="flex items-center gap-1.5">
                               <Star
-                                v-if="(rows[row.index] as ArticleRow).article.is_starred"
+                                v-if="vr.row.article.is_starred"
                                 class="w-3 h-3 text-starred shrink-0 fill-starred"
                               />
                               <h3
                                 class="line-clamp-2 text-sm font-semibold"
                                 :class="
-                                  (rows[row.index] as ArticleRow).article.is_read
+                                  vr.row.article.is_read
                                     ? 'text-muted-foreground/80'
                                     : 'text-foreground'
                                 "
                               >
-                                {{ (rows[row.index] as ArticleRow).article.title }}
+                                {{ vr.row.article.title }}
                               </h3>
                             </div>
                             <p
-                              v-if="(rows[row.index] as ArticleRow).article.summary"
+                              v-if="vr.row.article.summary"
                               class="text-xs mt-1 truncate"
                               :class="
-                                (rows[row.index] as ArticleRow).article.is_read
+                                vr.row.article.is_read
                                   ? 'text-muted-foreground/80'
                                   : 'text-muted-foreground'
                               "
                             >
-                              {{ (rows[row.index] as ArticleRow).article.summary }}
+                              {{ vr.row.article.summary }}
                             </p>
                           </div>
                           <div
                             class="flex items-center gap-3 mt-auto text-xs overflow-hidden"
                             :class="
-                              (rows[row.index] as ArticleRow).article.is_read
+                              vr.row.article.is_read
                                 ? 'text-muted-foreground/40'
                                 : 'text-muted-foreground/60'
                             "
                           >
                             <span class="truncate min-w-0">
-                              {{ (rows[row.index] as ArticleRow).article.feed_title }}
+                              {{ vr.row.article.feed_title }}
                             </span>
-                            <span
-                              v-if="(rows[row.index] as ArticleRow).article.published_at"
-                              class="shrink-0"
-                            >
-                              {{
-                                dayjs(
-                                  (rows[row.index] as ArticleRow).article.published_at! * 1000
-                                ).fromNow()
-                              }}
+                            <span v-if="vr.row.article.published_at" class="shrink-0">
+                              {{ formatRelativeDay(vr.row.article.published_at) }}
                             </span>
                           </div>
                         </div>
                         <img
-                          v-if="(rows[row.index] as ArticleRow).article.cover_image"
-                          :src="(rows[row.index] as ArticleRow).article.cover_image ?? undefined"
+                          v-if="vr.row.article.cover_image"
+                          :src="vr.row.article.cover_image ?? undefined"
                           class="h-full aspect-square rounded-md object-cover shrink-0 bg-muted ring-1 ring-inset ring-black/10 dark:ring-white/10"
-                          :class="
-                            (rows[row.index] as ArticleRow).article.is_read ? 'opacity-60' : ''
-                          "
+                          :class="vr.row.article.is_read ? 'opacity-60' : ''"
                           loading="lazy"
                           @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
                         />
@@ -270,22 +269,16 @@ async function onClickNewArticles(): Promise<void> {
                     </button>
                   </ContextMenuTrigger>
                   <ContextMenuContent>
-                    <ContextMenuItem
-                      @select="toggleRead((rows[row.index] as ArticleRow).article.id)"
-                    >
-                      {{
-                        (rows[row.index] as ArticleRow).article.is_read ? '标记未读' : '标为已读'
-                      }}
+                    <ContextMenuItem @select="toggleRead(vr.row.article.id)">
+                      {{ vr.row.article.is_read ? '标记未读' : '标为已读' }}
                     </ContextMenuItem>
-                    <ContextMenuItem
-                      @select="toggleStar((rows[row.index] as ArticleRow).article.id)"
-                    >
-                      {{ (rows[row.index] as ArticleRow).article.is_starred ? '取消星标' : '星标' }}
+                    <ContextMenuItem @select="toggleStar(vr.row.article.id)">
+                      {{ vr.row.article.is_starred ? '取消星标' : '星标' }}
                     </ContextMenuItem>
                     <ContextMenuSeparator />
                     <ContextMenuItem
-                      v-if="(rows[row.index] as ArticleRow).article.url"
-                      @select="openInBrowser((rows[row.index] as ArticleRow).article.url)"
+                      v-if="vr.row.article.url"
+                      @select="openInBrowser(vr.row.article.url)"
                     >
                       在浏览器中打开
                     </ContextMenuItem>

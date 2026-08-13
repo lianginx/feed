@@ -8,13 +8,12 @@ import { useArticles } from '@renderer/windows/main/composables/useArticles'
 import { useTitleInToolbar } from '@renderer/windows/main/composables/useTitleInToolbar'
 import { useTranslate } from '@renderer/windows/main/composables/useTranslate'
 import { sanitizeHtml } from '@renderer/windows/main/utils/sanitize'
-import { dayjs } from '@renderer/windows/main/utils/dayjs'
+import { formatRelativeDay } from '@renderer/windows/main/utils/dayjs'
 import { estimateReadingTime } from '@renderer/windows/main/utils/readingTime'
 
 const { currentArticle, toggleStar } = useArticles()
 const { translating, translated, shown, configured, toggle, refresh } = useTranslate()
 
-// 翻译按钮：Shift+左键点击 = 忽略缓存强制重译（等价于 Option+Shift+T），普通点击 = 切换
 function onTranslateClick(e: MouseEvent): void {
   if (e.shiftKey) {
     void refresh()
@@ -23,18 +22,15 @@ function onTranslateClick(e: MouseEvent): void {
   }
 }
 
-// 标题：译文显示时用译文标题（h1 与顶栏共用）
 const displayTitle = computed(() =>
   shown.value && translated.value ? translated.value.title : (currentArticle.value?.title ?? '')
 )
 
-// 标题滚出视野后放进顶栏（类似 macOS 原生标题）
 const scrollAreaRef = useTemplateRef<InstanceType<typeof ScrollArea>>('scrollArea')
 const contentRef = computed<HTMLElement | null>(() => scrollAreaRef.value?.viewport ?? null)
 const toolbarRef = ref<HTMLElement | null>(null)
 const { titleInToolbar } = useTitleInToolbar(contentRef, toolbarRef, currentArticle)
 
-// 返回顶部按钮：滚动超过阈值才显示，悬浮在内容右下角
 const BACK_TO_TOP_THRESHOLD = 400
 const showBackToTop = ref(false)
 
@@ -54,7 +50,6 @@ watch(currentArticle, () => {
   }
 })
 
-// 时间显示：默认相对时间（如「3 小时前」），点击切换为绝对时间
 const useRelativeTime = ref(true)
 
 function formatDate(timestamp: number | null): string {
@@ -64,7 +59,7 @@ function formatDate(timestamp: number | null): string {
 
 function formatTime(timestamp: number | null): string {
   if (!timestamp) return ''
-  return useRelativeTime.value ? dayjs(timestamp * 1000).fromNow() : formatDate(timestamp)
+  return useRelativeTime.value ? formatRelativeDay(timestamp) : formatDate(timestamp)
 }
 
 function toggleTimeFormat(): void {
@@ -77,10 +72,8 @@ function openInBrowser(url: string | null): void {
   }
 }
 
-// 阅读时间：根据文章正文字数估算（中文按字、英文按词，分开计速）
 const readingTime = computed(() => estimateReadingTime(currentArticle.value?.content ?? null))
 
-// 展示正文：优先译文/原文正文；正文缺失（如详情抓取失败）时回退显示摘要，保留换行
 const displayContent = computed(() => {
   const article = currentArticle.value
   if (!article) return ''
@@ -271,10 +264,6 @@ const displayContent = computed(() => {
   transform: translateY(6px) scale(0.96);
 }
 
-/* 返回顶部按钮：锚定正文列（max-w-3xl，即 48rem）右缘外侧。
-   公式：正文右缘到卡片右缘的空白 d = (100% - min(100%, 48rem)) / 2，
-   right = max(固定贴边 1.25rem, d - 按钮宽(2.5rem) - 间隙(1rem))。
-   卡片宽度不足时自动退化为贴卡片右缘向内，避免溢出。 */
 .back-to-top-btn {
   right: max(1.25rem, calc((100% - min(100%, 48rem)) / 2 - 3.5rem));
 }
