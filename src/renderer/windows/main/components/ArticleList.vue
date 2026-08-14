@@ -22,6 +22,7 @@ const {
   newArticleCount,
   atTop,
   searchQuery,
+  searchApplied,
   reloadFirstPage,
   loadMore,
   openArticle,
@@ -84,6 +85,11 @@ watch(
   },
   { immediate: true }
 )
+
+watch(searchApplied, () => {
+  resetCollapsed()
+  scrollAreaRef.value?.viewport?.scrollTo(0, 0)
+})
 
 watch([() => articles.value.length, loadingMore], () => {
   if (!loadingMore.value) void ensureFilled()

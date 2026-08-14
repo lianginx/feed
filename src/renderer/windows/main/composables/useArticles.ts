@@ -26,6 +26,8 @@ const newArticleCount = ref(0)
 const atTop = ref(true)
 /** 当前搜索关键词 */
 const searchQuery = ref('')
+/** 搜索生效信号：applySearch 执行时自增，供列表重置 UI 状态 */
+const searchApplied = ref(0)
 
 let cursor: ArticleListCursor | null = null
 /** 请求序号：scope/刷新变化后旧请求响应直接丢弃，防止污染当前状态 */
@@ -123,6 +125,7 @@ export function useArticles() {
   /** 应用搜索关键词：重置分页并重新加载第一页 */
   function applySearch(query: string): void {
     searchQuery.value = query.trim()
+    searchApplied.value++
     void reloadFirstPage()
   }
 
@@ -213,6 +216,7 @@ export function useArticles() {
     newArticleCount,
     atTop,
     searchQuery,
+    searchApplied,
     reloadFirstPage,
     loadMore,
     handleFeedRefreshed,
