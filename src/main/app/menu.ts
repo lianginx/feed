@@ -4,16 +4,8 @@ import { getMainWindow } from './window'
 import { createSettingsWindow } from './settingsWindow'
 import { createAddFeedWindow } from './addFeedWindow'
 
-/**
- * 构建并设置应用菜单。
- * 菜单项通过 webContents.send 向渲染进程发送指令。
- */
 export function buildAppMenu(): void {
-  // 开发者工具菜单：完全由 FEED_ENABLE_DEVTOOLS 决定（.env 中 MAIN_VITE_ENABLE_DEVTOOLS）
-  const showDevToolsMenu = envBool(
-    'FEED_ENABLE_DEVTOOLS',
-    import.meta.env.MAIN_VITE_ENABLE_DEVTOOLS
-  )
+  const showDevToolsMenu = envBool(import.meta.env.MAIN_VITE_ENABLE_DEVTOOLS)
 
   const template: Electron.MenuItemConstructorOptions[] = [
     {
@@ -112,8 +104,7 @@ export function buildAppMenu(): void {
         {
           label: '只看未读/显示全部',
           accelerator: 'Tab',
-          // 不实际注册快捷键（macOS 支持），避免与渲染进程 keydown 拦截冲突，
-          // 仅在菜单中显示提示；Tab 实际由渲染进程 useTabShortcut 处理
+
           registerAccelerator: false,
           click: () => getMainWindow()?.webContents.send('menu:toggleUnread')
         },
