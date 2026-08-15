@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Star } from '@lucide/vue'
+import { toast } from 'vue-sonner'
 import { formatRelativeDay } from '@renderer/windows/main/utils/dayjs'
 import {
   ContextMenu,
@@ -22,6 +23,20 @@ const emit = defineEmits<{
 
 function openInBrowser(url: string | null) {
   if (url) window.open(url, '_blank')
+}
+
+async function copyShareText() {
+  const { title, summary, url, feed_title } = props.article
+  const parts = [`${title}\n`]
+  if (summary) parts.push(`${summary}\n`)
+  if (url) parts.push(`原文：${url}`)
+  if (feed_title) parts.push(`来源：${feed_title}`)
+  const res = await window.api.clipboard.writeText(parts.join('\n'))
+  if (res.success) {
+    toast.success('已复制分享信息')
+  } else {
+    toast.error(res.error || '复制失败')
+  }
 }
 </script>
 
@@ -84,6 +99,9 @@ function openInBrowser(url: string | null) {
         {{ props.article.is_starred ? '取消星标' : '星标' }}
       </ContextMenuItem>
       <ContextMenuSeparator />
+      <ContextMenuItem v-if="props.article.url" @select="copyShareText">
+        复制分享信息
+      </ContextMenuItem>
       <ContextMenuItem v-if="props.article.url" @select="openInBrowser(props.article.url)">
         在浏览器中打开
       </ContextMenuItem>

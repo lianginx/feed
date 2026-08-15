@@ -243,7 +243,12 @@ interface SystemApi {
   platform: string
 }
 
+interface ClipboardApi {
+  writeText: (text: string) => Promise<ApiResponse<unknown>>
+}
+
 interface AppApi {
+  clipboard: ClipboardApi
   feeds: FeedApi
   categories: CategoryApi
   articles: ArticleApi

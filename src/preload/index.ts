@@ -2,11 +2,6 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { UpdaterStatus } from '@shared/types/updater'
 import type { ArticleListParams } from '@shared/types/articles'
 
-/**
- * 订阅主进程事件：包裹回调并剥离 IpcRendererEvent，只透传业务数据，
- * 避免把底层 ipcRenderer / 事件对象暴露给渲染进程（Electron 安全规则 #20）。
- * 返回取消订阅函数。
- */
 function onChannel<A extends unknown[]>(
   channel: string,
   callback: (...args: A) => void
@@ -20,8 +15,10 @@ function onChannel<A extends unknown[]>(
 }
 
 const api = {
+  clipboard: {
+    writeText: (text: string) => ipcRenderer.invoke('clipboard:writeText', text)
+  },
   system: {
-    /** 当前操作系统平台（darwin / win32 / linux） */
     platform: process.platform
   },
   feeds: {
@@ -44,7 +41,6 @@ const api = {
       title?: string
       categoryId?: number
     }) => ipcRenderer.invoke('feeds:addAdapter', input),
-    /** 订阅单个订阅源刷新进度事件，返回取消订阅函数 */
     onRefreshProgress: (
       callback: (data: {
         feedId: number
@@ -54,7 +50,6 @@ const api = {
         error?: string
       }) => void
     ): (() => void) => onChannel('feeds:refresh-progress', callback),
-    /** 打开「添加订阅源」独立窗口 */
     openAddFeedWindow: () => ipcRenderer.invoke('feeds:openAddFeedWindow'),
     onAddResult: (callback: (data: { success: boolean; error?: string }) => void): (() => void) =>
       onChannel('feeds:add-result', callback),
@@ -82,26 +77,20 @@ const api = {
   config: {
     get: () => ipcRenderer.invoke('config:get'),
     update: (settings: Record<string, unknown>) => ipcRenderer.invoke('config:update', settings),
-    /** 用内置浏览器登录站点：弹登录窗口，成功后自动保存该域 cookie */
     loginSite: (input: { domain: string; loginUrl: string; loginCookieNames?: string[] }) =>
       ipcRenderer.invoke('settings:loginSite', input),
-    /** 订阅配置变更事件，返回取消订阅函数 */
     onChanged: (callback: () => void): (() => void) => onChannel('config:changed', callback)
   },
   cache: {
-    /** 本地缓存占用统计（按命名空间） */
     stats: () => ipcRenderer.invoke('cache:stats'),
-    /** 清理本地缓存，返回释放字节数 */
     clear: () => ipcRenderer.invoke('cache:clear')
   },
   opml: {
     import: () => ipcRenderer.invoke('opml:import'),
     export: () => ipcRenderer.invoke('opml:export'),
-    /** 订阅 OPML 导入完成事件，返回取消订阅函数 */
     onImported: (callback: () => void): (() => void) => onChannel('opml:imported', callback)
   },
   menu: {
-    /** 上报菜单可用状态（主进程据此置灰菜单项） */
     updateState: (state: {
       hasArticle: boolean
       hasFeedContext: boolean
