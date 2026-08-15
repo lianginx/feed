@@ -29,54 +29,50 @@ function openInBrowser(url: string | null) {
   <ContextMenu>
     <ContextMenuTrigger class="block">
       <button
-        class="w-full py-4 h-38 text-left"
+        class="flex flex-col w-full py-4 text-left"
         @click="emit('select', props.article.id)"
         @dblclick="openInBrowser(props.article.url)"
       >
-        <div class="flex items-start gap-3 h-full">
-          <div class="flex-1 min-w-0 h-full flex flex-col">
-            <div>
-              <div class="flex items-baseline gap-1.5">
-                <Star
-                  v-if="props.article.is_starred"
-                  class="-ml-4.5 w-3 h-3 text-starred shrink-0 fill-starred"
-                />
-                <h3
-                  class="line-clamp-2 font-semibold text-sm"
-                  :class="props.article.is_read ? 'text-muted-foreground' : 'text-foreground'"
-                >
-                  {{ props.article.title }}
-                </h3>
-              </div>
-              <p
-                v-if="props.article.summary"
-                class="text-xs mt-2 line-clamp-2"
-                :class="
-                  props.article.is_read ? 'text-muted-foreground/70' : 'text-muted-foreground/90'
-                "
+        <div class="flex gap-2 h-21">
+          <div class="flex flex-col gap-1 flex-1 min-w-0">
+            <div class="flex items-baseline gap-1.5">
+              <Star
+                v-if="props.article.is_starred"
+                class="-ml-4.5 w-3 h-3 text-starred shrink-0 fill-starred"
+              />
+              <h3
+                class="line-clamp-2 font-semibold text-sm"
+                :class="props.article.is_read ? 'text-muted-foreground' : 'text-foreground'"
               >
-                {{ props.article.summary }}
-              </p>
+                {{ props.article.title }}
+              </h3>
             </div>
-            <div
-              class="flex items-center gap-3 mt-auto text-xs overflow-hidden text-muted-foreground/70"
+            <p
+              v-if="props.article.summary"
+              class="text-xs line-clamp-2"
+              :class="
+                props.article.is_read ? 'text-muted-foreground/70' : 'text-muted-foreground/90'
+              "
             >
-              <span class="truncate min-w-0">
-                {{ props.article.feed_title }}
-              </span>
-              <span v-if="props.article.published_at" class="shrink-0">
-                {{ formatRelativeDay(props.article.published_at) }}
-              </span>
-            </div>
+              {{ props.article.summary }}
+            </p>
           </div>
           <img
             v-if="props.article.cover_image"
             :src="props.article.cover_image ?? undefined"
-            class="h-full aspect-square rounded-md object-cover shrink-0 bg-muted ring-1 ring-inset ring-black/10 dark:ring-white/10"
+            class="h-full aspect-square rounded-md object-cover shrink-0 bg-muted border-[0.5px] border-muted-foreground/10"
             :class="props.article.is_read ? 'opacity-60' : ''"
             loading="lazy"
             @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
           />
+        </div>
+        <div class="flex items-center gap-3 mt-2 text-xs overflow-hidden text-muted-foreground/70">
+          <span class="truncate min-w-0">
+            {{ props.article.feed_title }}
+          </span>
+          <span v-if="props.article.published_at" class="shrink-0">
+            {{ formatRelativeDay(props.article.published_at) }}
+          </span>
         </div>
       </button>
     </ContextMenuTrigger>
