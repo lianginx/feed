@@ -131,7 +131,7 @@ async function onClickNewArticles() {
                 <div
                   v-for="article in group.articles"
                   :key="`article-${article.id}`"
-                  class="pl-6 pr-5 border-t last:border-b border-border/50 transition-colors hover:bg-muted"
+                  class="pl-6 pr-5 border-t border-border/50 transition-colors hover:bg-muted"
                   :class="{ 'bg-muted': article.id === currentArticle?.id }"
                 >
                   <ArticleListItem
