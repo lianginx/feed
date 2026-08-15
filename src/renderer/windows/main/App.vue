@@ -14,13 +14,15 @@ import { SidebarProvider, Sidebar } from '@renderer/shared/components/ui/sidebar
 import SidebarNav from '@renderer/windows/main/components/sidebar/SidebarNav.vue'
 import ArticleList from '@renderer/windows/main/components/ArticleList.vue'
 import ArticleReader from '@renderer/windows/main/components/ArticleReader.vue'
-import ToastNotification from '@renderer/windows/main/components/ToastNotification.vue'
 import DialogAddCategory from '@renderer/windows/main/components/dialog/DialogAddCategory.vue'
 import DialogConfirm from '@renderer/windows/main/components/dialog/DialogConfirm.vue'
 import DialogUpdate from '@renderer/windows/main/components/dialog/DialogUpdate.vue'
 import DialogSyncConflict from '@renderer/windows/main/components/dialog/DialogSyncConflict.vue'
+import Sonner from '@renderer/shared/components/ui/sonner/Sonner.vue'
+import { useTheme } from '@renderer/shared/composables/useTheme'
 
 const { loadSettings } = useApp()
+const { resolvedTheme } = useTheme()
 const { loadFeeds } = useFeeds()
 
 useMenuCommands()
@@ -123,7 +125,7 @@ async function handleSyncConflictChoice(choice: 'local' | 'remote'): Promise<voi
     </div>
   </SidebarProvider>
 
-  <ToastNotification />
+  <Sonner :theme="resolvedTheme" />
 
   <DialogAddCategory
     :open="showAddCategory || editCategoryData !== null"
