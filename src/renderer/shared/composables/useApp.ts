@@ -1,9 +1,7 @@
-import { ref, computed, watch } from 'vue'
+import { ref } from 'vue'
 import type { SyncConfig, TranslateConfig, ProxyConfig } from '@renderer/shared/types'
+import { useTheme } from '@renderer/shared/composables/useTheme'
 
-export type Theme = 'light' | 'dark' | 'system'
-
-const theme = ref<Theme>('system')
 const updateInterval = ref(30)
 const autoCheckUpdate = ref(true)
 const updateCheckInterval = ref(360)
@@ -14,33 +12,13 @@ const launchHidden = ref(false)
 const siteCookies = ref<Record<string, string>>({})
 const proxyConfig = ref<ProxyConfig>({ mode: 'auto' })
 
-function resolveTheme(t: Theme): 'light' | 'dark' {
-  if (t === 'system') {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-  }
-  return t
-}
-
-const resolvedTheme = computed(() => resolveTheme(theme.value))
-
-function applyTheme(t: 'light' | 'dark'): void {
-  document.documentElement.setAttribute('data-theme', t)
-}
-
-watch(resolvedTheme, applyTheme, { immediate: true })
-
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-  if (theme.value === 'system') {
-    // 直接读取实时 matchMedia，避免使用被缓存的 computed（其依赖不含 matchMedia，会返回过期值）
-    applyTheme(resolveTheme(theme.value))
-  }
-})
-
 export function useApp() {
+  const { theme, loadTheme } = useTheme()
+
   async function loadSettings(): Promise<void> {
+    await loadTheme()
     const result = await window.api.config.get()
     if (result.success && result.data) {
-      theme.value = result.data.theme
       updateInterval.value = result.data.updateInterval
       autoCheckUpdate.value = result.data.autoCheckUpdate
       updateCheckInterval.value = result.data.updateCheckInterval
@@ -51,11 +29,6 @@ export function useApp() {
       siteCookies.value = result.data.siteCookies ?? {}
       proxyConfig.value = result.data.proxy ?? { mode: 'auto' }
     }
-  }
-
-  async function setTheme(t: Theme): Promise<void> {
-    theme.value = t
-    await window.api.config.update({ theme: t })
   }
 
   async function setUpdateInterval(minutes: number): Promise<void> {
@@ -128,7 +101,6 @@ export function useApp() {
 
   return {
     theme,
-    resolvedTheme,
     updateInterval,
     autoCheckUpdate,
     updateCheckInterval,
@@ -139,7 +111,6 @@ export function useApp() {
     siteCookies,
     proxyConfig,
     loadSettings,
-    setTheme,
     setUpdateInterval,
     setAutoCheckUpdate,
     setUpdateCheckInterval,

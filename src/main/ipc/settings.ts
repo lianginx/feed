@@ -1,4 +1,4 @@
-import { ipcMain, nativeTheme, BrowserWindow } from 'electron'
+import { ipcMain, nativeTheme } from 'electron'
 import { getSettings, updateSettings, type AppSettings } from '@main/config'
 import { getMainWindow } from '@main/app/window'
 import { startScheduler } from '@main/services/timer'
@@ -65,13 +65,6 @@ export function registerSettingsHandlers(): void {
       const updated = updateSettings(settings)
       if (settings.theme !== undefined) {
         nativeTheme.themeSource = settings.theme
-        const wins = BrowserWindow.getAllWindows()
-        if (wins.length > 0) {
-          const isDark =
-            settings.theme === 'dark' ||
-            (settings.theme === 'system' && nativeTheme.shouldUseDarkColors)
-          wins[0].setBackgroundColor(isDark ? '#0a0a0a' : '#fafafa')
-        }
       }
       if (settings.updateInterval !== undefined) {
         startScheduler()

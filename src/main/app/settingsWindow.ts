@@ -20,8 +20,7 @@ export function createSettingsWindow(): void {
 
   const settings = getSettings()
   nativeTheme.themeSource = settings.theme
-  const isDark =
-    settings.theme === 'dark' || (settings.theme === 'system' && nativeTheme.shouldUseDarkColors)
+  const isDark = nativeTheme.shouldUseDarkColors
 
   settingsWindow = new BrowserWindow({
     width: 760,

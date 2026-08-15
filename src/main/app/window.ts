@@ -73,8 +73,7 @@ export function createWindow(): void {
 
   nativeTheme.themeSource = settings.theme
 
-  const isDark =
-    settings.theme === 'dark' || (settings.theme === 'system' && nativeTheme.shouldUseDarkColors)
+  const isDark = nativeTheme.shouldUseDarkColors
 
   mainWindow = new BrowserWindow({
     acceptFirstMouse: true,

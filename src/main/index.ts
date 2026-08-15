@@ -1,7 +1,7 @@
 // 副作用：必须在任何读取 userData 的模块（尤其 ./config）之前执行，确定目录并迁移老数据
 import './dataMigration'
 
-import { app, nativeTheme } from 'electron'
+import { app } from 'electron'
 import { electronApp } from '@electron-toolkit/utils'
 import { APP_METADATA } from '@shared/appMetadata'
 import { initializeDatabase, closeConnection } from './database'
@@ -50,17 +50,6 @@ app.whenReady().then(() => {
   createWindow()
   createTray()
   setTrayRef(getTrayRef())
-
-  nativeTheme.on('updated', () => {
-    const savedTheme = getSettings().theme
-    if (savedTheme === 'system') {
-      const win = getMainWindow()
-      if (win) {
-        const isDark = nativeTheme.shouldUseDarkColors
-        win.setBackgroundColor(isDark ? '#0a0a0a' : '#fafafa')
-      }
-    }
-  })
 
   scheduleBadgeUpdate()
 
