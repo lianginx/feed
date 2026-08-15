@@ -29,8 +29,7 @@ import {
 } from '@renderer/shared/components/ui/select'
 import { Switch } from '@renderer/shared/components/ui/switch'
 import { ScrollArea } from '@renderer/shared/components/ui/scroll-area'
-import { useApp } from '@renderer/shared/composables/useApp'
-import { useTheme, type Theme } from '@renderer/shared/composables/useTheme'
+import { useApp, type Theme } from '@renderer/shared/composables/useApp'
 import { useSync } from '@renderer/shared/composables/useSync'
 import { useSyncEvents } from '@renderer/shared/composables/useSyncEvents'
 import type {
@@ -42,6 +41,8 @@ import type {
 } from '@renderer/shared/types'
 
 const {
+  theme,
+  setTheme,
   updateInterval,
   setUpdateInterval,
   syncConfig,
@@ -62,7 +63,6 @@ const {
   proxyConfig,
   setProxyConfig
 } = useApp()
-const { theme, setTheme } = useTheme()
 const { runSync, syncing, lastSyncedAt, loadStatus } = useSync()
 
 const themes: { value: Theme; label: string }[] = [
@@ -1160,11 +1160,13 @@ onMounted(async () => {
   color: var(--color-blue-700);
 }
 
-[data-theme='dark'] .link {
-  color: var(--color-blue-500);
-}
+@media (prefers-color-scheme: dark) {
+  .link {
+    color: var(--color-blue-500);
+  }
 
-[data-theme='dark'] .link:hover {
-  color: var(--color-blue-600);
+  .link:hover {
+    color: var(--color-blue-600);
+  }
 }
 </style>

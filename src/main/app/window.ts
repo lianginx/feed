@@ -69,11 +69,10 @@ export function setupExternalNavigation(webContents: WebContents): void {
  */
 export function createWindow(): void {
   const settings = getSettings()
-  const bounds = settings.windowBounds
-
   nativeTheme.themeSource = settings.theme
-
   const isDark = nativeTheme.shouldUseDarkColors
+
+  const bounds = settings.windowBounds
 
   mainWindow = new BrowserWindow({
     acceptFirstMouse: true,

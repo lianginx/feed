@@ -38,7 +38,9 @@
 }
 
 /* 行内代码在暗色下降低背景亮度，文字用 accent-foreground 保证对比度 */
-[data-theme='dark'] .prose :where(code):not(:where(pre code, pre *)) {
-  background-color: color-mix(in srgb, var(--muted) 80%, transparent);
-  color: var(--accent-foreground);
+@media (prefers-color-scheme: dark) {
+  .prose :where(code):not(:where(pre code, pre *)) {
+    background-color: color-mix(in srgb, var(--muted) 80%, transparent);
+    color: var(--accent-foreground);
+  }
 }

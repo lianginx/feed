@@ -1,7 +1,9 @@
 import { ref } from 'vue'
 import type { SyncConfig, TranslateConfig, ProxyConfig } from '@renderer/shared/types'
-import { useTheme } from '@renderer/shared/composables/useTheme'
 
+export type Theme = 'light' | 'dark' | 'system'
+
+const theme = ref<Theme>('system')
 const updateInterval = ref(30)
 const autoCheckUpdate = ref(true)
 const updateCheckInterval = ref(360)
@@ -13,12 +15,10 @@ const siteCookies = ref<Record<string, string>>({})
 const proxyConfig = ref<ProxyConfig>({ mode: 'auto' })
 
 export function useApp() {
-  const { theme, loadTheme } = useTheme()
-
-  async function loadSettings(): Promise<void> {
-    await loadTheme()
+  async function loadSettings() {
     const result = await window.api.config.get()
     if (result.success && result.data) {
+      theme.value = result.data.theme
       updateInterval.value = result.data.updateInterval
       autoCheckUpdate.value = result.data.autoCheckUpdate
       updateCheckInterval.value = result.data.updateCheckInterval
@@ -31,32 +31,37 @@ export function useApp() {
     }
   }
 
-  async function setUpdateInterval(minutes: number): Promise<void> {
+  async function setTheme(t: Theme) {
+    theme.value = t
+    await window.api.config.update({ theme: t })
+  }
+
+  async function setUpdateInterval(minutes: number) {
     updateInterval.value = minutes
     await window.api.config.update({ updateInterval: minutes })
   }
 
-  async function setAutoCheckUpdate(enabled: boolean): Promise<void> {
+  async function setAutoCheckUpdate(enabled: boolean) {
     autoCheckUpdate.value = enabled
     await window.api.config.update({ autoCheckUpdate: enabled })
   }
 
-  async function setUpdateCheckInterval(minutes: number): Promise<void> {
+  async function setUpdateCheckInterval(minutes: number) {
     updateCheckInterval.value = minutes
     await window.api.config.update({ updateCheckInterval: minutes })
   }
 
-  async function setAutoLaunch(enabled: boolean): Promise<void> {
+  async function setAutoLaunch(enabled: boolean) {
     autoLaunch.value = enabled
     await window.api.config.update({ autoLaunch: enabled })
   }
 
-  async function setLaunchHidden(enabled: boolean): Promise<void> {
+  async function setLaunchHidden(enabled: boolean) {
     launchHidden.value = enabled
     await window.api.config.update({ launchHidden: enabled })
   }
 
-  async function setSyncConfig(partial: Partial<SyncConfig>): Promise<void> {
+  async function setSyncConfig(partial: Partial<SyncConfig>) {
     const next: SyncConfig = { ...syncConfig.value, ...partial }
     if (!next.token) delete next.token
     if (!next.webdavUrl) delete next.webdavUrl
@@ -66,7 +71,7 @@ export function useApp() {
     await window.api.config.update({ sync: next })
   }
 
-  async function setTranslateConfig(partial: Partial<TranslateConfig>): Promise<void> {
+  async function setTranslateConfig(partial: Partial<TranslateConfig>) {
     const next: TranslateConfig = { ...translateConfig.value, ...partial }
     if (!next.baiduAppid) delete next.baiduAppid
     if (!next.baiduSecretKey) delete next.baiduSecretKey
@@ -74,7 +79,7 @@ export function useApp() {
     await window.api.config.update({ translate: next })
   }
 
-  async function setSiteCookies(next: Record<string, string>): Promise<void> {
+  async function setSiteCookies(next: Record<string, string>) {
     const cleaned: Record<string, string> = {}
     for (const [domain, cookie] of Object.entries(next)) {
       if (domain.trim() && cookie.trim()) {
@@ -85,7 +90,7 @@ export function useApp() {
     await window.api.config.update({ siteCookies: cleaned })
   }
 
-  async function setProxyConfig(partial: Partial<ProxyConfig>): Promise<void> {
+  async function setProxyConfig(partial: Partial<ProxyConfig>) {
     const next: ProxyConfig = { ...proxyConfig.value, ...partial }
     if (next.mode !== 'manual') {
       // 非手动模式不保留手动字段，避免残留
@@ -111,6 +116,7 @@ export function useApp() {
     siteCookies,
     proxyConfig,
     loadSettings,
+    setTheme,
     setUpdateInterval,
     setAutoCheckUpdate,
     setUpdateCheckInterval,

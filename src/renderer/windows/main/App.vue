@@ -19,10 +19,8 @@ import DialogConfirm from '@renderer/windows/main/components/dialog/DialogConfir
 import DialogUpdate from '@renderer/windows/main/components/dialog/DialogUpdate.vue'
 import DialogSyncConflict from '@renderer/windows/main/components/dialog/DialogSyncConflict.vue'
 import Sonner from '@renderer/shared/components/ui/sonner/Sonner.vue'
-import { useTheme } from '@renderer/shared/composables/useTheme'
 
 const { loadSettings } = useApp()
-const { resolvedTheme } = useTheme()
 const { loadFeeds } = useFeeds()
 
 useMenuCommands()
@@ -125,7 +123,7 @@ async function handleSyncConflictChoice(choice: 'local' | 'remote'): Promise<voi
     </div>
   </SidebarProvider>
 
-  <Sonner :theme="resolvedTheme" />
+  <Sonner theme="system" />
 
   <DialogAddCategory
     :open="showAddCategory || editCategoryData !== null"
