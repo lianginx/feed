@@ -108,6 +108,7 @@ async function handleDeleteFeed(): Promise<void> {
 
 <template>
   <SidebarMenuItem
+    :data-feed-id="props.feed.id"
     :class="props.class"
     draggable="true"
     @click="selectFeed(props.feed.id)"

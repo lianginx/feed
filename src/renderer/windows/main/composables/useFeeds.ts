@@ -31,6 +31,7 @@ const selectedFeedId = ref<number | null>(null)
 const selectedCategoryId = ref<number | null | undefined>(undefined)
 const loading = ref(false)
 const refreshingFeedIds = ref<Set<number>>(new Set())
+const scrollTargetFeedId = ref<number | null>(null)
 
 const filteredFeeds = computed(() => {
   if (selectedCategoryId.value === undefined) return feeds.value
@@ -140,6 +141,14 @@ export function useFeeds() {
     }
   }
 
+  function requestScrollToFeed(id: number) {
+    scrollTargetFeedId.value = id
+  }
+
+  function clearScrollTargetFeed() {
+    scrollTargetFeedId.value = null
+  }
+
   return {
     categories,
     feeds,
@@ -160,6 +169,9 @@ export function useFeeds() {
     refreshCategoryFeeds,
     refreshAllFeeds,
     selectFeed,
-    selectCategory
+    selectCategory,
+    scrollTargetFeedId,
+    requestScrollToFeed,
+    clearScrollTargetFeed
   }
 }

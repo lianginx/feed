@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watch, nextTick } from 'vue'
 import { Collapsible, CollapsibleContent } from '@renderer/shared/components/ui/collapsible'
 import {
   ContextMenu,
@@ -25,7 +26,14 @@ import SidebarEmptyState from '@renderer/windows/main/components/sidebar/Sidebar
 import SidebarFeedActions from '@renderer/windows/main/components/sidebar/SidebarFeedActions.vue'
 import SidebarViewSwitcher from '@renderer/windows/main/components/sidebar/SidebarViewSwitcher.vue'
 
-const { categories, feeds, loadFeeds, refreshCategoryFeeds } = useFeeds()
+const {
+  categories,
+  feeds,
+  loadFeeds,
+  refreshCategoryFeeds,
+  scrollTargetFeedId,
+  clearScrollTargetFeed
+} = useFeeds()
 const { showAddCategory, handleEditCategory, handleDeleteCategory } = useAddCategoryDialog()
 const { editingFeed, showEditFeed, close: closeEditFeed } = useFeedEditDialog()
 const {
@@ -42,6 +50,31 @@ async function handleMarkAllReadByCategory(catId: number | null): Promise<void> 
   await window.api.categories.markAllRead(catId)
   await loadFeeds()
 }
+
+watch(scrollTargetFeedId, async (feedId) => {
+  if (feedId === null) return
+
+  try {
+    for (let i = 0; i < 30; i++) {
+      await nextTick()
+      // 新源默认进未分类，若其所在分组被折叠则先展开
+      const target = feeds.value.find((f) => f.id === feedId)
+      if (target?.category_id === null) {
+        uncategorizedCollapsed.value = false
+      } else if (target?.category_id) {
+        collapsedCategories.value[target.category_id] = false
+      }
+      const el = document.querySelector(`[data-feed-id="${feedId}"]`) as HTMLElement | null
+      if (el && el.offsetParent !== null) {
+        el.scrollIntoView({ block: 'center' })
+        return
+      }
+      await new Promise((r) => requestAnimationFrame(r))
+    }
+  } finally {
+    clearScrollTargetFeed()
+  }
+})
 </script>
 
 <template>
