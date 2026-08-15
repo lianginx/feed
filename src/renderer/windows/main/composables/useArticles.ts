@@ -9,7 +9,6 @@ import type {
 } from '@shared/types/articles'
 
 const PAGE_SIZE = 60
-export const TOP_THRESHOLD = 80
 
 const articles = ref<Article[]>([])
 const currentArticle = ref<ArticleDetail | null>(null)
@@ -17,7 +16,6 @@ const loading = ref(false)
 const loadingMore = ref(false)
 const hasMore = ref(false)
 const newArticleCount = ref(0)
-const atTop = ref(true)
 const searchQuery = ref('')
 const searchApplied = ref(0)
 
@@ -92,15 +90,8 @@ export function useArticles() {
 
   function handleFeedRefreshed(feedId: number, inserted: number): void {
     if (!isFeedRelevant(feedId)) return
-    if (searchQuery.value.trim()) {
-      if (atTop.value) void reloadFirstPage()
-      return
-    }
-    if (atTop.value) {
-      void reloadFirstPage()
-    } else {
-      newArticleCount.value += inserted
-    }
+    if (searchQuery.value.trim()) return
+    newArticleCount.value += inserted
   }
 
   function isFeedRelevant(feedId: number): boolean {
@@ -199,7 +190,6 @@ export function useArticles() {
     loadingMore,
     hasMore,
     newArticleCount,
-    atTop,
     searchQuery,
     searchApplied,
     reloadFirstPage,

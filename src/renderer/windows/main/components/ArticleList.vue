@@ -2,7 +2,7 @@
 import { watch, useTemplateRef, nextTick, onUnmounted } from 'vue'
 import { ScrollArea } from '@renderer/shared/components/ui/scroll-area'
 import { Collapsible, CollapsibleContent } from '@renderer/shared/components/ui/collapsible'
-import { useArticles, TOP_THRESHOLD } from '@renderer/windows/main/composables/useArticles'
+import { useArticles } from '@renderer/windows/main/composables/useArticles'
 import { useFeeds } from '@renderer/windows/main/composables/useFeeds'
 import { useArticleView } from '@renderer/windows/main/composables/useArticleView'
 import { useArticleGroups } from '@renderer/windows/main/composables/useArticleGroups'
@@ -20,7 +20,6 @@ const {
   loadingMore,
   hasMore,
   newArticleCount,
-  atTop,
   searchQuery,
   searchApplied,
   reloadFirstPage,
@@ -45,7 +44,6 @@ const { stuckDates, setHeaderRef, updateStuckHeaders } = useStickyDateHeaders(
 function onViewportScroll() {
   const el = scrollAreaRef.value?.viewport
   if (!el) return
-  atTop.value = el.scrollTop < TOP_THRESHOLD
   updateStuckHeaders()
   if (el.scrollTop + el.clientHeight >= el.scrollHeight - 200) {
     void loadMore()
