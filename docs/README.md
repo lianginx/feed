@@ -54,3 +54,4 @@
 | [phase2.md](./phase2.md)             | 第二期功能规划                      |
 | [alternatives.md](./alternatives.md) | 备选方案对比                        |
 | [release.md](./release.md)           | 发布与分发                          |
+| [sync-article-state.md](./sync-article-state.md) | 文章状态同步设计方案        |
