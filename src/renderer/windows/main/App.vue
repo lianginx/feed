@@ -27,7 +27,6 @@ useMenuCommands()
 useFeedsEvents()
 useAppEvents()
 useSyncEvents((result) => {
-  // 远端数据已应用，刷新订阅列表（含新增/删除/排序变化）
   if (result.status === 'pulled') {
     loadFeeds()
   }
@@ -51,7 +50,6 @@ const {
 } = useConfirmDialog()
 const { pendingConflict, resolveConflict, loadStatus } = useSync()
 
-// 全局禁用浏览器默认右键菜单（自定义 ContextMenu 已自行处理 preventDefault）
 function onContextMenu(e: MouseEvent): void {
   if (!e.defaultPrevented) {
     e.preventDefault()
@@ -114,12 +112,10 @@ async function handleSyncConflictChoice(choice: 'local' | 'remote'): Promise<voi
     :style="{ '--sidebar-width': '20rem' }"
     class="h-screen overflow-hidden bg-canvas"
   >
-    <!-- 侧边栏不做卡片，透明化直接陈列在地面上 -->
     <Sidebar collapsible="none" class="bg-transparent">
       <SidebarNav />
     </Sidebar>
-    <!-- 地面：承载卡片的画布，卡片之间留 gap；卡片用多层阴影浮起 -->
-    <div class="m-2 ml-0 flex-4 min-w-0 overflow-hidden rounded-xl bg-card">
+    <div class="m-2 ml-0 flex-4 max-w-104 min-w-0 overflow-hidden rounded-xl bg-card">
       <ArticleList />
     </div>
     <div class="m-2 ml-0 flex-8 min-w-0 overflow-hidden rounded-xl bg-card">
