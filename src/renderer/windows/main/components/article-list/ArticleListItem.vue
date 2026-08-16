@@ -75,7 +75,7 @@ async function copyShareText() {
           <img
             v-if="props.article.cover_image"
             :src="props.article.cover_image ?? undefined"
-            class="h-full aspect-square rounded-md object-cover shrink-0 bg-muted border-[0.5px] border-muted-foreground/10"
+            class="h-full aspect-square object-cover shrink-0 bg-muted border-[0.5px] border-muted-foreground/10"
             :class="props.article.is_read ? 'opacity-60' : ''"
             loading="lazy"
             @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"

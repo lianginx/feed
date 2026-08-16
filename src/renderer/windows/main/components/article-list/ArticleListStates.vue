@@ -34,10 +34,10 @@ withDefaults(
     </div>
   </template>
   <div
-    v-else
-    class="h-30 -mt-10 flex items-center justify-center gap-2 text-xs text-muted-foreground/70"
+    v-else-if="loadingMore || !hasMore"
+    class="pb-10 flex items-center justify-center gap-2 text-xs text-muted-foreground/70"
   >
     <Spinner v-if="loadingMore" class="size-4" />
-    <span v-else-if="!hasMore">已经到底了</span>
+    <span v-else>已经到底了</span>
   </div>
 </template>

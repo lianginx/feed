@@ -18,8 +18,8 @@ defineEmits<{
 <template>
   <div
     :ref="(el) => headerRef?.(el, dateKey)"
-    class="sticky top-0 z-10 flex items-center select-none bg-card pl-6 pr-5 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
-    :class="{ 'shadow-sm': stuck }"
+    class="sticky top-0 z-10 flex items-center select-none bg-card/95 pl-6 pr-5 py-2 text-xs font-semibold text-muted-foreground backdrop-blur transition-colors hover:text-foreground"
+    :class="{ 'border-b border-border/50': stuck }"
     @click="$emit('toggle-collapse', dateKey)"
   >
     <span class="flex-1">{{ label }}</span>
