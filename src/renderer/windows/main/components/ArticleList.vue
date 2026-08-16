@@ -72,10 +72,22 @@ onUnmounted(() => {
 })
 
 watch(
-  [selectedFeedId, selectedCategoryId, isUnread, isStar, isToday],
-  () => {
+  [selectedView, selectedFeedId, selectedCategoryId, isUnread, isStar, isToday],
+  (
+    // isUnread 单独变化（未读筛选切换）时保留搜索关键词，故不参与判定
+    [view, feedId, categoryId, , star, today],
+    [oldView, oldFeedId, oldCategoryId, , oldStar, oldToday]
+  ) => {
     currentArticle.value = null
-    searchQuery.value = ''
+    const scopeChanged =
+      view !== oldView ||
+      feedId !== oldFeedId ||
+      categoryId !== oldCategoryId ||
+      star !== oldStar ||
+      today !== oldToday
+    if (scopeChanged) {
+      searchQuery.value = ''
+    }
     resetCollapsed()
     if (collapseTimer) clearTimeout(collapseTimer)
     scrollAreaRef.value?.viewport?.scrollTo(0, 0)
@@ -104,7 +116,7 @@ async function onClickNewArticles() {
 </script>
 
 <template>
-  <div class="h-full flex flex-col">
+  <div class="h-full flex flex-col bg-card">
     <ArticleListToolbar
       :selected-view="selectedView"
       :is-unread="isUnread"
@@ -129,8 +141,8 @@ async function onClickNewArticles() {
                 <div
                   v-for="article in group.articles"
                   :key="`article-${article.id}`"
-                  class="pl-6 pr-5 border-t border-border/50 transition-colors hover:bg-muted"
-                  :class="{ 'bg-muted': article.id === currentArticle?.id }"
+                  class="pl-6 pr-5 border-t border-border/50 transition-colors hover:bg-sidebar-accent/60"
+                  :class="{ 'bg-sidebar-accent/80': article.id === currentArticle?.id }"
                 >
                   <ArticleListItem
                     :article="article"
