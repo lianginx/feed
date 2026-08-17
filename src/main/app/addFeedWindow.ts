@@ -5,6 +5,15 @@ import { getSettings } from '@main/config'
 import { setupExternalNavigation } from './window'
 
 let addFeedWindow: BrowserWindow | null = null
+let pendingFeedUrl: string | undefined
+
+function sendPendingFeedUrl(): void {
+  if (!pendingFeedUrl || !addFeedWindow || addFeedWindow.isDestroyed()) return
+
+  const feedUrl = pendingFeedUrl
+  pendingFeedUrl = undefined
+  addFeedWindow.webContents.send('feeds:initial-url', feedUrl)
+}
 
 /** 获取添加订阅源窗口实例（可能为 null，调用方需判空） */
 export function getAddFeedWindow(): BrowserWindow | null {
@@ -22,11 +31,14 @@ export function closeAddFeedWindow() {
  * 创建（或聚焦）独立的「添加订阅源」窗口。
  * 单例：已存在则显示并聚焦，否则新建；关闭即销毁。
  */
-export function createAddFeedWindow() {
+export function createAddFeedWindow(feedUrl?: string) {
+  if (feedUrl) pendingFeedUrl = feedUrl
+
   if (addFeedWindow && !addFeedWindow.isDestroyed()) {
     if (addFeedWindow.isMinimized()) addFeedWindow.restore()
     addFeedWindow.show()
     addFeedWindow.focus()
+    if (!addFeedWindow.webContents.isLoadingMainFrame()) sendPendingFeedUrl()
     return
   }
 
@@ -55,7 +67,11 @@ export function createAddFeedWindow() {
 
   addFeedWindow.on('ready-to-show', () => addFeedWindow?.show())
 
-  addFeedWindow.on('closed', () => (addFeedWindow = null))
+  addFeedWindow.on('closed', () => {
+    addFeedWindow = null
+    pendingFeedUrl = undefined
+  })
+  addFeedWindow.webContents.on('did-finish-load', sendPendingFeedUrl)
 
   // 外部链接统一在系统浏览器中打开，避免在 Electron 中新开窗体（与主窗口一致）
   setupExternalNavigation(addFeedWindow.webContents)

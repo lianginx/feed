@@ -15,68 +15,84 @@ import { createWindow, getMainWindow, setIsQuitting } from './app/window'
 import { buildAppMenu } from './app/menu'
 import { createTray, getTrayRef } from './app/tray'
 import { registerAppProtocols } from './app/protocol'
+import {
+  handleInitialFeedUrl,
+  registerFeedProtocolClient,
+  registerFeedProtocolEvents
+} from './app/feedProtocol'
 import { startScheduler, stopScheduler } from './services/timer'
 import { setTrayRef, scheduleBadgeUpdate } from './services/badge'
 import { initUpdater, registerUpdaterHandlers } from './services/updater'
 import { initAutoLaunch } from './services/autoLaunch'
 import { initProxy } from './services/proxy'
 
-app.whenReady().then(() => {
-  electronApp.setAppUserModelId(APP_METADATA.appId)
+const gotTheLock = app.requestSingleInstanceLock()
 
-  registerAppProtocols()
+if (!gotTheLock) {
+  app.quit()
+} else {
+  registerFeedProtocolEvents()
 
-  buildAppMenu()
+  app.whenReady().then(() => {
+    electronApp.setAppUserModelId(APP_METADATA.appId)
 
-  initializeDatabase()
-  // 启动时兜底清理过期译文缓存（低频率；平时写入侧已节流）
-  cleanupTranslations(getConnection())
+    registerAppProtocols()
+    registerFeedProtocolClient()
 
-  // 开发环境 IPC 日志（必须在注册处理器之前）
-  setupIpcLogger()
+    buildAppMenu()
 
-  // 统一校验 IPC 调用来源（安全规则 #17）
-  guardIpcHandlers()
+    initializeDatabase()
+    // 启动时兜底清理过期译文缓存（低频率；平时写入侧已节流）
+    cleanupTranslations(getConnection())
 
-  registerAllHandlers()
-  registerUpdaterHandlers()
+    // 开发环境 IPC 日志（必须在注册处理器之前）
+    setupIpcLogger()
 
-  initUpdater()
+    // 统一校验 IPC 调用来源（安全规则 #17）
+    guardIpcHandlers()
 
-  initAutoLaunch()
+    registerAllHandlers()
+    registerUpdaterHandlers()
 
-  initProxy(getSettings())
+    initUpdater()
 
-  createWindow()
-  createTray()
-  setTrayRef(getTrayRef())
+    initAutoLaunch()
 
-  scheduleBadgeUpdate()
+    initProxy(getSettings())
 
-  startScheduler()
+    createWindow()
+    createTray()
+    setTrayRef(getTrayRef())
 
-  app.on('activate', () => {
-    const existing = getMainWindow()
-    if (existing) {
-      existing.show()
-      existing.focus()
-    } else {
-      createWindow()
+    scheduleBadgeUpdate()
+
+    startScheduler()
+
+    handleInitialFeedUrl()
+
+    app.on('activate', () => {
+      const existing = getMainWindow()
+      if (existing) {
+        existing.show()
+        existing.focus()
+      } else {
+        createWindow()
+      }
+    })
+  })
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit()
     }
   })
-})
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
+  app.on('before-quit', () => {
+    setIsQuitting(true)
+    stopScheduler()
+  })
 
-app.on('before-quit', () => {
-  setIsQuitting(true)
-  stopScheduler()
-})
-
-app.on('will-quit', () => {
-  closeConnection()
-})
+  app.on('will-quit', () => {
+    closeConnection()
+  })
+}

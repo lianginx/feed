@@ -131,6 +131,7 @@ interface FeedApi {
   refresh: (feedId: number) => Promise<ApiResponse<boolean>>
   onRefreshProgress: (callback: (data: RefreshProgressEvent) => void) => () => void
   openAddFeedWindow: () => Promise<ApiResponse<boolean>>
+  onInitialUrl: (callback: (url: string) => void) => () => void
   onAddResult: (callback: (data: { success: boolean; error?: string }) => void) => () => void
   onChanged: (callback: (data: { feedId?: number }) => void) => () => void
 }

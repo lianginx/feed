@@ -6,6 +6,12 @@ const config = {
   // appId 来自 package.json，必须在应用发布后保持稳定。
   appId: APP_METADATA.appId,
   productName: APP_METADATA.productName,
+  protocols: [
+    {
+      name: 'Feed subscription',
+      schemes: ['feed']
+    }
+  ],
 
   // ---------- 目录与打包内容 ----------
   directories: {

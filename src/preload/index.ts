@@ -51,6 +51,8 @@ const api = {
       }) => void
     ): (() => void) => onChannel('feeds:refresh-progress', callback),
     openAddFeedWindow: () => ipcRenderer.invoke('feeds:openAddFeedWindow'),
+    onInitialUrl: (callback: (url: string) => void): (() => void) =>
+      onChannel('feeds:initial-url', callback),
     onAddResult: (callback: (data: { success: boolean; error?: string }) => void): (() => void) =>
       onChannel('feeds:add-result', callback),
     onChanged: (callback: (data: { feedId?: number }) => void): (() => void) =>

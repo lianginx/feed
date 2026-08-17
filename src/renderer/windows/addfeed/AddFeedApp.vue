@@ -34,6 +34,7 @@ const canAddAdapter = computed(
 )
 
 let stopAddResult: (() => void) | null = null
+let stopInitialUrl: (() => void) | null = null
 let errorTimer: ReturnType<typeof setTimeout> | undefined
 
 function showError(message: string) {
@@ -48,6 +49,10 @@ function showError(message: string) {
 watch(selectedId, () => (error.value = ''))
 
 onMounted(async () => {
+  stopInitialUrl = window.api.feeds.onInitialUrl((feedUrl) => {
+    selectedId.value = RSS_ID
+    url.value = feedUrl
+  })
   stopAddResult = window.api.feeds.onAddResult((data) => {
     if (data.success) return
     showError(data.error || '未知错误')
@@ -62,6 +67,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  stopInitialUrl?.()
   stopAddResult?.()
   clearTimeout(errorTimer)
 })
