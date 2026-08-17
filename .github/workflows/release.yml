@@ -1,7 +1,7 @@
 name: Build & Release
 
 # 触发条件：
-# - 推送 v* 标签（如 v1.1.0）时，自动在三个平台构建并发布到 GitHub Releases
+# - 推送 v* 标签（如 v1.1.0）时，自动构建 macOS 安装包并发布到 GitHub Releases
 # - 也可以手动触发（Actions 页面 → Run workflow 按钮）
 on:
   push:
@@ -16,7 +16,7 @@ permissions:
 jobs:
   # 预创建 GitHub Release：
   # electron-builder 在 Release 已存在时会直接上传资产、不会重新创建。
-  # 三个平台并行 --publish always 时若都不存在，会同时尝试创建导致 422 already_exists 冲突，
+  # 构建 job 使用 --publish always 时若 Release 不存在，会尝试创建 Release，
   # 因此先在此 job 创建空 Release，让后续构建 job 只上传不创建。
   # Release notes 由脚本基于「上一个 tag → 当前 tag」的提交历史自动生成。
   # 仅 tag 触发（v*）时创建 draft release：
@@ -63,15 +63,11 @@ jobs:
     if: ${{ !cancelled() && needs.prepare.result != 'failure' }}
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false # 单个平台失败不阻塞其他平台
+      fail-fast: false
       matrix:
         include:
           - os: macos-latest
             script: build:mac
-          - os: windows-latest
-            script: build:win
-          - os: ubuntu-latest
-            script: build:linux
 
     steps:
       - name: Checkout
@@ -90,7 +86,7 @@ jobs:
 
       # ELECTRON_MIRROR：让 @electron/rebuild 下载 Electron headers 走 npmmirror 镜像，
       # 避免依赖 GitHub 连通性（曾因连接 github.com 的 Cloudflare IP 超时导致 install 失败）
-      # shell: bash：Windows runner 默认 PowerShell，而循环是 bash 语法，必须显式指定
+      # shell: bash：安装失败时最多重试三次
       - name: Install dependencies
         shell: bash
         run: |
@@ -109,7 +105,7 @@ jobs:
         env:
           ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
 
-      # 未配置代码签名证书：macOS/Windows 均跳过签名（避免 CI 卡在签名/公证环节）
+      # 未配置代码签名证书：macOS 跳过签名（避免 CI 卡在签名/公证环节）
       # GITHUB_TOKEN 由仓库自动提供，electron-builder 用它把产物上传到 GitHub Releases
       # 仅 tag 触发时 --publish always 上传到 draft release；手动触发只构建不发布
       - name: Build & Publish

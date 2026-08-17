@@ -29,16 +29,16 @@ const config = {
   ],
   asarUnpack: ['resources/**'],
 
-  // ---------- Windows 平台 ----------
-  win: {
-    executableName: APP_METADATA.name
-  },
-  nsis: {
-    artifactName: '${name}-${version}-setup.${ext}',
-    shortcutName: '${productName}',
-    uninstallDisplayName: '${productName}',
-    createDesktopShortcut: 'always'
-  },
+  // ---------- Windows 平台（暂时取消支持） ----------
+  // win: {
+  //   executableName: APP_METADATA.name
+  // },
+  // nsis: {
+  //   artifactName: '${name}-${version}-setup.${ext}',
+  //   shortcutName: '${productName}',
+  //   uninstallDisplayName: '${productName}',
+  //   createDesktopShortcut: 'always'
+  // },
 
   // ---------- macOS 平台 ----------
   mac: {
@@ -52,15 +52,15 @@ const config = {
     artifactName: '${productName}-${version}.${ext}'
   },
 
-  // ---------- Linux 平台 ----------
-  linux: {
-    target: ['AppImage', 'deb'],
-    maintainer: 'Liang',
-    category: 'Utility'
-  },
-  appImage: {
-    artifactName: '${productName}-${version}.${ext}'
-  },
+  // ---------- Linux 平台（暂时取消支持） ----------
+  // linux: {
+  //   target: ['AppImage', 'deb'],
+  //   maintainer: 'Liang',
+  //   category: 'Utility'
+  // },
+  // appImage: {
+  //   artifactName: '${productName}-${version}.${ext}'
+  // },
 
   // ---------- 通用配置 ----------
   npmRebuild: false,

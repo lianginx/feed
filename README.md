@@ -1,6 +1,6 @@
 # Feed — 简洁的 RSS 阅读器
 
-一个清爽、专注阅读的桌面端 RSS / Atom 订阅阅读器，正式支持 macOS，Windows / Linux 提供实验性支持。把你喜欢的博客、新闻、漫画站点聚合到一个地方，安静地读，告别一个个开网页。
+一个清爽、专注阅读的桌面端 RSS / Atom 订阅阅读器，目前仅支持 macOS。把你喜欢的博客、新闻、漫画站点聚合到一个地方，安静地读，告别一个个开网页。
 
 ![主界面](docs/screenshots/main.png)
 
@@ -17,16 +17,14 @@
 
 ## 下载安装
 
-到 [GitHub Releases](https://github.com/lianginx/feed/releases) 下载对应平台的安装包：
+到 [GitHub Releases](https://github.com/lianginx/feed/releases) 下载 macOS 安装包：
 
-| 平台    | 安装包                                       | 支持级别     |
-| ------- | -------------------------------------------- | ------------ |
-| macOS   | `Feed-<版本号>.dmg`                          | 正式支持     |
-| Windows | `feed-<版本号>-setup.exe`                    | 实验性支持   |
-| Linux   | `Feed-<版本号>.AppImage`（另有 `.deb` 可选） | 实验性支持   |
+| 平台  | 安装包              | 支持级别 |
+| ----- | ------------------- | -------- |
+| macOS | `Feed-<版本号>.dmg` | 正式支持 |
 
 > [!NOTE]
-> 应用主要在 macOS 上开发和测试，**macOS 是唯一正式支持平台**。Windows / Linux 版本会随每次发版自动构建产物，功能可正常使用，但属于**实验性支持**：不承诺修复平台特有 bug，作者当前精力有限，问题反馈响应可能不及时。
+> 应用主要在 macOS 上开发和测试，**macOS 是当前唯一支持的平台**。Windows / Linux 版本因暂未完成充分适配与测试，已暂时取消支持，不再提供安装包；后续完成验证后再考虑恢复。
 
 > [!WARNING]
 > **macOS 首次打开可能被系统拦截**：应用目前未做 Apple 签名和公证，Gatekeeper 会提示无法验证开发者，也可能出现下面两种情况：
@@ -98,8 +96,6 @@ xattr -cr /Applications/Feed.app
 | 平台    | 路径                                                  |
 | ------- | ----------------------------------------------------- |
 | macOS   | `~/Library/Application Support/com.lianginx.feed/feed.db` |
-| Windows | `%APPDATA%\com.lianginx.feed\feed.db`                 |
-| Linux   | `~/.config/com.lianginx.feed/feed.db`                 |
 
 ### 如何从别的阅读器迁移？
 在旧阅读器里导出 OPML 文件 → 在本应用菜单里选择「导入 OPML」即可。以后想换工具，也可以随时「导出 OPML」把数据带走。
@@ -126,7 +122,7 @@ pnpm install     # 安装依赖
 pnpm dev         # 启动开发环境（热重载）
 pnpm typecheck   # 类型检查
 pnpm build       # 类型检查 + 构建产物
-pnpm build:mac   # 打包 macOS 安装包（build:win / build:linux 同理）
+pnpm build:mac   # 打包 macOS 安装包
 ```
 
 更多架构、数据库、发布细节见 [docs/](./docs/) 目录下的文档，发版流程见 [docs/release.md](./docs/release.md)。
