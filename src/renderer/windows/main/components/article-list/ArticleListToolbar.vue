@@ -15,10 +15,10 @@ defineEmits<{
 
 <template>
   <div
-    class="p-3 flex items-center justify-between gap-2 min-h-9.5 border-b border-border/60 bg-card"
+    class="px-3 py-2 flex items-center justify-between gap-2 min-h-9.5 border-b border-border/60 bg-card"
     style="app-region: drag"
   >
-    <ArticleSearch />
+    <ArticleSearch class="flex-1" />
     <Button
       v-if="selectedView !== 'unread'"
       class="size-8 shrink-0 flex items-center justify-center transition-colors bg-transparent text-accent-foreground hover:bg-accent"

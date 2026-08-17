@@ -119,7 +119,7 @@ const displayContent = computed(() => {
       >
         <div
           ref="toolbarRef"
-          class="sticky top-0 z-10 p-3 flex items-center gap-2 min-h-9.5 bg-card"
+          class="sticky top-0 z-10 px-3 py-2 flex items-center gap-2 min-h-9.5 bg-card"
           style="app-region: drag"
         >
           <!-- 增加 ml-2 与右边图标视觉对齐 -->
