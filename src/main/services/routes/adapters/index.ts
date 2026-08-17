@@ -3,6 +3,7 @@ import { v2exAdapter } from './v2ex'
 import { bilibiliUserArticle, bilibiliUserVideo } from './bilibili'
 import { telegramChannelAdapter } from './telegram'
 import { hapigoChangelogAdapter } from './hapigo'
+import { markodenicNewsletterAdapter } from './markodenic'
 
 /**
  * 全部内置适配器。
@@ -13,7 +14,8 @@ const adapters = [
   bilibiliUserArticle,
   bilibiliUserVideo,
   telegramChannelAdapter,
-  hapigoChangelogAdapter
+  hapigoChangelogAdapter,
+  markodenicNewsletterAdapter
 ]
 
 for (const adapter of adapters) {

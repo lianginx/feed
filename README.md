@@ -58,6 +58,7 @@ xattr -cr /Applications/Feed.app
 | B 站 UP 主视频  | UP 主投稿视频       | UP 主 ID                             | 可选         |
 | Telegram 频道   | 频道消息            | 频道用户名（如 `NewlearnerChannel`） | 否           |
 | HapiGo 更新日志 | HapiGo 官方更新日志 | 无                                   | 否           |
+| Marko Denic Newsletter | Web 开发技巧与资源 | 无                              | 否           |
 
 > **B 站视频订阅不稳定？** 部分站点（如 B 站视频）登录后更稳定。在「设置 → 内置路由」里点「用浏览器登录」即可；不登录也能订阅公开内容，只是偶尔不稳定。
 
