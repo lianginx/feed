@@ -120,7 +120,9 @@ async function handleExportOpml(): Promise<void> {
         return
       }
       if ('filePath' in result.data) {
-        importResult.value = `已导出到：${result.data.filePath}`
+        importResult.value = `已导出到：${result.data.filePath}${
+          result.data.includeRoutes ? '（含内置路由）' : '（不含内置路由）'
+        }`
       }
     } else {
       importResult.value = `导出失败：${result.error || '未知错误'}`
@@ -1014,7 +1016,7 @@ onMounted(async () => {
                 <div class="min-w-0">
                   <div class="text-sm">OPML 导入导出</div>
                   <div class="mt-0.5 text-xs text-muted-foreground">
-                    用标准 OPML 格式迁移订阅列表
+                    普通订阅兼容其他 RSS 阅读器，内置路由可选择是否导出
                   </div>
                 </div>
                 <div class="flex shrink-0 gap-2">

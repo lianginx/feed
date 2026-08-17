@@ -182,7 +182,9 @@ interface OpmlApi {
       { canceled: true } | { canceled: false; total: number; added: number; skipped: number }
     >
   >
-  export: () => Promise<ApiResponse<{ canceled: true } | { canceled: false; filePath: string }>>
+  export: () => Promise<
+    ApiResponse<{ canceled: true } | { canceled: false; filePath: string; includeRoutes: boolean }>
+  >
   onImported: (callback: () => void) => () => void
 }
 
