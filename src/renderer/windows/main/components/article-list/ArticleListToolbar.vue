@@ -15,7 +15,7 @@ defineEmits<{
 
 <template>
   <div
-    class="px-3 py-2 flex items-center justify-between gap-2 min-h-9.5 border-b border-border/60 bg-card"
+    class="h-12 shrink-0 px-3 py-2 flex items-center justify-between gap-2 border-b border-border/60 bg-card"
     style="app-region: drag"
   >
     <ArticleSearch class="flex-1" />

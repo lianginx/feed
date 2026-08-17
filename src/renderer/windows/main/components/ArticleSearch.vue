@@ -30,9 +30,7 @@ async function focusSearch() {
 }
 
 function onSearchBlur() {
-  if (!searchQuery.value.trim()) {
-    searchExpanded.value = false
-  }
+  searchExpanded.value = false
 }
 
 function clearSearch() {
@@ -74,6 +72,7 @@ function clearSearch() {
       class="absolute right-0 size-8 flex items-center justify-center rounded-md transition-colors text-muted-foreground hover:text-foreground"
       style="app-region: no-drag"
       title="清除"
+      @mousedown.prevent
       @click="clearSearch"
     >
       <X class="size-4" />
