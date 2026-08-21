@@ -32,9 +32,11 @@ async function addRss(params: { url: string; title?: string; categoryId?: number
     }
     const customTitle = params.title?.trim() ? 1 : 0
     const title = params.title?.trim() || params.url
-    const feedId = db
-      .prepare('INSERT INTO feeds (url, title, custom_title, category_id) VALUES (?, ?, ?, ?)')
-      .run(params.url, title, customTitle, params.categoryId || null).lastInsertRowid as number
+    const feedId = Number(
+      db
+        .prepare('INSERT INTO feeds (url, title, custom_title, category_id) VALUES (?, ?, ?, ?)')
+        .run(params.url, title, customTitle, params.categoryId || null).lastInsertRowid
+    )
 
     void refreshSingleFeed(feedId)
     scheduleSync()
@@ -72,19 +74,21 @@ async function addAdapterSource(input: {
     }
     const customTitle = input.title?.trim() ? 1 : 0
     const title = input.title?.trim() || url
-    const feedId = db
-      .prepare(
-        `INSERT INTO feeds (url, title, custom_title, category_id, adapter_id, adapter_params)
+    const feedId = Number(
+      db
+        .prepare(
+          `INSERT INTO feeds (url, title, custom_title, category_id, adapter_id, adapter_params)
          VALUES (?, ?, ?, ?, ?, ?)`
-      )
-      .run(
-        url,
-        title,
-        customTitle,
-        input.categoryId || null,
-        adapter.id,
-        JSON.stringify(input.params)
-      ).lastInsertRowid as number
+        )
+        .run(
+          url,
+          title,
+          customTitle,
+          input.categoryId || null,
+          adapter.id,
+          JSON.stringify(input.params)
+        ).lastInsertRowid
+    )
 
     void refreshSingleFeed(feedId)
     scheduleSync()

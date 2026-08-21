@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { detectLanguage, isSameLanguage } from '@main/services/translate/detect'
+import { detectLanguage, isSameLanguage, toDetectedLang } from '@main/services/translate/detect'
 
 describe('detectLanguage', () => {
   it('简体中文 → zh', () => {
@@ -51,5 +51,41 @@ describe('isSameLanguage', () => {
 
   it('unknown 不跳过', () => {
     expect(isSameLanguage('unknown', 'zh')).toBe(false)
+  })
+})
+
+describe('toDetectedLang', () => {
+  it('zh / zh-Hans / zh-CN → zh', () => {
+    expect(toDetectedLang('zh')).toBe('zh')
+    expect(toDetectedLang('zh-Hans')).toBe('zh')
+    expect(toDetectedLang('zh-CN')).toBe('zh')
+  })
+
+  it('zh-Hant / zh-TW / zh-HK → zh-Hant', () => {
+    expect(toDetectedLang('zh-Hant')).toBe('zh-Hant')
+    expect(toDetectedLang('zh-TW')).toBe('zh-Hant')
+    expect(toDetectedLang('zh-HK')).toBe('zh-Hant')
+  })
+
+  it('en / ja / ko 保持不变', () => {
+    expect(toDetectedLang('en')).toBe('en')
+    expect(toDetectedLang('ja')).toBe('ja')
+    expect(toDetectedLang('ko')).toBe('ko')
+  })
+
+  it('带地域后缀 → 归一化', () => {
+    expect(toDetectedLang('en-US')).toBe('en')
+    expect(toDetectedLang('en-GB')).toBe('en')
+    expect(toDetectedLang('ja-JP')).toBe('ja')
+    expect(toDetectedLang('ko-KR')).toBe('ko')
+    expect(toDetectedLang('zh-Hans-CN')).toBe('zh')
+    expect(toDetectedLang('zh-Hant-TW')).toBe('zh-Hant')
+    expect(toDetectedLang('zh-MO')).toBe('zh-Hant')
+  })
+
+  it('未知语言 → unknown', () => {
+    expect(toDetectedLang('fr')).toBe('unknown')
+    expect(toDetectedLang('de')).toBe('unknown')
+    expect(toDetectedLang('')).toBe('unknown')
   })
 })

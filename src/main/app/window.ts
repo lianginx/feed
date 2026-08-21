@@ -10,6 +10,10 @@ let destroyTimer: ReturnType<typeof setTimeout> | null = null
 
 const LOW_MEMORY_DESTROY_DELAY_MS = 1000 * 60 * 5
 
+export function isQuitting(): boolean {
+  return quitting
+}
+
 export function setIsQuitting(val: boolean): void {
   quitting = val
   if (val && destroyTimer) {
@@ -41,7 +45,12 @@ export function scheduleDestroyTimer(): void {
   }, LOW_MEMORY_DESTROY_DELAY_MS)
 }
 
-export function ensureMainWindow(): BrowserWindow {
+export function ensureMainWindow(): BrowserWindow | null {
+  if (quitting) {
+    const existing = getMainWindow()
+    if (existing && !existing.isDestroyed()) return existing
+    return null
+  }
   const existing = getMainWindow()
   if (existing && !existing.isDestroyed()) {
     cancelDestroyTimer()

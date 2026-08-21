@@ -727,7 +727,7 @@ onMounted(async () => {
                 <div class="min-w-0">
                   <div class="text-sm">低内存后台模式</div>
                   <div class="mt-0.5 text-xs text-muted-foreground">
-                    隐藏到托盘 5 分钟后释放窗口内存，再次打开时重建窗口
+                    关闭窗口后在后台占用更少内存
                   </div>
                 </div>
                 <Switch

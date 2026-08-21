@@ -30,7 +30,7 @@ export function registerCategoryHandlers(): void {
       const db = getConnection()
       const result = db.prepare('INSERT INTO categories (name) VALUES (?)').run(name)
       scheduleSync()
-      return success({ id: result.lastInsertRowid })
+      return success({ id: Number(result.lastInsertRowid) })
     } catch (e) {
       return error((e as Error).message)
     }

@@ -71,7 +71,7 @@ function getOrCreateCategory(db: ReturnType<typeof getConnection>, name: string)
     { id: number } | undefined
   if (existing) return existing.id
   const result = db.prepare('INSERT INTO categories (name) VALUES (?)').run(name)
-  return result.lastInsertRowid as number
+  return Number(result.lastInsertRowid)
 }
 
 function importFeeds(entries: FeedEntry[]): { total: number; added: number; skipped: number } {
@@ -109,7 +109,7 @@ function importFeeds(entries: FeedEntry[]): { total: number; added: number; skip
           entry.adapterId || null,
           entry.adapterParams || null
         )
-      insertedIds.push(result.lastInsertRowid as number)
+      insertedIds.push(Number(result.lastInsertRowid))
     }
   })
   for (const id of insertedIds) void refreshSingleFeed(id)

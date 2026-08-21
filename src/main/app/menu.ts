@@ -23,7 +23,7 @@ export function buildAppMenu(): void {
         },
         {
           label: '检查更新…',
-          click: () => ensureMainWindow().webContents.send('menu:checkForUpdates')
+          click: () => ensureMainWindow()?.webContents.send('menu:checkForUpdates')
         },
         { type: 'separator' },
         {
@@ -72,18 +72,18 @@ export function buildAppMenu(): void {
           label: '刷新',
           accelerator: 'CmdOrCtrl+R',
           enabled: false,
-          click: () => ensureMainWindow().webContents.send('menu:refreshFeed')
+          click: () => ensureMainWindow()?.webContents.send('menu:refreshFeed')
         },
         {
           label: '刷新全部',
           accelerator: 'CmdOrCtrl+Shift+R',
-          click: () => ensureMainWindow().webContents.send('menu:refreshAllFeeds')
+          click: () => ensureMainWindow()?.webContents.send('menu:refreshAllFeeds')
         },
         { type: 'separator' },
         {
           label: '全部标为已读',
           accelerator: 'CmdOrCtrl+Shift+A',
-          click: () => ensureMainWindow().webContents.send('menu:markAllRead')
+          click: () => ensureMainWindow()?.webContents.send('menu:markAllRead')
         },
         { type: 'separator' },
         {
@@ -99,14 +99,14 @@ export function buildAppMenu(): void {
         {
           label: '搜索文章',
           accelerator: 'CmdOrCtrl+F',
-          click: () => ensureMainWindow().webContents.send('menu:focusSearch')
+          click: () => ensureMainWindow()?.webContents.send('menu:focusSearch')
         },
         {
           label: '只看未读/显示全部',
           accelerator: 'Tab',
 
           registerAccelerator: false,
-          click: () => ensureMainWindow().webContents.send('menu:toggleUnread')
+          click: () => ensureMainWindow()?.webContents.send('menu:toggleUnread')
         },
         { type: 'separator' },
         {
@@ -114,12 +114,12 @@ export function buildAppMenu(): void {
           label: '标为已读/标记未读',
           accelerator: 'CmdOrCtrl+E',
           enabled: false,
-          click: () => ensureMainWindow().webContents.send('menu:toggleRead')
+          click: () => ensureMainWindow()?.webContents.send('menu:toggleRead')
         },
         {
           label: '全部文章标为已读',
           accelerator: 'CmdOrCtrl+Shift+E',
-          click: () => ensureMainWindow().webContents.send('menu:markListRead')
+          click: () => ensureMainWindow()?.webContents.send('menu:markListRead')
         },
         { type: 'separator' },
         {
@@ -127,7 +127,7 @@ export function buildAppMenu(): void {
           label: '收藏/取消收藏',
           accelerator: 'CmdOrCtrl+D',
           enabled: false,
-          click: () => ensureMainWindow().webContents.send('menu:toggleStar')
+          click: () => ensureMainWindow()?.webContents.send('menu:toggleStar')
         },
         { type: 'separator' },
         {
@@ -135,14 +135,14 @@ export function buildAppMenu(): void {
           label: '翻译当前文章',
           accelerator: 'Alt+T',
           enabled: false,
-          click: () => ensureMainWindow().webContents.send('menu:translate')
+          click: () => ensureMainWindow()?.webContents.send('menu:translate')
         },
         {
           id: 'menu-translate-refresh',
           label: '强制刷新翻译',
           accelerator: 'Alt+Shift+T',
           enabled: false,
-          click: () => ensureMainWindow().webContents.send('menu:translateRefresh')
+          click: () => ensureMainWindow()?.webContents.send('menu:translateRefresh')
         }
       ]
     },
@@ -154,7 +154,7 @@ export function buildAppMenu(): void {
               {
                 label: '开发者工具',
                 accelerator: 'Alt+Cmd+I',
-                click: () => ensureMainWindow().webContents.toggleDevTools()
+                click: () => ensureMainWindow()?.webContents.toggleDevTools()
               }
             ]
           }

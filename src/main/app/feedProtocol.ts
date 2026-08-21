@@ -1,7 +1,7 @@
 import { app } from 'electron'
 import { resolve } from 'node:path'
 import { createAddFeedWindow } from './addFeedWindow'
-import { ensureMainWindow } from './window'
+import { ensureMainWindow, isQuitting } from './window'
 import { findFeedUrl, parseFeedUrl } from './feedUrl'
 
 const FEED_PROTOCOL = 'feed'
@@ -13,6 +13,7 @@ function focusMainWindow(): void {
 }
 
 function openParsedFeedUrl(feedUrl: string): void {
+  if (isQuitting()) return
   if (!isReady) {
     pendingFeedUrl = feedUrl
     return

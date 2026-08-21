@@ -78,22 +78,30 @@ export function isSameLanguage(detected: DetectedLang, target: string): boolean 
 
 /** 微软检测返回的语言码 → 应用级 DetectedLang；未知语言归为 unknown */
 export function toDetectedLang(lang: string): DetectedLang {
-  switch (lang) {
-    case 'zh':
-    case 'zh-Hans':
-    case 'zh-CN':
-      return 'zh'
-    case 'zh-Hant':
-    case 'zh-TW':
-    case 'zh-HK':
-      return 'zh-Hant'
-    case 'en':
-      return 'en'
-    case 'ja':
-      return 'ja'
-    case 'ko':
-      return 'ko'
-    default:
-      return 'unknown'
+  const lower = lang.toLowerCase()
+  if (
+    lower === 'zh' ||
+    lower.startsWith('zh-hans') ||
+    lower === 'zh-cn' ||
+    lower.startsWith('zh-cn-') ||
+    lower === 'zh-sg' ||
+    lower.startsWith('zh-sg-')
+  ) {
+    return 'zh'
   }
+  if (
+    lower.startsWith('zh-hant') ||
+    lower === 'zh-tw' ||
+    lower.startsWith('zh-tw-') ||
+    lower === 'zh-hk' ||
+    lower.startsWith('zh-hk-') ||
+    lower === 'zh-mo' ||
+    lower.startsWith('zh-mo-')
+  ) {
+    return 'zh-Hant'
+  }
+  if (lower === 'en' || lower.startsWith('en-')) return 'en'
+  if (lower === 'ja' || lower.startsWith('ja-')) return 'ja'
+  if (lower === 'ko' || lower.startsWith('ko-')) return 'ko'
+  return 'unknown'
 }
