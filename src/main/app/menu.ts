@@ -1,8 +1,32 @@
 import { app, ipcMain, Menu } from 'electron'
 import { envBool } from '@main/env'
-import { ensureMainWindow } from './window'
+import { ensureMainWindow, isQuitting } from './window'
 import { createSettingsWindow } from './settingsWindow'
 import { createAddFeedWindow } from './addFeedWindow'
+
+const pendingSends = new WeakMap<Electron.BrowserWindow, string[]>()
+
+function sendToMain(channel: string): void {
+  if (isQuitting()) return
+  const win = ensureMainWindow()
+  if (!win || win.isDestroyed()) return
+  if (win.webContents.isLoading() || win.webContents.getURL() === '') {
+    let pending = pendingSends.get(win)
+    if (!pending) {
+      pending = []
+      pendingSends.set(win, pending)
+      win.webContents.once('did-finish-load', () => {
+        const toSend = pendingSends.get(win)
+        pendingSends.delete(win)
+        if (!toSend || win.isDestroyed()) return
+        for (const c of toSend) win.webContents.send(c)
+      })
+    }
+    pending.push(channel)
+  } else {
+    win.webContents.send(channel)
+  }
+}
 
 export function buildAppMenu(): void {
   const showDevToolsMenu = envBool(import.meta.env.MAIN_VITE_ENABLE_DEVTOOLS)
@@ -19,11 +43,14 @@ export function buildAppMenu(): void {
         {
           label: '设置…',
           accelerator: 'CmdOrCtrl+,',
-          click: () => createSettingsWindow()
+          click: () => {
+            if (isQuitting()) return
+            createSettingsWindow()
+          }
         },
         {
           label: '检查更新…',
-          click: () => ensureMainWindow()?.webContents.send('menu:checkForUpdates')
+          click: () => sendToMain('menu:checkForUpdates')
         },
         { type: 'separator' },
         {
@@ -64,7 +91,10 @@ export function buildAppMenu(): void {
         {
           label: '添加订阅源',
           accelerator: 'CmdOrCtrl+N',
-          click: () => createAddFeedWindow()
+          click: () => {
+            if (isQuitting()) return
+            createAddFeedWindow()
+          }
         },
         { type: 'separator' },
         {
@@ -72,18 +102,18 @@ export function buildAppMenu(): void {
           label: '刷新',
           accelerator: 'CmdOrCtrl+R',
           enabled: false,
-          click: () => ensureMainWindow()?.webContents.send('menu:refreshFeed')
+          click: () => sendToMain('menu:refreshFeed')
         },
         {
           label: '刷新全部',
           accelerator: 'CmdOrCtrl+Shift+R',
-          click: () => ensureMainWindow()?.webContents.send('menu:refreshAllFeeds')
+          click: () => sendToMain('menu:refreshAllFeeds')
         },
         { type: 'separator' },
         {
           label: '全部标为已读',
           accelerator: 'CmdOrCtrl+Shift+A',
-          click: () => ensureMainWindow()?.webContents.send('menu:markAllRead')
+          click: () => sendToMain('menu:markAllRead')
         },
         { type: 'separator' },
         {
@@ -99,14 +129,14 @@ export function buildAppMenu(): void {
         {
           label: '搜索文章',
           accelerator: 'CmdOrCtrl+F',
-          click: () => ensureMainWindow()?.webContents.send('menu:focusSearch')
+          click: () => sendToMain('menu:focusSearch')
         },
         {
           label: '只看未读/显示全部',
           accelerator: 'Tab',
 
           registerAccelerator: false,
-          click: () => ensureMainWindow()?.webContents.send('menu:toggleUnread')
+          click: () => sendToMain('menu:toggleUnread')
         },
         { type: 'separator' },
         {
@@ -114,12 +144,12 @@ export function buildAppMenu(): void {
           label: '标为已读/标记未读',
           accelerator: 'CmdOrCtrl+E',
           enabled: false,
-          click: () => ensureMainWindow()?.webContents.send('menu:toggleRead')
+          click: () => sendToMain('menu:toggleRead')
         },
         {
           label: '全部文章标为已读',
           accelerator: 'CmdOrCtrl+Shift+E',
-          click: () => ensureMainWindow()?.webContents.send('menu:markListRead')
+          click: () => sendToMain('menu:markListRead')
         },
         { type: 'separator' },
         {
@@ -127,7 +157,7 @@ export function buildAppMenu(): void {
           label: '收藏/取消收藏',
           accelerator: 'CmdOrCtrl+D',
           enabled: false,
-          click: () => ensureMainWindow()?.webContents.send('menu:toggleStar')
+          click: () => sendToMain('menu:toggleStar')
         },
         { type: 'separator' },
         {
@@ -135,14 +165,14 @@ export function buildAppMenu(): void {
           label: '翻译当前文章',
           accelerator: 'Alt+T',
           enabled: false,
-          click: () => ensureMainWindow()?.webContents.send('menu:translate')
+          click: () => sendToMain('menu:translate')
         },
         {
           id: 'menu-translate-refresh',
           label: '强制刷新翻译',
           accelerator: 'Alt+Shift+T',
           enabled: false,
-          click: () => ensureMainWindow()?.webContents.send('menu:translateRefresh')
+          click: () => sendToMain('menu:translateRefresh')
         }
       ]
     },
@@ -154,7 +184,10 @@ export function buildAppMenu(): void {
               {
                 label: '开发者工具',
                 accelerator: 'Alt+Cmd+I',
-                click: () => ensureMainWindow()?.webContents.toggleDevTools()
+                click: () => {
+                  if (isQuitting()) return
+                  ensureMainWindow()?.webContents.toggleDevTools()
+                }
               }
             ]
           }

@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import { getConnection } from '@main/database/connection'
+import { getConnection, toSafeNumber } from '@main/database/connection'
 import { withTransaction } from '@main/database/transaction'
 import { success, error } from './util'
 import { scheduleBadgeUpdate } from '@main/services/badge'
@@ -30,7 +30,7 @@ export function registerCategoryHandlers(): void {
       const db = getConnection()
       const result = db.prepare('INSERT INTO categories (name) VALUES (?)').run(name)
       scheduleSync()
-      return success({ id: Number(result.lastInsertRowid) })
+      return success({ id: toSafeNumber(result.lastInsertRowid) })
     } catch (e) {
       return error((e as Error).message)
     }

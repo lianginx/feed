@@ -1,5 +1,5 @@
 import { app, Tray, Menu, nativeImage } from 'electron'
-import { showMainWindow } from './window'
+import { isQuitting, showMainWindow } from './window'
 import { createSettingsWindow } from './settingsWindow'
 import { refreshAllFeeds } from '@main/services/refresher'
 import icon from '../../../resources/icon.png?asset'
@@ -22,19 +22,26 @@ export function createTray(): void {
   const contextMenu = Menu.buildFromTemplate([
     {
       label: '显示主窗口',
-      click: () => showMainWindow()
+      click: () => {
+        if (isQuitting()) return
+        showMainWindow()
+      }
     },
     { type: 'separator' },
     {
       label: '刷新所有订阅',
       click: () => {
+        if (isQuitting()) return
         void refreshAllFeeds()
       }
     },
     { type: 'separator' },
     {
       label: '设置',
-      click: () => createSettingsWindow()
+      click: () => {
+        if (isQuitting()) return
+        createSettingsWindow()
+      }
     },
     { type: 'separator' },
     {
@@ -46,5 +53,8 @@ export function createTray(): void {
   tray.setToolTip('Feed')
   tray.setContextMenu(contextMenu)
 
-  tray.on('double-click', () => showMainWindow())
+  tray.on('double-click', () => {
+    if (isQuitting()) return
+    showMainWindow()
+  })
 }

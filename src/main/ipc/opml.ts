@@ -1,6 +1,6 @@
 import { ipcMain, dialog } from 'electron'
 import { readFileSync, writeFileSync } from 'fs'
-import { getConnection } from '@main/database/connection'
+import { getConnection, toSafeNumber } from '@main/database/connection'
 import { withTransaction } from '@main/database/transaction'
 import { refreshSingleFeed } from '@main/services/refresher'
 import { getAdapter } from '@main/services/routes'
@@ -71,7 +71,7 @@ function getOrCreateCategory(db: ReturnType<typeof getConnection>, name: string)
     { id: number } | undefined
   if (existing) return existing.id
   const result = db.prepare('INSERT INTO categories (name) VALUES (?)').run(name)
-  return Number(result.lastInsertRowid)
+  return toSafeNumber(result.lastInsertRowid)
 }
 
 function importFeeds(entries: FeedEntry[]): { total: number; added: number; skipped: number } {
@@ -109,7 +109,7 @@ function importFeeds(entries: FeedEntry[]): { total: number; added: number; skip
           entry.adapterId || null,
           entry.adapterParams || null
         )
-      insertedIds.push(Number(result.lastInsertRowid))
+      insertedIds.push(toSafeNumber(result.lastInsertRowid))
     }
   })
   for (const id of insertedIds) void refreshSingleFeed(id)

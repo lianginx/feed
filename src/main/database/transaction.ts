@@ -26,8 +26,8 @@ export function withTransaction<T>(db: AppDatabase, fn: () => T): T {
         db.exec(`ROLLBACK TO SAVEPOINT sp_${current}`)
         db.exec(`RELEASE SAVEPOINT sp_${current}`)
       }
-    } catch {
-      void 0
+    } catch (rollbackErr) {
+      console.warn('[db] 回滚失败', rollbackErr)
     }
     throw e
   }
@@ -48,8 +48,8 @@ export function withTransaction<T>(db: AppDatabase, fn: () => T): T {
         db.exec(`ROLLBACK TO SAVEPOINT sp_${current}`)
         db.exec(`RELEASE SAVEPOINT sp_${current}`)
       }
-    } catch {
-      void 0
+    } catch (rollbackErr) {
+      console.warn('[db] 提交失败后回滚失败', rollbackErr)
     }
     throw commitErr
   }

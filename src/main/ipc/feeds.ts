@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
 import { getMainWindow } from '@main/app/window'
 import { createAddFeedWindow, closeAddFeedWindow, getAddFeedWindow } from '@main/app/addFeedWindow'
-import { getConnection } from '@main/database/connection'
+import { getConnection, toSafeNumber } from '@main/database/connection'
 import { withTransaction } from '@main/database/transaction'
 import { toFriendlyFeedError } from '@main/services/rss'
 import { refreshFeedFavicon } from '@main/services/favicon'
@@ -32,7 +32,7 @@ async function addRss(params: { url: string; title?: string; categoryId?: number
     }
     const customTitle = params.title?.trim() ? 1 : 0
     const title = params.title?.trim() || params.url
-    const feedId = Number(
+    const feedId = toSafeNumber(
       db
         .prepare('INSERT INTO feeds (url, title, custom_title, category_id) VALUES (?, ?, ?, ?)')
         .run(params.url, title, customTitle, params.categoryId || null).lastInsertRowid
@@ -74,7 +74,7 @@ async function addAdapterSource(input: {
     }
     const customTitle = input.title?.trim() ? 1 : 0
     const title = input.title?.trim() || url
-    const feedId = Number(
+    const feedId = toSafeNumber(
       db
         .prepare(
           `INSERT INTO feeds (url, title, custom_title, category_id, adapter_id, adapter_params)

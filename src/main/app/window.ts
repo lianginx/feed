@@ -7,6 +7,7 @@ import { shouldLaunchHidden } from '@main/services/autoLaunch'
 let mainWindow: BrowserWindow | null = null
 let quitting = false
 let destroyTimer: ReturnType<typeof setTimeout> | null = null
+let saveTimer: ReturnType<typeof setTimeout> | null = null
 
 const LOW_MEMORY_DESTROY_DELAY_MS = 1000 * 60 * 5
 
@@ -19,6 +20,10 @@ export function setIsQuitting(val: boolean): void {
   if (val && destroyTimer) {
     clearTimeout(destroyTimer)
     destroyTimer = null
+  }
+  if (val && saveTimer) {
+    clearTimeout(saveTimer)
+    saveTimer = null
   }
 }
 
@@ -39,6 +44,7 @@ export function scheduleDestroyTimer(): void {
   if (quitting) return
   destroyTimer = setTimeout(() => {
     destroyTimer = null
+    if (!getSettings().lowMemoryMode || quitting) return
     if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
       mainWindow.destroy()
     }
@@ -139,14 +145,32 @@ export function createWindow(): void {
   mainWindow.on('closed', () => {
     mainWindow = null
     cancelDestroyTimer()
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+    }
   })
-  mainWindow.on('hide', scheduleDestroyTimer)
+  mainWindow.on('hide', () => {
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+      if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isMinimized()) {
+        updateSettings({ windowBounds: mainWindow.getBounds() })
+      }
+    }
+    scheduleDestroyTimer()
+  })
 
-  let saveTimer: ReturnType<typeof setTimeout> | null = null
   const saveBounds = (): void => {
     if (saveTimer) clearTimeout(saveTimer)
     saveTimer = setTimeout(() => {
-      if (mainWindow && !mainWindow.isMinimized()) {
+      saveTimer = null
+      if (
+        mainWindow &&
+        !mainWindow.isDestroyed() &&
+        !mainWindow.isMinimized() &&
+        mainWindow.isVisible()
+      ) {
         updateSettings({ windowBounds: mainWindow.getBounds() })
       }
     }, 500)

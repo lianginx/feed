@@ -81,7 +81,8 @@ export function toDetectedLang(lang: string): DetectedLang {
   const lower = lang.toLowerCase()
   if (
     lower === 'zh' ||
-    lower.startsWith('zh-hans') ||
+    lower === 'zh-hans' ||
+    lower.startsWith('zh-hans-') ||
     lower === 'zh-cn' ||
     lower.startsWith('zh-cn-') ||
     lower === 'zh-sg' ||
@@ -90,7 +91,8 @@ export function toDetectedLang(lang: string): DetectedLang {
     return 'zh'
   }
   if (
-    lower.startsWith('zh-hant') ||
+    lower === 'zh-hant' ||
+    lower.startsWith('zh-hant-') ||
     lower === 'zh-tw' ||
     lower.startsWith('zh-tw-') ||
     lower === 'zh-hk' ||

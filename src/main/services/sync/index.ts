@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron'
 import store, { getSettings } from '@main/config'
-import { getConnection } from '@main/database/connection'
+import { getConnection, toSafeNumber } from '@main/database/connection'
 import { withTransaction } from '@main/database/transaction'
 import { createSyncProvider } from './providers'
 
@@ -132,7 +132,7 @@ function applySnapshot(snapshot: SyncSnapshot): void {
         const r = db
           .prepare('INSERT INTO categories (name, sort_order) VALUES (?, ?)')
           .run(c.name, c.sortOrder)
-        catNameToId.set(c.name, Number(r.lastInsertRowid))
+        catNameToId.set(c.name, toSafeNumber(r.lastInsertRowid))
       }
     }
 
