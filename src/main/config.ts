@@ -1,18 +1,13 @@
 import Store from 'electron-store'
 
-/** 订阅源同步载体类型 */
 export type SyncProvider = 'none' | 'gist' | 'gitee' | 'webdav'
 
-/** 翻译提供商类型 */
 export type TranslateProviderKind = 'none' | 'baidu' | 'edge'
 
-/** 网络代理模式：auto=自动跟随系统代理，none=直连，manual=手动指定 */
 export type ProxyMode = 'auto' | 'none' | 'manual'
 
-/** 全局网络代理配置（覆盖 Node fetch 与浏览器抓取两条路径；Telegram MTProto 二期接入） */
 export interface ProxyConfig {
   mode: ProxyMode
-  /** manual 模式：代理协议 */
   protocol?: 'http' | 'socks5'
   host?: string
   port?: number
@@ -22,19 +17,14 @@ export interface ProxyConfig {
 
 export interface TranslateConfig {
   provider: TranslateProviderKind
-  /** 百度翻译开放平台 appid */
   baiduAppid?: string
-  /** 百度翻译开放平台密钥 */
   baiduSecretKey?: string
-  /** 目标语言应用码（默认 zh） */
   targetLang: string
 }
 
 export interface SyncConfig {
   provider: SyncProvider
-  /** GitHub Gist / Gitee 的访问 token */
   token?: string
-  /** WebDAV 服务器地址（目录 URL，末尾不含斜杠） */
   webdavUrl?: string
   webdavUsername?: string
   webdavPassword?: string
@@ -48,21 +38,15 @@ export interface AppSettings {
   updateCheckInterval: number // 自动检查更新间隔，分钟，默认 360（6 小时）
   sync: SyncConfig // 订阅源同步配置
   translate: TranslateConfig // 文章翻译配置
-  /** 同步内部状态：上次同步快照（不参与用户配置 UI） */
   syncLastDump?: string
-  /** 同步内部状态：上次同步时间戳（不参与用户配置 UI） */
   syncLastSyncedAt?: number
-  /** 同步内部状态：Gist/Gitee 载体记住的远端 gist id（不参与用户配置 UI） */
   syncGistId?: string
   syncGiteeId?: string
-  /** 开机自动启动，默认 false */
   autoLaunch: boolean
-  /** 启动时隐藏窗口（仅登录自动启动时生效），默认 false */
   launchHidden: boolean
-  /** 站点适配器登录 Cookie：域名 → 整段 cookie 字符串（如 'SESSDATA=xxx; bili_jct=yyy'），供 needsBrowser 适配器注入 */
   siteCookies: Record<string, string>
-  /** 全局网络代理设置 */
   proxy: ProxyConfig
+  lowMemoryMode: boolean
 }
 
 const defaults: AppSettings = {
@@ -76,18 +60,14 @@ const defaults: AppSettings = {
   autoLaunch: false,
   launchHidden: false,
   siteCookies: {},
-  proxy: { mode: 'auto' }
+  proxy: { mode: 'auto' },
+  lowMemoryMode: false
 }
 
 const store = new Store<AppSettings>({
   defaults
 })
 
-/**
- * 读取设置：用 defaults 兜底合并（electron-store 的 defaults 只在首次创建时生效，
- * 旧配置文件不会自动补新字段）。对 sync/translate 等嵌套对象做深合并，
- * 避免「有对象但缺子字段」（如缺 targetLang）时返回 undefined 导致请求参数异常。
- */
 function readSettings(): AppSettings {
   const storedSync = store.store.sync as SyncConfig | undefined
   const storedTranslate = store.store.translate as TranslateConfig | undefined

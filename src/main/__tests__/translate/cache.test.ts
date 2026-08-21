@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import Database from 'better-sqlite3'
+import { DatabaseSync } from 'node:sqlite'
 import {
   computeSourceHash,
   getTranslation,
@@ -7,10 +7,20 @@ import {
   cleanupTranslations
 } from '@main/services/translate/cache'
 
+function wrapDb(raw: DatabaseSync) {
+  return {
+    prepare: (sql: string) => raw.prepare(sql),
+    exec: (sql: string) => raw.exec(sql),
+    pragma: () => undefined,
+    transaction: (fn: () => void) => fn,
+    close: () => {}
+  }
+}
+
 /** 用 :memory: 手动建表（与 migration v7 同构） */
-function createDb(): Database.Database {
-  const db = new Database(':memory:')
-  db.exec(`
+function createDb() {
+  const raw = new DatabaseSync(':memory:')
+  raw.exec(`
     CREATE TABLE article_translations (
       article_id INTEGER NOT NULL,
       provider TEXT NOT NULL,
@@ -23,7 +33,7 @@ function createDb(): Database.Database {
       PRIMARY KEY (article_id, provider, target_lang)
     )
   `)
-  return db
+  return wrapDb(raw)
 }
 
 const base = {
@@ -36,7 +46,7 @@ const base = {
 }
 
 describe('cache', () => {
-  let db: Database.Database
+  let db: ReturnType<typeof createDb>
   beforeEach(() => {
     db = createDb()
   })
@@ -115,7 +125,6 @@ describe('cache', () => {
     expect(rec?.source_hash).toBe('h2')
     expect(rec?.created_at).toBe(t1)
     expect(rec?.updated_at).toBe(t1 + 50)
-    // 旧 hash 记录已被覆盖，不再命中
     expect(getTranslation(db, 1, 'baidu', 'zh', 'h1')).toBeNull()
   })
 
@@ -134,7 +143,6 @@ describe('cache', () => {
       c: number
     }
     expect(c).toBe(500)
-    // 最旧的 10 条被清理，最新的保留
     expect(getTranslation(db, 1, 'baidu', 'zh', 'h0')).toBeNull()
     expect(getTranslation(db, 510, 'baidu', 'zh', 'h509')).not.toBeNull()
   })

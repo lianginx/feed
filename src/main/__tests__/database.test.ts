@@ -1,9 +1,32 @@
-import Database from 'better-sqlite3'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { DatabaseSync } from 'node:sqlite'
 import { describe, expect, it } from 'vitest'
 import { migrations } from '@main/database/migrations'
 import { seedDefaultFeeds } from '@main/database/seed'
 
-function init(db: Database.Database): void {
+function wrapDb(raw: DatabaseSync): any {
+  return {
+    prepare: (sql: string) => raw.prepare(sql),
+    exec: (sql: string) => raw.exec(sql),
+    transaction: (fn: () => void) => () => {
+      raw.exec('BEGIN')
+      try {
+        fn()
+        raw.exec('COMMIT')
+      } catch (e) {
+        try {
+          raw.exec('ROLLBACK')
+        } catch {
+          void 0
+        }
+        throw e
+      }
+    }
+  }
+}
+
+function init(raw: DatabaseSync): void {
+  const db: any = wrapDb(raw)
   db.exec(`
     CREATE TABLE IF NOT EXISTS _migrations (
       version INTEGER PRIMARY KEY,
@@ -34,7 +57,7 @@ describe('database init', () => {
   })
 
   it('在全新数据库上完整跑通迁移链并 seed 默认订阅源（含内置路由 adapter）', () => {
-    const db = new Database(':memory:')
+    const db = new DatabaseSync(':memory:')
     init(db)
 
     const applied = db.prepare('SELECT version, name FROM _migrations ORDER BY version').all() as {
@@ -52,7 +75,7 @@ describe('database init', () => {
   })
 
   it('已有数据的数据库不会重复 seed', () => {
-    const db = new Database(':memory:')
+    const db = new DatabaseSync(':memory:')
     init(db)
 
     const countBefore = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as { c: number }
@@ -67,7 +90,7 @@ describe('database init', () => {
   })
 
   it('已迁移到 v9 的旧库不会再执行 v5，且 seed 跳过（count > 0）', () => {
-    const db = new Database(':memory:')
+    const db = new DatabaseSync(':memory:')
     init(db)
     init(db)
 
@@ -78,7 +101,7 @@ describe('database init', () => {
   })
 
   it('用户清空全部订阅后重启，不会被重新写入默认订阅源', () => {
-    const db = new Database(':memory:')
+    const db = new DatabaseSync(':memory:')
     init(db)
 
     db.exec('DELETE FROM feeds')
@@ -89,9 +112,8 @@ describe('database init', () => {
   })
 
   it('老用户升级（无标记 + count>0）：只落标记不写数据，之后清空订阅也不恢复', () => {
-    const db = new Database(':memory:')
+    const db = new DatabaseSync(':memory:')
     init(db)
-    // 模拟旧版本状态：删除标记，但订阅数据仍在
     db.exec("DELETE FROM _app_state WHERE key = 'seeded_default_feeds'")
 
     const countBefore = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as { c: number }
@@ -108,9 +130,8 @@ describe('database init', () => {
   })
 
   it('老用户升级（无标记 + count==0）：恢复一次默认源（已知局限），此后清空不再恢复', () => {
-    const db = new Database(':memory:')
+    const db = new DatabaseSync(':memory:')
     init(db)
-    // 模拟旧版本状态：标记与订阅数据均已不存在（v5 时代 seed 过、之后清空了订阅）
     db.exec('DELETE FROM feeds')
     db.exec("DELETE FROM _app_state WHERE key = 'seeded_default_feeds'")
 

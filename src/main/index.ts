@@ -1,4 +1,3 @@
-// 副作用：必须在任何读取 userData 的模块（尤其 ./config）之前执行，确定目录并迁移老数据
 import './dataMigration'
 
 import { app } from 'electron'
@@ -11,7 +10,7 @@ import { registerAllHandlers } from './ipc/index'
 import { setupIpcLogger } from './ipc/logger'
 import { guardIpcHandlers } from './ipc/util'
 import { getSettings } from './config'
-import { createWindow, getMainWindow, setIsQuitting } from './app/window'
+import { createWindow, ensureMainWindow, setIsQuitting } from './app/window'
 import { buildAppMenu } from './app/menu'
 import { createTray, getTrayRef } from './app/tray'
 import { registerAppProtocols } from './app/protocol'
@@ -42,13 +41,10 @@ if (!gotTheLock) {
     buildAppMenu()
 
     initializeDatabase()
-    // 启动时兜底清理过期译文缓存（低频率；平时写入侧已节流）
     cleanupTranslations(getConnection())
 
-    // 开发环境 IPC 日志（必须在注册处理器之前）
     setupIpcLogger()
 
-    // 统一校验 IPC 调用来源（安全规则 #17）
     guardIpcHandlers()
 
     registerAllHandlers()
@@ -71,17 +67,12 @@ if (!gotTheLock) {
     handleInitialFeedUrl()
 
     app.on('activate', () => {
-      const existing = getMainWindow()
-      if (existing) {
-        existing.show()
-        existing.focus()
-      } else {
-        createWindow()
-      }
+      ensureMainWindow()
     })
   })
 
   app.on('window-all-closed', () => {
+    if (getTrayRef()) return
     if (process.platform !== 'darwin') {
       app.quit()
     }

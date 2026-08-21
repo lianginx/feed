@@ -2,7 +2,6 @@ import { ipcMain } from 'electron'
 import { getMainWindow } from '@main/app/window'
 import { createAddFeedWindow, closeAddFeedWindow, getAddFeedWindow } from '@main/app/addFeedWindow'
 import { getConnection } from '@main/database/connection'
-import { toFriendlyFeedError } from '@main/services/rss'
 import { refreshFeedFavicon } from '@main/services/favicon'
 import { refreshSingleFeed } from '@main/services/refresher'
 import { getAdapter, listAdapters } from '@main/services/routes'
@@ -39,6 +38,7 @@ async function addRss(params: { url: string; title?: string; categoryId?: number
     scheduleSync()
     notifyFeedAdded(feedId)
   } catch (e) {
+    const { toFriendlyFeedError } = await import('@main/services/rss')
     sendAddResult({ success: false, error: toFriendlyFeedError(e) })
   }
 }
@@ -89,6 +89,7 @@ async function addAdapterSource(input: {
     scheduleSync()
     notifyFeedAdded(feedId)
   } catch (e) {
+    const { toFriendlyFeedError } = await import('@main/services/rss')
     sendAddResult({ success: false, error: toFriendlyFeedError(e) })
   }
 }

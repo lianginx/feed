@@ -61,7 +61,9 @@ const {
   siteCookies,
   setSiteCookies,
   proxyConfig,
-  setProxyConfig
+  setProxyConfig,
+  lowMemoryMode,
+  setLowMemoryMode
 } = useApp()
 const { runSync, syncing, lastSyncedAt, loadStatus } = useSync()
 
@@ -85,7 +87,6 @@ const updateCheckOptions = [
   { value: 1440, label: '24 小时' }
 ]
 
-// ---------- OPML 导入导出 ----------
 const importResult = ref<string | null>(null)
 const importing = ref(false)
 
@@ -132,7 +133,6 @@ async function handleExportOpml(): Promise<void> {
   }
 }
 
-// ---------- 本地缓存清理 ----------
 const cacheSize = ref<number | null>(null)
 const clearingCache = ref(false)
 const cacheCleared = ref(false)
@@ -169,7 +169,6 @@ async function handleClearCache(): Promise<void> {
   }
 }
 
-// ---------- 全局网络代理（本地编辑态，点「保存代理设置」后写入配置） ----------
 const proxyMode = ref<ProxyConfig['mode']>('auto')
 const proxyProtocol = ref<ProxyConfig['protocol']>('http')
 const proxyHost = ref('')
@@ -231,7 +230,6 @@ onMounted(() => {
   loadCacheStats()
 })
 
-// ---------- 订阅源同步（本地编辑态，点「保存同步设置」后写入配置） ----------
 const syncProvider = ref<SyncConfig['provider']>(syncConfig.value.provider)
 const syncTokenInput = ref(syncConfig.value.token ?? '')
 const syncWebdavUrlInput = ref(syncConfig.value.webdavUrl ?? '')
@@ -304,7 +302,6 @@ async function handleSaveSync(): Promise<void> {
     partial.webdavUsername = syncWebdavUsernameInput.value.trim()
     partial.webdavPassword = syncWebdavPasswordInput.value
   } else {
-    // 关闭同步：清空凭据，避免敏感信息残留配置
     partial.token = ''
     partial.webdavUrl = ''
     partial.webdavUsername = ''
@@ -312,7 +309,6 @@ async function handleSaveSync(): Promise<void> {
   }
   await setSyncConfig(partial)
   syncSaved.value = true
-  // 配置变更后立即在后台执行一次同步，让设置立即可用
   applySyncResultMsg(await runSync())
   setTimeout(() => {
     syncSaved.value = false
@@ -321,7 +317,6 @@ async function handleSaveSync(): Promise<void> {
 
 useSyncEvents()
 
-// ---------- 文章翻译（本地编辑态，点「保存翻译设置」后写入配置） ----------
 const translateProvider = ref<TranslateConfig['provider']>(translateConfig.value.provider)
 const translateAppidInput = ref(translateConfig.value.baiduAppid ?? '')
 const translateSecretKeyInput = ref(translateConfig.value.baiduSecretKey ?? '')
@@ -332,7 +327,6 @@ const translateError = ref<string | null>(null)
 const translating = ref(false)
 const translateTestResult = ref<string | null>(null)
 
-// ---------- 内置路由登录 Cookie（本地编辑态，点「保存路由设置」后写入配置） ----------
 const siteCookieInputs = ref<Record<string, string>>({})
 const siteCookieAdapters = ref<AdapterInfo[]>([])
 const siteCookiesSaved = ref(false)
@@ -365,14 +359,12 @@ function buildTranslateConfig(): TranslateConfig | null {
     translateError.value = '请先选择翻译服务'
     return null
   }
-  // edge：免凭据，直接可用
   return config
 }
 
 async function handleTestTranslate(): Promise<void> {
   translateTestResult.value = null
   translateError.value = null
-  // 用当前表单值调 translate:test，未保存也能测
   const config = buildTranslateConfig()
   if (!config) return
   translating.value = true
@@ -408,7 +400,6 @@ async function handleSaveTranslate(): Promise<void> {
     partial.baiduAppid = translateAppidInput.value.trim()
     partial.baiduSecretKey = translateSecretKeyInput.value
   } else {
-    // 关闭翻译或改用免凭据服务：清空凭据，避免敏感信息残留配置
     partial.baiduAppid = ''
     partial.baiduSecretKey = ''
   }
@@ -419,7 +410,6 @@ async function handleSaveTranslate(): Promise<void> {
   }, 2000)
 }
 
-// ---------- 左侧导航 ----------
 const activeSection = ref<'general' | 'startup' | 'sync' | 'translate' | 'data' | 'sites'>(
   'general'
 )
@@ -452,7 +442,6 @@ async function handleLoginSite(adapter: AdapterInfo): Promise<void> {
     const result = await window.api.config.loginSite({
       domain: adapter.cookieDomain,
       loginUrl: adapter.loginUrl,
-      // Vue reactive 数组是 Proxy，IPC 无法克隆，需展开成普通数组
       loginCookieNames: [...(adapter.loginCookieNames ?? [])]
     })
     if (result.success && result.data && !('cancelled' in result.data)) {
@@ -729,6 +718,21 @@ onMounted(async () => {
                   :model-value="launchHidden"
                   :disabled="!autoLaunch"
                   @update:model-value="(v) => setLaunchHidden(!!v)"
+                />
+              </div>
+            </section>
+            <section class="mt-8">
+              <h2 class="text-sm font-semibold text-foreground mb-1">后台</h2>
+              <div class="flex items-center justify-between gap-6 py-3">
+                <div class="min-w-0">
+                  <div class="text-sm">低内存后台模式</div>
+                  <div class="mt-0.5 text-xs text-muted-foreground">
+                    隐藏到托盘 5 分钟后释放窗口内存，再次打开时重建窗口
+                  </div>
+                </div>
+                <Switch
+                  :model-value="lowMemoryMode"
+                  @update:model-value="(v) => setLowMemoryMode(!!v)"
                 />
               </div>
             </section>

@@ -1,5 +1,5 @@
 import { app, Tray, Menu, nativeImage } from 'electron'
-import { getMainWindow } from './window'
+import { showMainWindow } from './window'
 import { createSettingsWindow } from './settingsWindow'
 import { refreshAllFeeds } from '@main/services/refresher'
 import icon from '../../../resources/icon.png?asset'
@@ -10,9 +10,6 @@ export function getTrayRef(): Tray | null {
   return tray
 }
 
-/**
- * 创建系统托盘，绑定右键菜单和点击恢复窗口的行为。
- */
 export function createTray(): void {
   const trayIcon = nativeImage.createFromPath(icon)
   if (process.platform === 'darwin') {
@@ -25,7 +22,7 @@ export function createTray(): void {
   const contextMenu = Menu.buildFromTemplate([
     {
       label: '显示主窗口',
-      click: () => getMainWindow()?.show()
+      click: () => showMainWindow()
     },
     { type: 'separator' },
     {
@@ -49,5 +46,5 @@ export function createTray(): void {
   tray.setToolTip('Feed')
   tray.setContextMenu(contextMenu)
 
-  tray.on('double-click', () => getMainWindow()?.show())
+  tray.on('double-click', () => showMainWindow())
 }

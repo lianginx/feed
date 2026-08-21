@@ -53,6 +53,7 @@ interface AppSettings {
   launchHidden: boolean
   siteCookies: Record<string, string>
   proxy: ProxyConfig
+  lowMemoryMode: boolean
 }
 
 interface TranslateConfig {

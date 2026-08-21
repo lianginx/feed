@@ -6,37 +6,70 @@ import { shouldLaunchHidden } from '@main/services/autoLaunch'
 
 let mainWindow: BrowserWindow | null = null
 let quitting = false
+let destroyTimer: ReturnType<typeof setTimeout> | null = null
+
+const LOW_MEMORY_DESTROY_DELAY_MS = 1000 * 60 * 5
 
 export function setIsQuitting(val: boolean): void {
   quitting = val
+  if (val && destroyTimer) {
+    clearTimeout(destroyTimer)
+    destroyTimer = null
+  }
 }
 
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow
 }
 
-/** 允许在系统浏览器中打开的外部链接协议白名单（安全规则 #15） */
+function cancelDestroyTimer(): void {
+  if (destroyTimer) {
+    clearTimeout(destroyTimer)
+    destroyTimer = null
+  }
+}
+
+function scheduleDestroyTimer(): void {
+  cancelDestroyTimer()
+  if (!getSettings().lowMemoryMode) return
+  if (quitting) return
+  destroyTimer = setTimeout(() => {
+    destroyTimer = null
+    if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+      mainWindow.destroy()
+    }
+  }, LOW_MEMORY_DESTROY_DELAY_MS)
+}
+
+export function ensureMainWindow(): BrowserWindow {
+  const existing = getMainWindow()
+  if (existing && !existing.isDestroyed()) {
+    cancelDestroyTimer()
+    if (!existing.isVisible()) existing.show()
+    if (existing.isMinimized()) existing.restore()
+    existing.focus()
+    return existing
+  }
+  createWindow()
+  return mainWindow as BrowserWindow
+}
+
+export function showMainWindow(): void {
+  ensureMainWindow()
+}
+
 const SAFE_EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:'])
 
-/**
- * 在系统浏览器中安全地打开外部链接，仅允许白名单协议。
- */
 function openExternalSafe(url: string): void {
   try {
     if (SAFE_EXTERNAL_PROTOCOLS.has(new URL(url).protocol)) {
       shell.openExternal(url).catch(() => {})
     }
   } catch {
-    // 忽略无法解析的 URL
+    void 0
   }
 }
 
-/**
- * 为窗口的 webContents 配置外部链接处理（安全规则 #12、#15）：
- * - window.open / target="_blank" 新窗口请求 → 在系统浏览器打开并拒绝创建新窗体
- * - 应用内导航到外部 http/https 链接 → 阻止并改为系统浏览器打开
- * 主窗口与设置窗口共用，避免两个窗口行为不一致。
- */
 export function setupExternalNavigation(webContents: WebContents): void {
   webContents.setWindowOpenHandler((details) => {
     openExternalSafe(details.url)
@@ -44,7 +77,6 @@ export function setupExternalNavigation(webContents: WebContents): void {
   })
 
   webContents.on('will-navigate', (event, url) => {
-    // 开发模式下放行 Vite 开发服务器自身的导航（如 HMR 全量刷新）
     if (
       is.dev &&
       process.env['ELECTRON_RENDERER_URL'] &&
@@ -59,14 +91,11 @@ export function setupExternalNavigation(webContents: WebContents): void {
         openExternalSafe(url)
       }
     } catch {
-      // 忽略无法解析的 URL
+      void 0
     }
   })
 }
 
-/**
- * 创建主窗口，绑定窗口状态记忆和关闭时最小化到托盘的行为。
- */
 export function createWindow(): void {
   const settings = getSettings()
   nativeTheme.themeSource = settings.theme
@@ -92,13 +121,18 @@ export function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
-    // 开机自动启动且开启「启动时隐藏窗口」时不显示主窗口（可从托盘/Dock 恢复）
     if (!shouldLaunchHidden()) {
       mainWindow?.show()
     }
   })
 
-  // 窗口状态记忆（防抖保存）
+  mainWindow.on('show', cancelDestroyTimer)
+  mainWindow.on('closed', () => {
+    mainWindow = null
+    cancelDestroyTimer()
+  })
+  mainWindow.on('hide', scheduleDestroyTimer)
+
   let saveTimer: ReturnType<typeof setTimeout> | null = null
   const saveBounds = (): void => {
     if (saveTimer) clearTimeout(saveTimer)
@@ -120,6 +154,7 @@ export function createWindow(): void {
     if (!quitting) {
       event.preventDefault()
       mainWindow?.hide()
+      scheduleDestroyTimer()
     }
   })
 

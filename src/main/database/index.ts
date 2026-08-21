@@ -1,9 +1,9 @@
-import type Database from 'better-sqlite3'
-import { getConnection } from './connection'
+import { getConnection, type AppDatabase } from './connection'
 import { migrations, type Migration } from './migrations'
 import { seedDefaultFeeds } from './seed'
 
 export { closeConnection } from './connection'
+export type { AppDatabase }
 
 export function initializeDatabase(): void {
   const db = getConnection()
@@ -28,11 +28,10 @@ export function initializeDatabase(): void {
     runMigration(db, m)
   }
 
-  // 迁移全部完成后 schema 已是最新，此时再 seed 默认订阅源
   seedDefaultFeeds(db)
 }
 
-function runMigration(db: Database.Database, m: Migration): void {
+function runMigration(db: AppDatabase, m: Migration): void {
   db.transaction(() => {
     if (typeof m.up === 'string') {
       db.exec(m.up)

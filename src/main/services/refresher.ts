@@ -1,5 +1,5 @@
 import { getConnection } from '@main/database/connection'
-import { parseFeed, toFriendlyFeedError, type ParsedFeed } from './rss'
+import type { ParsedFeed } from './rss'
 import { normalizeContentImages } from './contentImages'
 import { getAdapter, runAdapter } from './routes'
 import { getCookiesForAdapter } from './siteCookies'
@@ -7,11 +7,6 @@ import { getCacheFile } from './cache'
 import { fileNameForSource, parseFaviconName, resolveAndCacheFavicon } from './favicon'
 import { scheduleBadgeUpdate } from './badge'
 import { getMainWindow } from '@main/app/window'
-import DOMPurify from 'dompurify'
-import { JSDOM } from 'jsdom'
-
-const purifyWindow = new JSDOM('').window
-const purify = DOMPurify(purifyWindow as unknown as Window & typeof globalThis)
 
 const MAX_RETRIES = 3
 const RETRY_DELAY_MS = 2000
@@ -24,6 +19,7 @@ async function fetchWithRetry(url: string): Promise<ParsedFeed> {
   let lastError: unknown
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
+      const { parseFeed } = await import('./rss')
       return await parseFeed(url)
     } catch (e) {
       lastError = e
@@ -104,7 +100,7 @@ export async function persistParsedFeed(
 
       const degraded = item.contentComplete === false
       const rawContent = degraded ? '' : item.content || item.contentSnippet || ''
-      const sanitizedContent = normalizeContentImages(purify.sanitize(rawContent))
+      const sanitizedContent = degraded ? '' : normalizeContentImages(rawContent)
       const parsedTime = item.pubDate ? new Date(item.pubDate).getTime() : NaN
       const publishedAt = Number.isFinite(parsedTime)
         ? Math.floor(parsedTime / 1000)
@@ -219,6 +215,7 @@ async function refreshFeed(feedId: number): Promise<void> {
       updated
     })
   } catch (e) {
+    const { toFriendlyFeedError } = await import('./rss')
     const friendlyError = toFriendlyFeedError(e)
     console.error(`[refresher] feed ${feedId} 刷新失败:`, e)
 

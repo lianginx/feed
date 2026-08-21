@@ -1,11 +1,5 @@
-import type Database from 'better-sqlite3'
+import type { AppDatabase } from '@main/database/connection'
 import { createHash } from 'crypto'
-
-/**
- * SQLite 译文缓存。
- * 只依赖 better-sqlite3，不 import electron，保证可在 node 环境（vitest）运行。
- * 表结构由 migration v7 创建；测试用 :memory: 手动建表。
- */
 
 export interface TranslationRecord {
   article_id: number
@@ -18,24 +12,18 @@ export interface TranslationRecord {
   updated_at: number
 }
 
-/** 保留策略：超过 30 天 或 超出最近 500 篇 的记录被清理 */
 const RETENTION_DAYS = 30
 const RETENTION_COUNT = 500
 
-/** 清理节流：写入后最多每 CLEANUP_INTERVAL_MS 执行一次，避免每次保存都触发 DELETE（评审建议 5） */
 const CLEANUP_INTERVAL_MS = 10 * 60 * 1000
 let lastCleanupAt = 0
 
-/**
- * 计算源内容哈希：source_hash = sha256(title + '\n' + content)。
- * 内容变化 / 换提供商 / 换语言都会导致 key 变化，自动重译。
- */
 export function computeSourceHash(title: string, content: string): string {
   return createHash('sha256').update(`${title}\n${content}`).digest('hex')
 }
 
 export function getTranslation(
-  db: Database.Database,
+  db: AppDatabase,
   articleId: number,
   provider: string,
   targetLang: string,
@@ -50,7 +38,7 @@ export function getTranslation(
   return row ?? null
 }
 
-export function saveTranslation(db: Database.Database, rec: TranslationRecord): void {
+export function saveTranslation(db: AppDatabase, rec: TranslationRecord): void {
   db.prepare(
     `INSERT INTO article_translations
       (article_id, provider, target_lang, source_hash, translated_title, translated_content, created_at, updated_at)
@@ -71,15 +59,13 @@ export function saveTranslation(db: Database.Database, rec: TranslationRecord): 
     rec.created_at,
     rec.updated_at
   )
-  // 节流清理：不与每次写入强耦合；应用启动时另有 cleanupTranslations 兜底
   const now = Date.now()
   if (now - lastCleanupAt <= CLEANUP_INTERVAL_MS) return
   lastCleanupAt = now
   cleanupTranslations(db)
 }
 
-/** 保留策略清理：写入时顺带删除超期 / 超出数量的记录 */
-export function cleanupTranslations(db: Database.Database): void {
+export function cleanupTranslations(db: AppDatabase): void {
   db.prepare(
     `DELETE FROM article_translations
      WHERE updated_at < ?

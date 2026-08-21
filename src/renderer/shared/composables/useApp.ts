@@ -13,6 +13,7 @@ const autoLaunch = ref(false)
 const launchHidden = ref(false)
 const siteCookies = ref<Record<string, string>>({})
 const proxyConfig = ref<ProxyConfig>({ mode: 'auto' })
+const lowMemoryMode = ref(false)
 
 export function useApp() {
   async function loadSettings() {
@@ -28,6 +29,7 @@ export function useApp() {
       launchHidden.value = result.data.launchHidden
       siteCookies.value = result.data.siteCookies ?? {}
       proxyConfig.value = result.data.proxy ?? { mode: 'auto' }
+      lowMemoryMode.value = result.data.lowMemoryMode ?? false
     }
   }
 
@@ -93,7 +95,6 @@ export function useApp() {
   async function setProxyConfig(partial: Partial<ProxyConfig>) {
     const next: ProxyConfig = { ...proxyConfig.value, ...partial }
     if (next.mode !== 'manual') {
-      // 非手动模式不保留手动字段，避免残留
       delete next.protocol
       delete next.host
       delete next.port
@@ -102,6 +103,11 @@ export function useApp() {
     }
     proxyConfig.value = next
     await window.api.config.update({ proxy: next })
+  }
+
+  async function setLowMemoryMode(enabled: boolean) {
+    lowMemoryMode.value = enabled
+    await window.api.config.update({ lowMemoryMode: enabled })
   }
 
   return {
@@ -115,6 +121,7 @@ export function useApp() {
     launchHidden,
     siteCookies,
     proxyConfig,
+    lowMemoryMode,
     loadSettings,
     setTheme,
     setUpdateInterval,
@@ -125,6 +132,7 @@ export function useApp() {
     setSiteCookies,
     setProxyConfig,
     setAutoLaunch,
-    setLaunchHidden
+    setLaunchHidden,
+    setLowMemoryMode
   }
 }

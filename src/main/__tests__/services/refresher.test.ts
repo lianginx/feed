@@ -1,10 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import Database from 'better-sqlite3'
+import { DatabaseSync } from 'node:sqlite'
 import { persistParsedFeed, type ParsedFeedPersistContext } from '@main/services/refresher'
 
-/** 用 :memory: 建最小表结构（与 migration v1/v2/v3 同构，persistParsedFeed 仅用到的列） */
-function createDb(): Database.Database {
-  const db = new Database(':memory:')
+function createDb(): DatabaseSync {
+  const db = new DatabaseSync(':memory:')
   db.exec(`
     CREATE TABLE feeds (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,8 +36,7 @@ function createDb(): Database.Database {
   return db
 }
 
-// getConnection 返回测试内共享的内存库；其余外部依赖打桩
-const holders = vi.hoisted(() => ({ db: null as unknown as Database.Database }))
+const holders = vi.hoisted(() => ({ db: null as unknown as any }))
 const electronApp = vi.hoisted(() => ({ mockUserData: '/tmp/feed-refresher-test' }))
 vi.mock('electron', () => ({ app: { getPath: () => electronApp.mockUserData } }))
 vi.mock('../../database/connection', () => ({ getConnection: () => holders.db }))
@@ -45,6 +44,27 @@ vi.mock('../../services/favicon', () => ({ resolveAndCacheFavicon: async () => n
 vi.mock('../../services/badge', () => ({ scheduleBadgeUpdate: () => undefined }))
 vi.mock('../../services/siteCookies', () => ({ getCookiesForAdapter: () => undefined }))
 vi.mock('../../app/window', () => ({ getMainWindow: () => undefined }))
+
+function wrapDb(raw: DatabaseSync): any {
+  return {
+    prepare: (sql: string) => raw.prepare(sql),
+    exec: (sql: string) => raw.exec(sql),
+    transaction: (fn: () => void) => () => {
+      raw.exec('BEGIN')
+      try {
+        fn()
+        raw.exec('COMMIT')
+      } catch (e) {
+        try {
+          raw.exec('ROLLBACK')
+        } catch {
+          void 0
+        }
+        throw e
+      }
+    }
+  }
+}
 
 const feedCtx: ParsedFeedPersistContext = {
   url: 'https://example.com/feed',
@@ -54,11 +74,10 @@ const feedCtx: ParsedFeedPersistContext = {
 
 describe('persistParsedFeed', () => {
   beforeEach(() => {
-    holders.db = createDb()
+    holders.db = wrapDb(createDb())
   })
 
   it('详情抓取失败的兜底内容不覆盖已有完整正文，发布日期也不丢失', async () => {
-    // 首次入库：完整正文 + 真实发布日期
     await persistParsedFeed(1, feedCtx, {
       title: '测试源',
       items: [
@@ -72,7 +91,6 @@ describe('persistParsedFeed', () => {
       ]
     })
 
-    // 二次刷新：详情抓取失败（contentComplete=false，正文缺失 + 无 pubDate）
     await persistParsedFeed(1, feedCtx, {
       title: '测试源',
       items: [{ guid: 'g1', title: '标题', contentComplete: false }]
@@ -141,7 +159,6 @@ describe('persistParsedFeed', () => {
       .prepare('SELECT content, summary FROM articles WHERE guid = ?')
       .get('g2') as { content: string; summary: string }
     expect(row.content).toBe('')
-    // 列表摘要仍作为 summary 落库
     expect(row.summary).toBe('列表摘要文本')
   })
 })
