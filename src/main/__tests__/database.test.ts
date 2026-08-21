@@ -1,32 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { DatabaseSync } from 'node:sqlite'
 import { describe, expect, it } from 'vitest'
 import { migrations } from '@main/database/migrations'
 import { seedDefaultFeeds } from '@main/database/seed'
 
-function wrapDb(raw: DatabaseSync): any {
-  return {
-    prepare: (sql: string) => raw.prepare(sql),
-    exec: (sql: string) => raw.exec(sql),
-    transaction: (fn: () => void) => () => {
-      raw.exec('BEGIN')
-      try {
-        fn()
-        raw.exec('COMMIT')
-      } catch (e) {
-        try {
-          raw.exec('ROLLBACK')
-        } catch {
-          void 0
-        }
-        throw e
-      }
-    }
-  }
-}
-
 function init(raw: DatabaseSync): void {
-  const db: any = wrapDb(raw)
+  const db = raw
   db.exec(`
     CREATE TABLE IF NOT EXISTS _migrations (
       version INTEGER PRIMARY KEY,
@@ -36,15 +14,24 @@ function init(raw: DatabaseSync): void {
   `)
   const current = db
     .prepare('SELECT COALESCE(MAX(version), 0) AS version FROM _migrations')
-    .get() as { version: number }
+    .get() as unknown as { version: number }
   migrations.sort((a: { version: number }, b: { version: number }) => a.version - b.version)
   for (const m of migrations) {
     if (m.version <= current.version) continue
-    db.transaction(() => {
+    db.exec('BEGIN')
+    try {
       if (typeof m.up === 'string') db.exec(m.up)
       else m.up(db)
       db.prepare('INSERT INTO _migrations (version, name) VALUES (?, ?)').run(m.version, m.name)
-    })()
+      db.exec('COMMIT')
+    } catch (e) {
+      try {
+        db.exec('ROLLBACK')
+      } catch {
+        void 0
+      }
+      throw e
+    }
   }
   seedDefaultFeeds(db)
 }
@@ -60,7 +47,9 @@ describe('database init', () => {
     const db = new DatabaseSync(':memory:')
     init(db)
 
-    const applied = db.prepare('SELECT version, name FROM _migrations ORDER BY version').all() as {
+    const applied = db
+      .prepare('SELECT version, name FROM _migrations ORDER BY version')
+      .all() as unknown as {
       version: number
       name: string
     }[]
@@ -68,7 +57,7 @@ describe('database init', () => {
 
     const adapterFeeds = db
       .prepare('SELECT url, adapter_id, adapter_params FROM feeds WHERE adapter_id IS NOT NULL')
-      .all() as { url: string; adapter_id: string; adapter_params: string }[]
+      .all() as unknown as { url: string; adapter_id: string; adapter_params: string }[]
     expect(adapterFeeds.length).toBeGreaterThan(0)
     expect(adapterFeeds.every((f) => f.adapter_params !== null)).toBe(true)
     expect(adapterFeeds.some((f) => f.url.includes('bilibili'))).toBe(true)
@@ -78,14 +67,18 @@ describe('database init', () => {
     const db = new DatabaseSync(':memory:')
     init(db)
 
-    const countBefore = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as { c: number }
+    const countBefore = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as unknown as {
+      c: number
+    }
     db.prepare('INSERT INTO feeds (url, title) VALUES (?, ?)').run(
       'https://user-added.example/rss',
       '用户添加的源'
     )
     init(db)
 
-    const countAfter = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as { c: number }
+    const countAfter = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as unknown as {
+      c: number
+    }
     expect(countAfter.c).toBe(countBefore.c + 1)
   })
 
@@ -94,7 +87,9 @@ describe('database init', () => {
     init(db)
     init(db)
 
-    const applied = db.prepare('SELECT version FROM _migrations ORDER BY version').all() as {
+    const applied = db
+      .prepare('SELECT version FROM _migrations ORDER BY version')
+      .all() as unknown as {
       version: number
     }[]
     expect(applied.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
@@ -107,7 +102,7 @@ describe('database init', () => {
     db.exec('DELETE FROM feeds')
     init(db)
 
-    const count = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as { c: number }
+    const count = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as unknown as { c: number }
     expect(count.c).toBe(0)
   })
 
@@ -116,16 +111,22 @@ describe('database init', () => {
     init(db)
     db.exec("DELETE FROM _app_state WHERE key = 'seeded_default_feeds'")
 
-    const countBefore = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as { c: number }
+    const countBefore = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as unknown as {
+      c: number
+    }
     init(db)
 
-    const countAfterUpgrade = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as { c: number }
+    const countAfterUpgrade = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as unknown as {
+      c: number
+    }
     expect(countAfterUpgrade.c).toBe(countBefore.c)
 
     db.exec('DELETE FROM feeds')
     init(db)
 
-    const countAfterClear = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as { c: number }
+    const countAfterClear = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as unknown as {
+      c: number
+    }
     expect(countAfterClear.c).toBe(0)
   })
 
@@ -137,13 +138,17 @@ describe('database init', () => {
 
     init(db)
 
-    const countRestored = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as { c: number }
+    const countRestored = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as unknown as {
+      c: number
+    }
     expect(countRestored.c).toBeGreaterThan(0)
 
     db.exec('DELETE FROM feeds')
     init(db)
 
-    const countAfterClear = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as { c: number }
+    const countAfterClear = db.prepare('SELECT COUNT(*) AS c FROM feeds').get() as unknown as {
+      c: number
+    }
     expect(countAfterClear.c).toBe(0)
   })
 })

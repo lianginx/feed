@@ -7,17 +7,10 @@ import {
   cleanupTranslations
 } from '@main/services/translate/cache'
 
-function wrapDb(raw: DatabaseSync) {
-  return {
-    prepare: (sql: string) => raw.prepare(sql),
-    exec: (sql: string) => raw.exec(sql),
-    pragma: () => undefined,
-    transaction: (fn: () => void) => fn,
-    close: () => {}
-  }
+function wrapDb(raw: DatabaseSync): DatabaseSync {
+  return raw
 }
 
-/** 用 :memory: 手动建表（与 migration v7 同构） */
 function createDb() {
   const raw = new DatabaseSync(':memory:')
   raw.exec(`
@@ -84,7 +77,7 @@ describe('cache', () => {
       article_id: 1,
       source_hash: hash,
       ...base,
-      updated_at: now - 31 * 24 * 3600 // 31 天前
+      updated_at: now - 31 * 24 * 3600
     })
     saveTranslation(db, {
       article_id: 2,
@@ -139,7 +132,7 @@ describe('cache', () => {
       })
     }
     cleanupTranslations(db)
-    const { c } = db.prepare('SELECT COUNT(*) AS c FROM article_translations').get() as {
+    const { c } = db.prepare('SELECT COUNT(*) AS c FROM article_translations').get() as unknown as {
       c: number
     }
     expect(c).toBe(500)

@@ -45,27 +45,6 @@ vi.mock('../../services/badge', () => ({ scheduleBadgeUpdate: () => undefined })
 vi.mock('../../services/siteCookies', () => ({ getCookiesForAdapter: () => undefined }))
 vi.mock('../../app/window', () => ({ getMainWindow: () => undefined }))
 
-function wrapDb(raw: DatabaseSync): any {
-  return {
-    prepare: (sql: string) => raw.prepare(sql),
-    exec: (sql: string) => raw.exec(sql),
-    transaction: (fn: () => void) => () => {
-      raw.exec('BEGIN')
-      try {
-        fn()
-        raw.exec('COMMIT')
-      } catch (e) {
-        try {
-          raw.exec('ROLLBACK')
-        } catch {
-          void 0
-        }
-        throw e
-      }
-    }
-  }
-}
-
 const feedCtx: ParsedFeedPersistContext = {
   url: 'https://example.com/feed',
   custom_title: 0,
@@ -74,7 +53,7 @@ const feedCtx: ParsedFeedPersistContext = {
 
 describe('persistParsedFeed', () => {
   beforeEach(() => {
-    holders.db = wrapDb(createDb())
+    holders.db = createDb()
   })
 
   it('详情抓取失败的兜底内容不覆盖已有完整正文，发布日期也不丢失', async () => {
@@ -98,7 +77,7 @@ describe('persistParsedFeed', () => {
 
     const row = holders.db
       .prepare('SELECT content, published_at FROM articles WHERE guid = ?')
-      .get('g1') as { content: string; published_at: number }
+      .get('g1') as unknown as { content: string; published_at: number }
     expect(row.content).toContain('完整正文内容')
     expect(row.published_at).toBe(
       Math.floor(new Date('2024-03-01T10:00:00+08:00').getTime() / 1000)
@@ -134,7 +113,7 @@ describe('persistParsedFeed', () => {
 
     const row = holders.db
       .prepare('SELECT content, published_at FROM articles WHERE guid = ?')
-      .get('g1') as { content: string; published_at: number }
+      .get('g1') as unknown as { content: string; published_at: number }
     expect(row.content).toContain('新完整正文')
     expect(row.published_at).toBe(
       Math.floor(new Date('2024-04-01T10:00:00+08:00').getTime() / 1000)
@@ -157,7 +136,7 @@ describe('persistParsedFeed', () => {
 
     const row = holders.db
       .prepare('SELECT content, summary FROM articles WHERE guid = ?')
-      .get('g2') as { content: string; summary: string }
+      .get('g2') as unknown as { content: string; summary: string }
     expect(row.content).toBe('')
     expect(row.summary).toBe('列表摘要文本')
   })

@@ -50,7 +50,8 @@ export function registerCategoryHandlers(): void {
     try {
       const db = getConnection()
       let feedCount = 0
-      db.transaction(() => {
+      db.exec('BEGIN')
+      try {
         const feedIds: { id: number }[] = db
           .prepare('SELECT id FROM feeds WHERE category_id = ?')
           .all(id) as { id: number }[]
@@ -67,7 +68,15 @@ export function registerCategoryHandlers(): void {
         }
 
         db.prepare('DELETE FROM categories WHERE id = ?').run(id)
-      })()
+        db.exec('COMMIT')
+      } catch (e) {
+        try {
+          db.exec('ROLLBACK')
+        } catch {
+          void 0
+        }
+        throw e
+      }
       scheduleSync()
       return success({ id, feedCount })
     } catch (e) {
@@ -100,11 +109,20 @@ export function registerCategoryHandlers(): void {
       try {
         const db = getConnection()
         const stmt = db.prepare('UPDATE categories SET sort_order = ? WHERE id = ?')
-        db.transaction(() => {
+        db.exec('BEGIN')
+        try {
           for (const item of items) {
             stmt.run(item.sort_order, item.id)
           }
-        })()
+          db.exec('COMMIT')
+        } catch (e) {
+          try {
+            db.exec('ROLLBACK')
+          } catch {
+            void 0
+          }
+          throw e
+        }
         scheduleSync()
         return success({ updated: items.length })
       } catch (e) {

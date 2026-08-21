@@ -1,5 +1,5 @@
 import { getConnection } from '@main/database/connection'
-import type { ParsedFeed } from './rss'
+import { parseFeed, toFriendlyFeedError, type ParsedFeed } from './rss'
 import { normalizeContentImages } from './contentImages'
 import { getAdapter, runAdapter } from './routes'
 import { getCookiesForAdapter } from './siteCookies'
@@ -19,7 +19,6 @@ async function fetchWithRetry(url: string): Promise<ParsedFeed> {
   let lastError: unknown
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const { parseFeed } = await import('./rss')
       return await parseFeed(url)
     } catch (e) {
       lastError = e
@@ -94,7 +93,8 @@ export async function persistParsedFeed(
   let inserted = 0
   let updated = 0
 
-  db.transaction(() => {
+  db.exec('BEGIN')
+  try {
     for (const item of parsed.items) {
       if (!item.guid) continue
 
@@ -139,7 +139,15 @@ export async function persistParsedFeed(
         inserted++
       }
     }
-  })()
+    db.exec('COMMIT')
+  } catch (e) {
+    try {
+      db.exec('ROLLBACK')
+    } catch {
+      void 0
+    }
+    throw e
+  }
 
   scheduleBadgeUpdate()
   return { inserted, updated }
@@ -147,7 +155,7 @@ export async function persistParsedFeed(
 
 export function refreshAllFeeds(): void {
   const db = getConnection()
-  const feeds = db.prepare('SELECT id FROM feeds').all() as { id: number }[]
+  const feeds = db.prepare('SELECT id FROM feeds').all() as unknown as { id: number }[]
   feeds.forEach((feed) => refreshSingleFeed(feed.id))
 }
 
@@ -215,7 +223,6 @@ async function refreshFeed(feedId: number): Promise<void> {
       updated
     })
   } catch (e) {
-    const { toFriendlyFeedError } = await import('./rss')
     const friendlyError = toFriendlyFeedError(e)
     console.error(`[refresher] feed ${feedId} 刷新失败:`, e)
 

@@ -4,8 +4,9 @@ import type { TranslatorInstanceMembers } from './providers'
 import { createTranslateProvider } from './providers'
 import { extractPieces, packPieces, rebuildHtml, type TranslateUnit } from './html'
 import { getTranslation, saveTranslation, computeSourceHash } from './cache'
-import { detectLanguage, isSameLanguage, SAMPLE_LIMIT } from './detect'
+import { detectLanguage, isSameLanguage, SAMPLE_LIMIT, toDetectedLang } from './detect'
 import type { BaiduApiError } from './providers/baidu'
+import { EdgeTranslator } from './providers/edge'
 import { createRateLimiter, type RateLimiter } from './rateLimit'
 
 export interface TranslateResult {
@@ -71,30 +72,16 @@ export async function translateArticle(
   const { $, pieces, units, isFullDocument } = extractPieces(content)
 
   const sampleText = `${article.title}\n${units.map((u) => u.text).join('\n')}`
-  const provider = await createTranslateProvider(settings.translate)
+  const provider = createTranslateProvider(settings.translate)
 
   let detected = detectLanguage(sampleText)
   if (isSameLanguage(detected, to)) {
     return { title: article.title, content, degraded: false, skipped: true }
   }
 
-  if (
-    provider &&
-    'detect' in provider &&
-    typeof (provider as { detect?: unknown }).detect === 'function'
-  ) {
-    try {
-      const edgeDetected = await (
-        provider as { detect: (t: string[]) => Promise<string | null> }
-      ).detect([sampleText.slice(0, SAMPLE_LIMIT)])
-      if (edgeDetected) {
-        const mapped = edgeDetected as unknown as string
-        const { toDetectedLang } = await import('./detect')
-        detected = toDetectedLang(mapped)
-      }
-    } catch {
-      void 0
-    }
+  if (provider instanceof EdgeTranslator) {
+    const edgeDetected = await provider.detect([sampleText.slice(0, SAMPLE_LIMIT)])
+    if (edgeDetected) detected = toDetectedLang(edgeDetected)
   }
   if (isSameLanguage(detected, to)) {
     return { title: article.title, content, degraded: false, skipped: true }
@@ -180,7 +167,7 @@ export async function translateArticle(
 }
 
 export async function testTranslate(config: TranslateConfig): Promise<void> {
-  const provider = await createTranslateProvider(config)
+  const provider = createTranslateProvider(config)
   if (!provider) throw new Error('翻译配置不完整，请选择可用的翻译服务')
   const throttle = createProviderThrottle(provider)
   const [result] = await translateWithRetry(provider, ['你好，世界'], 'auto', 'en', 1, throttle)

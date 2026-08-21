@@ -1,6 +1,6 @@
 # 数据库设计
 
-> 数据库使用 better-sqlite3，文件位于 `app.getPath('userData')/feed.db`。
+> 数据库使用 `node:sqlite`（`DatabaseSync`），文件位于 `app.getPath('userData')/feed.db`。
 > 同时支持 RSS 和 Atom 格式（rss-parser 原生支持两者）。
 
 ## feeds 表（订阅源）
@@ -38,7 +38,7 @@
 | title        | TEXT NOT NULL                          | 标题                                   |
 | url          | TEXT                                   | 原文链接                               |
 | author       | TEXT                                   | 作者                                   |
-| content      | TEXT                                   | 完整 HTML 内容（已用 DOMPurify 净化）  |
+| content      | TEXT                                   | 完整 HTML 内容（裸存，渲染前必须 `sanitizeHtml` 净化） |
 | summary      | TEXT                                   | 摘要（RSS description / Atom summary） |
 | published_at | INTEGER                                | 发布时间戳                             |
 | is_read      | INTEGER DEFAULT 0                      | 已读标记                               |
@@ -245,4 +245,4 @@ CREATE INDEX IF NOT EXISTS idx_articles_read_pub ON articles(is_read, published_
 | 版本号       | 整数序号      | 简单明确                             |
 | 执行方式     | 单事务包装    | 原子性，失败不回留下半成品状态       |
 | 回滚         | 不支持        | 桌面应用场景下，出错应通过新迁移修复 |
-| 依赖         | 零外部依赖    | 仅 better-sqlite3                    |
+| 依赖         | 零外部依赖    | 仅 `node:sqlite`                     |

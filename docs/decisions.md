@@ -4,8 +4,8 @@
 
 ## ⚠️ 安全注意事项
 
-- **RSS 文章内容必须使用 DOMPurify 净化后再渲染**（rss-parser 不做任何 XSS 过滤）
-- **禁止使用 `v-html` 直接渲染未净化的 HTML**（Electron 中 XSS 危害更大）
+- **RSS 文章 `articles.content` 为裸存，渲染前必须用 `sanitizeHtml`（DOMPurify）净化**（rss-parser 不做任何 XSS 过滤）
+- **禁止直接 `v-html` 裸渲染**
 - 详见：https://github.com/cure53/DOMPurify#readme
 
 ## ⚠️ 原生模块注意事项
@@ -78,7 +78,7 @@
 | macOS 钥匙串弹窗 | 关闭 `enableCookieEncryption`（fuse 置 false），不设 `--password-store` | v0.6.2 曾用 `--password-store=basic`，但它只影响 Chromium 密码存储、与 Cookie 加密（走 Keychain）无关，无法消除弹窗；v0.6.3 关闭 Cookie 加密才是根治。权衡：Cookie 磁盘加密降级为基础加密（安全清单 #4 主动回退），换取无弹窗启动体验 |
 | 应用名称         | Feed                                            | 简洁直接                                                              |
 | 关闭行为         | 最小化到系统托盘                                | 不退出应用，托盘右键菜单恢复/退出                                     |
-| 文章存储         | 存完整 HTML（DOMPurify 净化后）                 | 支持离线阅读                                                          |
+| 文章存储         | 存完整 HTML（裸存，仅 `normalizeContentImages`；渲染前 `sanitizeHtml` 净化） | 支持离线阅读，规避主进程 `JSDOM` 常驻泄漏                             |
 | 数据库 schema    | 三张表 + FTS5                                   | feeds/categories/articles + 全文搜索虚拟表                            |
 | 文章去重         | UNIQUE(feed_id, guid)                           | 同一订阅源内文章唯一，防止重复入库                                    |
 | 文章内容更新     | 覆盖保存                                        | 匹配到已有 article 则直接覆盖 content/title/author，不保留历史        |

@@ -18,7 +18,7 @@ export function initializeDatabase(): void {
 
   const current = db
     .prepare('SELECT COALESCE(MAX(version), 0) AS version FROM _migrations')
-    .get() as { version: number }
+    .get() as unknown as { version: number }
 
   migrations.sort((a, b) => a.version - b.version)
 
@@ -32,7 +32,8 @@ export function initializeDatabase(): void {
 }
 
 function runMigration(db: AppDatabase, m: Migration): void {
-  db.transaction(() => {
+  db.exec('BEGIN')
+  try {
     if (typeof m.up === 'string') {
       db.exec(m.up)
     } else {
@@ -40,5 +41,13 @@ function runMigration(db: AppDatabase, m: Migration): void {
     }
 
     db.prepare('INSERT INTO _migrations (version, name) VALUES (?, ?)').run(m.version, m.name)
-  })()
+    db.exec('COMMIT')
+  } catch (e) {
+    try {
+      db.exec('ROLLBACK')
+    } catch {
+      void 0
+    }
+    throw e
+  }
 }

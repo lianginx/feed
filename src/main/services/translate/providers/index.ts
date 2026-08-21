@@ -2,6 +2,8 @@ import type { TranslateConfig } from '@main/config'
 import type { Fetcher } from 'anylang/esm/utils/fetcher/types.js'
 import type { TranslatorInstanceMembers } from 'anylang/esm/translators/Translator.js'
 import { fetchWithTimeout } from '@main/services/http'
+import { BaiduTranslator } from './baidu'
+import { EdgeTranslator } from './edge'
 
 export type { TranslatorInstanceMembers } from 'anylang/esm/translators/Translator.js'
 
@@ -24,24 +26,19 @@ const anylangFetcher: Fetcher = async (url, options) => {
   return { headers: headerMap, ok: res.ok, status: res.status, statusText: res.statusText, data }
 }
 
-export async function createTranslateProvider(
-  config: TranslateConfig
-): Promise<TranslatorInstanceMembers | null> {
+export function createTranslateProvider(config: TranslateConfig): TranslatorInstanceMembers | null {
   switch (config.provider) {
-    case 'baidu': {
-      if (!config.baiduAppid || !config.baiduSecretKey) return null
-      const { BaiduTranslator } = await import('./baidu')
-      return new BaiduTranslator({
-        appid: config.baiduAppid,
-        secretKey: config.baiduSecretKey,
-        fetcher: anylangFetcher,
-        headers: {}
-      })
-    }
-    case 'edge': {
-      const { EdgeTranslator } = await import('./edge')
+    case 'baidu':
+      return config.baiduAppid && config.baiduSecretKey
+        ? new BaiduTranslator({
+            appid: config.baiduAppid,
+            secretKey: config.baiduSecretKey,
+            fetcher: anylangFetcher,
+            headers: {}
+          })
+        : null
+    case 'edge':
       return new EdgeTranslator({ fetcher: anylangFetcher, headers: {} })
-    }
     default:
       return null
   }

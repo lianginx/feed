@@ -34,7 +34,7 @@ export function getTranslation(
       `SELECT * FROM article_translations
        WHERE article_id = ? AND provider = ? AND target_lang = ? AND source_hash = ?`
     )
-    .get(articleId, provider, targetLang, sourceHash) as TranslationRecord | undefined
+    .get(articleId, provider, targetLang, sourceHash) as unknown as TranslationRecord | undefined
   return row ?? null
 }
 

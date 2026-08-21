@@ -22,7 +22,7 @@ export function getMainWindow(): BrowserWindow | null {
   return mainWindow
 }
 
-function cancelDestroyTimer(): void {
+export function cancelDestroyTimer(): void {
   if (destroyTimer) {
     clearTimeout(destroyTimer)
     destroyTimer = null

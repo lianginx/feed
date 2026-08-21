@@ -87,7 +87,8 @@ function importFeeds(entries: FeedEntry[]): { total: number; added: number; skip
 
   const skippedDuplicates = supportedEntries.length - newEntries.length
 
-  const doImport = db.transaction(() => {
+  db.exec('BEGIN')
+  try {
     for (const entry of newEntries) {
       let categoryId: number | null = null
       if (entry.category) {
@@ -109,9 +110,15 @@ function importFeeds(entries: FeedEntry[]): { total: number; added: number; skip
         )
       void refreshSingleFeed(result.lastInsertRowid as number)
     }
-  })
-
-  doImport()
+    db.exec('COMMIT')
+  } catch (e) {
+    try {
+      db.exec('ROLLBACK')
+    } catch {
+      void 0
+    }
+    throw e
+  }
 
   scheduleSync()
 
@@ -133,7 +140,7 @@ function exportOpml(includeRoutes: boolean): string {
     ${routeFilter}
     ORDER BY c.sort_order ASC, c.name ASC, f.sort_order ASC, f.id ASC`
     )
-    .all() as {
+    .all() as unknown as {
     title: string
     url: string
     site_url: string | null
@@ -220,7 +227,7 @@ async function chooseIncludeRoutes(): Promise<boolean | null> {
   const db = getConnection()
   const { count } = db
     .prepare('SELECT COUNT(*) AS count FROM feeds WHERE adapter_id IS NOT NULL')
-    .get() as { count: number }
+    .get() as unknown as { count: number }
 
   if (count === 0) return false
 

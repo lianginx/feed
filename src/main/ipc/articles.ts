@@ -28,7 +28,6 @@ function buildArticleConditions(params: ArticleListParams): {
     conditions.push('a.is_starred = 1')
   }
   if (params.isToday) {
-    // 今日发布：本地时区当天 0 点起（published_at 为 Unix 秒）
     const now = new Date()
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000
     conditions.push('a.published_at >= @todayStart')
@@ -48,13 +47,9 @@ export function registerArticleHandlers(): void {
       if (query) {
         const terms = query.split(/\s+/).filter(Boolean)
         if (terms.every((t) => t.length >= 3)) {
-          // 词长 ≥3：用 FTS5 MATCH（trigram 索引），避免前导通配符 LIKE 的全表扫描；
-          // 每个词用双引号包裹并转义，防止用户输入破坏 MATCH 查询语法。
-          // 注意：MATCH 语法不认表别名，必须用真实表名 articles_fts
           queryParams.match = terms.map((t) => `"${t.replace(/"/g, '""')}"`).join(' OR ')
           conditions.push('articles_fts MATCH @match')
         } else {
-          // 短词（<3 字符）trigram 无法索引匹配，降级为 LIKE 子串查询
           terms.forEach((term, i) => {
             queryParams[`like${i}`] = `%${term}%`
             conditions.push(
@@ -64,8 +59,6 @@ export function registerArticleHandlers(): void {
         }
       }
 
-      // 游标分页：排序为 published_at DESC, id DESC，游标是上一页最后一条（最旧），
-      // 下一页取比游标更旧的行。SQLite 中 NULL 在 DESC 排序时排最后，游标非空时需包含全部 NULL 行
       if (params.cursor) {
         if (params.cursor.publishedAt === null) {
           conditions.push('a.published_at IS NULL AND a.id < @cursorId')
@@ -85,7 +78,6 @@ export function registerArticleHandlers(): void {
         : 'FROM articles a\n        JOIN feeds f ON a.feed_id = f.id'
 
       const limit = Math.min(Math.max(params.limit ?? 60, 1), 200)
-      // 多取一条判断是否还有下一页
       const rows = db
         .prepare(
           `
@@ -138,7 +130,9 @@ export function registerArticleHandlers(): void {
       db.prepare(
         'UPDATE articles SET is_read = CASE WHEN is_read = 1 THEN 0 ELSE 1 END WHERE id = ?'
       ).run(id)
-      const article = db.prepare('SELECT is_read FROM articles WHERE id = ?').get(id) as {
+      const article = db
+        .prepare('SELECT is_read FROM articles WHERE id = ?')
+        .get(id) as unknown as {
         is_read: number
       }
       scheduleBadgeUpdate()
@@ -183,7 +177,9 @@ export function registerArticleHandlers(): void {
       db.prepare(
         'UPDATE articles SET is_starred = CASE WHEN is_starred = 1 THEN 0 ELSE 1 END WHERE id = ?'
       ).run(id)
-      const article = db.prepare('SELECT is_starred FROM articles WHERE id = ?').get(id) as {
+      const article = db
+        .prepare('SELECT is_starred FROM articles WHERE id = ?')
+        .get(id) as unknown as {
         is_starred: number
       }
       return success({ id, is_starred: article.is_starred })

@@ -3,7 +3,6 @@ import store, { getSettings } from '@main/config'
 import { getConnection } from '@main/database/connection'
 import { createSyncProvider } from './providers'
 
-/** 同步快照的 JSON 结构（版本 1） */
 export interface SyncSnapshot {
   version: 1
   updatedAt: number
@@ -15,30 +14,25 @@ export interface SyncFeed {
   url: string
   title: string
   siteUrl: string | null
-  category: string | null // 分类名（跨设备用名称关联，而非本地自增 id）
+  category: string | null
   sortOrder: number
   customTitle: number
-  // 可选字段：兼容旧版本快照（升级后首次同步时旧快照没有这两个字段）
   adapterId?: string | null
   adapterParams?: string | null
 }
 
-/** 一次同步的结果 */
 export type SyncResult =
-  | { status: 'disabled' } // 未配置同步
-  | { status: 'noop' } // 本地与远端均无变化
-  | { status: 'pushed' } // 已推送本地到远端
-  | { status: 'pulled' } // 已从远端拉取到本地
-  | { status: 'conflict' } // 本地与远端都有改动，需要用户选择
+  | { status: 'disabled' }
+  | { status: 'noop' }
+  | { status: 'pushed' }
+  | { status: 'pulled' }
+  | { status: 'conflict' }
   | { status: 'error'; error: string }
 
-/** 防抖自动同步的延迟（毫秒） */
 const AUTO_SYNC_DEBOUNCE_MS = 1500
 
 let syncing = false
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
-
-// ---------- 同步内部状态（持久化到 electron-store，不暴露给配置 UI） ----------
 
 function getLastDump(): string | null {
   return store.get('syncLastDump') ?? null
@@ -57,8 +51,6 @@ function setLastSyncedAt(time: number): void {
   store.set('syncLastSyncedAt', time)
 }
 
-// ---------- 序列化 / 应用快照 ----------
-
 interface CategoryRow {
   id: number
   name: string
@@ -76,18 +68,17 @@ interface FeedRow {
   adapter_params: string | null
 }
 
-/** 把当前本地订阅列表序列化为规范化快照字符串 */
 function serializeSnapshot(): string {
   const db = getConnection()
   const cats = db
     .prepare('SELECT id, name, sort_order FROM categories ORDER BY sort_order ASC, id ASC')
-    .all() as CategoryRow[]
+    .all() as unknown as CategoryRow[]
   const catNameById = new Map<number, string>(cats.map((c) => [c.id, c.name]))
   const feeds = db
     .prepare(
       'SELECT url, title, site_url, category_id, sort_order, custom_title, adapter_id, adapter_params FROM feeds ORDER BY sort_order ASC, id ASC'
     )
-    .all() as FeedRow[]
+    .all() as unknown as FeedRow[]
 
   const snapshot: SyncSnapshot = {
     version: 1,
@@ -117,22 +108,17 @@ function parseSnapshot(raw: string): SyncSnapshot {
 
 function isLocalEmpty(): boolean {
   const db = getConnection()
-  const { count } = db.prepare('SELECT COUNT(*) AS count FROM feeds').get() as { count: number }
+  const { count } = db.prepare('SELECT COUNT(*) AS count FROM feeds').get() as unknown as {
+    count: number
+  }
   return count === 0
 }
 
-/**
- * 把远端快照应用到本地数据库。
- * 采用「按 url / 分类名对账」而非清空重插：
- * - 远端新增的订阅/分类 → 插入
- * - 远端修改的元数据（标题/分类/排序/自定义标题）→ 更新，保留本地 id 与已抓取文章
- * - 本地有而远端没有的订阅/分类 → 删除（同步删除操作）
- */
 function applySnapshot(snapshot: SyncSnapshot): void {
   const db = getConnection()
 
-  db.transaction(() => {
-    // 1. 按名称 upsert 分类，建立 name -> id 映射
+  db.exec('BEGIN')
+  try {
     const catNameToId = new Map<string, number>()
     for (const c of snapshot.categories) {
       const existing = db.prepare('SELECT id FROM categories WHERE name = ?').get(c.name) as
@@ -151,13 +137,13 @@ function applySnapshot(snapshot: SyncSnapshot): void {
       }
     }
 
-    // 2. 处理本地订阅：远端不存在的删除，存在的先更新元数据（不含分类，稍后统一处理）
-    const localFeeds = db.prepare('SELECT * FROM feeds').all() as (FeedRow & { id: number })[]
+    const localFeeds = db.prepare('SELECT * FROM feeds').all() as unknown as (FeedRow & {
+      id: number
+    })[]
     const snapshotByUrl = new Map(snapshot.feeds.map((f) => [f.url, f]))
     for (const local of localFeeds) {
       const target = snapshotByUrl.get(local.url)
       if (!target) {
-        // 远端已删除该订阅 → 本地也删除（连带文章）
         db.prepare('DELETE FROM articles WHERE feed_id = ?').run(local.id)
         db.prepare('DELETE FROM feeds WHERE id = ?').run(local.id)
       } else {
@@ -175,7 +161,6 @@ function applySnapshot(snapshot: SyncSnapshot): void {
       }
     }
 
-    // 3. 插入远端有而本地没有的订阅
     const localUrlSet = new Set(localFeeds.map((f) => f.url))
     const insertFeed = db.prepare(
       'INSERT INTO feeds (url, title, site_url, category_id, sort_order, custom_title, adapter_id, adapter_params) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
@@ -195,16 +180,14 @@ function applySnapshot(snapshot: SyncSnapshot): void {
       )
     }
 
-    // 4. 更新已有订阅的分类归属（可能有跨设备分类变动）
     const setCategory = db.prepare('UPDATE feeds SET category_id = ? WHERE url = ?')
     for (const f of snapshot.feeds) {
       const catId = f.category ? (catNameToId.get(f.category) ?? null) : null
       setCategory.run(catId, f.url)
     }
 
-    // 5. 删除本地存在但远端快照中没有的分类
     const snapshotCatNames = new Set(snapshot.categories.map((c) => c.name))
-    const localCats = db.prepare('SELECT id, name FROM categories').all() as {
+    const localCats = db.prepare('SELECT id, name FROM categories').all() as unknown as {
       id: number
       name: string
     }[]
@@ -213,10 +196,16 @@ function applySnapshot(snapshot: SyncSnapshot): void {
         db.prepare('DELETE FROM categories WHERE id = ?').run(c.id)
       }
     }
-  })()
+    db.exec('COMMIT')
+  } catch (e) {
+    try {
+      db.exec('ROLLBACK')
+    } catch {
+      void 0
+    }
+    throw e
+  }
 }
-
-// ---------- 通知渲染进程 ----------
 
 function notifyRenderer(result: SyncResult): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -226,12 +215,6 @@ function notifyRenderer(result: SyncResult): void {
   }
 }
 
-// ---------- 同步主流程 ----------
-
-/**
- * 执行一次同步（启动 / 定时 / 手动 / 变更防抖 共用）。
- * 策略：整体替换 + 推送前冲突检测（详见设计讨论）。
- */
 export async function runSync(): Promise<SyncResult> {
   if (syncing) return { status: 'noop' }
   const settings = getSettings()
@@ -249,13 +232,11 @@ export async function runSync(): Promise<SyncResult> {
     let result: SyncResult
 
     if (remote === null) {
-      // 远端不存在（首次同步或远端被清空）→ 推送本地
       await provider.push(local)
       setLastDump(local)
       setLastSyncedAt(Date.now())
       result = { status: 'pushed' }
     } else if (remote === last) {
-      // 远端自上次同步后没有变化
       if (local === last) {
         result = { status: 'noop' }
       } else {
@@ -265,21 +246,17 @@ export async function runSync(): Promise<SyncResult> {
         result = { status: 'pushed' }
       }
     } else {
-      // 远端变了
       if (last === null && isLocalEmpty()) {
-        // 首次同步 + 本地为空 → 直接采纳远端
         applySnapshot(parseSnapshot(remote))
         setLastDump(remote)
         setLastSyncedAt(Date.now())
         result = { status: 'pulled' }
       } else if (local === last) {
-        // 本地没改 → 采纳远端
         applySnapshot(parseSnapshot(remote))
         setLastDump(remote)
         setLastSyncedAt(Date.now())
         result = { status: 'pulled' }
       } else {
-        // 本地与远端都有改动 → 冲突，等待用户选择
         result = { status: 'conflict' }
       }
     }
@@ -295,11 +272,6 @@ export async function runSync(): Promise<SyncResult> {
   }
 }
 
-/**
- * 冲突发生后，由用户选择以哪一方为准。
- * - 'local'：以本地为准，推送本地覆盖远端
- * - 'remote'：以远端为准，应用远端到本地
- */
 export async function resolveConflict(choice: 'local' | 'remote'): Promise<SyncResult> {
   if (syncing) return { status: 'noop' }
   const settings = getSettings()
@@ -340,12 +312,6 @@ export async function resolveConflict(choice: 'local' | 'remote'): Promise<SyncR
   }
 }
 
-/**
- * 订阅源/分类发生变更后，防抖触发一次自动同步。
- * 无论一次性改了多少条，都只会在最后一次变更后短暂延迟触发一次。
- * 若触发时恰有同步正在执行（启动/定时/手动），则延迟到其结束后再触发，
- * 避免本次变更被 runSync 的 syncing 保护静默丢弃。
- */
 export function scheduleSync(): void {
   if (debounceTimer) clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => {

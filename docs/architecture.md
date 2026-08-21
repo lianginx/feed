@@ -4,8 +4,8 @@
 
 ## ⚠️ 安全注意事项
 
-- **RSS 文章内容必须使用 DOMPurify 净化后再渲染**（rss-parser 不做任何 XSS 过滤）
-- **禁止使用 `v-html` 直接渲染未净化的 HTML**（Electron 中 XSS 危害更大）
+- **RSS 文章 `articles.content` 为裸存，渲染前必须用 `sanitizeHtml`（DOMPurify）净化**（rss-parser 不做任何 XSS 过滤，Electron 中 `v-html` 风险更高）
+- **禁止直接 `v-html` 裸渲染**
 - 详见：https://github.com/cure53/DOMPurify#readme
 
 ### Content-Security-Policy
@@ -25,7 +25,7 @@
 - `img-src` 允许 `https:` — RSS 文章中的外部图片可正常加载
 - `media-src` 允许 `https:` — 文章中的视频/音频可播放
 - 脚本严格限制 `'self'` — XSS 攻击面最小化
-- 文章 HTML 仍必须 DOMPurify 净化（双层防护）
+- 文章 HTML 渲染前必须经 `sanitizeHtml`（DOMPurify）净化；`articles.content` 为裸存，仅做 `normalizeContentImages`
 
 ### API Key 存储
 
@@ -199,6 +199,6 @@ routes/
 | RSS 解析失败   | 捕获异常，返回友好错误信息，不中断其他 feed 的刷新                         |
 | 网络错误       | 记录到 feed 的 `last_error` 字段，下次刷新时清除                           |
 | 无效 feed URL  | 添加时验证 URL 格式 + 尝试解析，失败则提示用户                             |
-| 恶意 HTML      | 所有文章内容入库前强制 DOMPurify 净化，不存在"不净化"的路径                |
+| 恶意 HTML      | `articles.content` 裸存（仅 `normalizeContentImages`），渲染前必须经 `sanitizeHtml`（DOMPurify）净化，禁止直接 `v-html` 裸渲染 |
 | 数据库写入失败 | IPC 统一 `{ success, data?, error? }` 格式，渲染层 toast 提示              |
 | 连续错误暂停   | 连续错误 ≥5 次后自动暂停该 feed 的定时刷新，UI 中标记为"已暂停"            |

@@ -1,6 +1,6 @@
 import { ipcMain, nativeTheme } from 'electron'
 import { getSettings, updateSettings, type AppSettings } from '@main/config'
-import { getMainWindow } from '@main/app/window'
+import { cancelDestroyTimer, getMainWindow } from '@main/app/window'
 import { startScheduler } from '@main/services/timer'
 import { refreshAutoCheckTimer } from '@main/services/updater'
 import { applyAutoLaunch } from '@main/services/autoLaunch'
@@ -18,7 +18,6 @@ export function registerSettingsHandlers(): void {
     }
   })
 
-  // 清理本地缓存（全部命名空间；favicon 内容寻址，缺失时会按源自动重建）
   ipcMain.handle('cache:clear', async () => {
     try {
       return success({ clearedBytes: clearCache() })
@@ -79,7 +78,9 @@ export function registerSettingsHandlers(): void {
       if (settings.proxy !== undefined) {
         void applyProxySettings(getSettings())
       }
-      // 通知主窗口重新加载配置（如主题变化即时生效）
+      if (settings.lowMemoryMode === false) {
+        cancelDestroyTimer()
+      }
       getMainWindow()?.webContents.send('config:changed')
       return success(updated)
     } catch (e) {

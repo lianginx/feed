@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import { getMainWindow } from '@main/app/window'
 import { createAddFeedWindow, closeAddFeedWindow, getAddFeedWindow } from '@main/app/addFeedWindow'
 import { getConnection } from '@main/database/connection'
+import { toFriendlyFeedError } from '@main/services/rss'
 import { refreshFeedFavicon } from '@main/services/favicon'
 import { refreshSingleFeed } from '@main/services/refresher'
 import { getAdapter, listAdapters } from '@main/services/routes'
@@ -38,7 +39,6 @@ async function addRss(params: { url: string; title?: string; categoryId?: number
     scheduleSync()
     notifyFeedAdded(feedId)
   } catch (e) {
-    const { toFriendlyFeedError } = await import('@main/services/rss')
     sendAddResult({ success: false, error: toFriendlyFeedError(e) })
   }
 }
@@ -89,7 +89,6 @@ async function addAdapterSource(input: {
     scheduleSync()
     notifyFeedAdded(feedId)
   } catch (e) {
-    const { toFriendlyFeedError } = await import('@main/services/rss')
     sendAddResult({ success: false, error: toFriendlyFeedError(e) })
   }
 }
@@ -202,10 +201,19 @@ export function registerFeedHandlers() {
   ipcMain.handle('feeds:delete', async (_event, id: number) => {
     try {
       const db = getConnection()
-      db.transaction(() => {
+      db.exec('BEGIN')
+      try {
         db.prepare('DELETE FROM articles WHERE feed_id = ?').run(id)
         db.prepare('DELETE FROM feeds WHERE id = ?').run(id)
-      })()
+        db.exec('COMMIT')
+      } catch (e) {
+        try {
+          db.exec('ROLLBACK')
+        } catch {
+          void 0
+        }
+        throw e
+      }
       scheduleSync()
       return success({ id })
     } catch (e) {
@@ -219,11 +227,20 @@ export function registerFeedHandlers() {
       try {
         const db = getConnection()
         const stmt = db.prepare('UPDATE feeds SET sort_order = ? WHERE id = ?')
-        db.transaction(() => {
+        db.exec('BEGIN')
+        try {
           for (const feed of feeds) {
             stmt.run(feed.sort_order, feed.id)
           }
-        })()
+          db.exec('COMMIT')
+        } catch (e) {
+          try {
+            db.exec('ROLLBACK')
+          } catch {
+            void 0
+          }
+          throw e
+        }
         scheduleSync()
         return success({ updated: feeds.length })
       } catch (e) {
