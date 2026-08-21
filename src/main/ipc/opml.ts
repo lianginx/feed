@@ -1,6 +1,7 @@
 import { ipcMain, dialog } from 'electron'
 import { readFileSync, writeFileSync } from 'fs'
 import { getConnection } from '@main/database/connection'
+import { withTransaction } from '@main/database/transaction'
 import { refreshSingleFeed } from '@main/services/refresher'
 import { getAdapter } from '@main/services/routes'
 import { scheduleSync } from '@main/services/sync'
@@ -87,8 +88,8 @@ function importFeeds(entries: FeedEntry[]): { total: number; added: number; skip
 
   const skippedDuplicates = supportedEntries.length - newEntries.length
 
-  db.exec('BEGIN')
-  try {
+  const insertedIds: number[] = []
+  withTransaction(db, () => {
     for (const entry of newEntries) {
       let categoryId: number | null = null
       if (entry.category) {
@@ -108,17 +109,10 @@ function importFeeds(entries: FeedEntry[]): { total: number; added: number; skip
           entry.adapterId || null,
           entry.adapterParams || null
         )
-      void refreshSingleFeed(result.lastInsertRowid as number)
+      insertedIds.push(result.lastInsertRowid as number)
     }
-    db.exec('COMMIT')
-  } catch (e) {
-    try {
-      db.exec('ROLLBACK')
-    } catch {
-      void 0
-    }
-    throw e
-  }
+  })
+  for (const id of insertedIds) void refreshSingleFeed(id)
 
   scheduleSync()
 

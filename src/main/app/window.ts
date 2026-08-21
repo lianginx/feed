@@ -29,7 +29,7 @@ export function cancelDestroyTimer(): void {
   }
 }
 
-function scheduleDestroyTimer(): void {
+export function scheduleDestroyTimer(): void {
   cancelDestroyTimer()
   if (!getSettings().lowMemoryMode) return
   if (quitting) return

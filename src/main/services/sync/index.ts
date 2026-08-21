@@ -1,6 +1,7 @@
 import { BrowserWindow } from 'electron'
 import store, { getSettings } from '@main/config'
 import { getConnection } from '@main/database/connection'
+import { withTransaction } from '@main/database/transaction'
 import { createSyncProvider } from './providers'
 
 export interface SyncSnapshot {
@@ -116,9 +117,7 @@ function isLocalEmpty(): boolean {
 
 function applySnapshot(snapshot: SyncSnapshot): void {
   const db = getConnection()
-
-  db.exec('BEGIN')
-  try {
+  withTransaction(db, () => {
     const catNameToId = new Map<string, number>()
     for (const c of snapshot.categories) {
       const existing = db.prepare('SELECT id FROM categories WHERE name = ?').get(c.name) as
@@ -196,15 +195,7 @@ function applySnapshot(snapshot: SyncSnapshot): void {
         db.prepare('DELETE FROM categories WHERE id = ?').run(c.id)
       }
     }
-    db.exec('COMMIT')
-  } catch (e) {
-    try {
-      db.exec('ROLLBACK')
-    } catch {
-      void 0
-    }
-    throw e
-  }
+  })
 }
 
 function notifyRenderer(result: SyncResult): void {

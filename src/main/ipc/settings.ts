@@ -1,6 +1,6 @@
 import { ipcMain, nativeTheme } from 'electron'
 import { getSettings, updateSettings, type AppSettings } from '@main/config'
-import { cancelDestroyTimer, getMainWindow } from '@main/app/window'
+import { cancelDestroyTimer, getMainWindow, scheduleDestroyTimer } from '@main/app/window'
 import { startScheduler } from '@main/services/timer'
 import { refreshAutoCheckTimer } from '@main/services/updater'
 import { applyAutoLaunch } from '@main/services/autoLaunch'
@@ -78,8 +78,9 @@ export function registerSettingsHandlers(): void {
       if (settings.proxy !== undefined) {
         void applyProxySettings(getSettings())
       }
-      if (settings.lowMemoryMode === false) {
-        cancelDestroyTimer()
+      if (settings.lowMemoryMode !== undefined) {
+        if (settings.lowMemoryMode) scheduleDestroyTimer()
+        else cancelDestroyTimer()
       }
       getMainWindow()?.webContents.send('config:changed')
       return success(updated)

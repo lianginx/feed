@@ -1,6 +1,7 @@
 import { getConnection, type AppDatabase } from './connection'
 import { migrations, type Migration } from './migrations'
 import { seedDefaultFeeds } from './seed'
+import { withTransaction } from './transaction'
 
 export { closeConnection } from './connection'
 export type { AppDatabase }
@@ -32,22 +33,12 @@ export function initializeDatabase(): void {
 }
 
 function runMigration(db: AppDatabase, m: Migration): void {
-  db.exec('BEGIN')
-  try {
+  withTransaction(db, () => {
     if (typeof m.up === 'string') {
       db.exec(m.up)
     } else {
       m.up(db)
     }
-
     db.prepare('INSERT INTO _migrations (version, name) VALUES (?, ?)').run(m.version, m.name)
-    db.exec('COMMIT')
-  } catch (e) {
-    try {
-      db.exec('ROLLBACK')
-    } catch {
-      void 0
-    }
-    throw e
-  }
+  })
 }

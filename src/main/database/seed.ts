@@ -1,5 +1,6 @@
 import type { AppDatabase } from './connection'
 import { DEFAULT_CATEGORIES, DEFAULT_FEEDS } from './defaultFeeds'
+import { withTransaction } from './transaction'
 
 const SEEDED_KEY = 'seeded_default_feeds'
 
@@ -22,8 +23,7 @@ export function seedDefaultFeeds(db: AppDatabase): void {
   )
   const markSeeded = db.prepare('INSERT INTO _app_state (key, value) VALUES (?, ?)')
 
-  db.exec('BEGIN')
-  try {
+  withTransaction(db, () => {
     DEFAULT_CATEGORIES.forEach((name, i) => {
       catStmt.run(name, i)
     })
@@ -41,13 +41,5 @@ export function seedDefaultFeeds(db: AppDatabase): void {
     })
 
     markSeeded.run(SEEDED_KEY, '1')
-    db.exec('COMMIT')
-  } catch (e) {
-    try {
-      db.exec('ROLLBACK')
-    } catch {
-      void 0
-    }
-    throw e
-  }
+  })
 }

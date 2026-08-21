@@ -130,11 +130,9 @@ export function registerArticleHandlers(): void {
       db.prepare(
         'UPDATE articles SET is_read = CASE WHEN is_read = 1 THEN 0 ELSE 1 END WHERE id = ?'
       ).run(id)
-      const article = db
-        .prepare('SELECT is_read FROM articles WHERE id = ?')
-        .get(id) as unknown as {
-        is_read: number
-      }
+      const article = db.prepare('SELECT is_read FROM articles WHERE id = ?').get(id) as unknown as
+        { is_read: number } | undefined
+      if (!article) return error('文章不存在')
       scheduleBadgeUpdate()
       return success({ id, is_read: article.is_read })
     } catch (e) {
@@ -179,9 +177,8 @@ export function registerArticleHandlers(): void {
       ).run(id)
       const article = db
         .prepare('SELECT is_starred FROM articles WHERE id = ?')
-        .get(id) as unknown as {
-        is_starred: number
-      }
+        .get(id) as unknown as { is_starred: number } | undefined
+      if (!article) return error('文章不存在')
       return success({ id, is_starred: article.is_starred })
     } catch (e) {
       return error((e as Error).message)

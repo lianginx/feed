@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { getConnection } from '@main/database/connection'
+import { withTransaction } from '@main/database/transaction'
 import { success, error } from './util'
 import { scheduleBadgeUpdate } from '@main/services/badge'
 import { scheduleSync } from '@main/services/sync'
@@ -50,8 +51,7 @@ export function registerCategoryHandlers(): void {
     try {
       const db = getConnection()
       let feedCount = 0
-      db.exec('BEGIN')
-      try {
+      withTransaction(db, () => {
         const feedIds: { id: number }[] = db
           .prepare('SELECT id FROM feeds WHERE category_id = ?')
           .all(id) as { id: number }[]
@@ -68,15 +68,7 @@ export function registerCategoryHandlers(): void {
         }
 
         db.prepare('DELETE FROM categories WHERE id = ?').run(id)
-        db.exec('COMMIT')
-      } catch (e) {
-        try {
-          db.exec('ROLLBACK')
-        } catch {
-          void 0
-        }
-        throw e
-      }
+      })
       scheduleSync()
       return success({ id, feedCount })
     } catch (e) {
@@ -108,21 +100,12 @@ export function registerCategoryHandlers(): void {
     async (_event, items: { id: number; sort_order: number }[]) => {
       try {
         const db = getConnection()
-        const stmt = db.prepare('UPDATE categories SET sort_order = ? WHERE id = ?')
-        db.exec('BEGIN')
-        try {
+        withTransaction(db, () => {
+          const stmt = db.prepare('UPDATE categories SET sort_order = ? WHERE id = ?')
           for (const item of items) {
             stmt.run(item.sort_order, item.id)
           }
-          db.exec('COMMIT')
-        } catch (e) {
-          try {
-            db.exec('ROLLBACK')
-          } catch {
-            void 0
-          }
-          throw e
-        }
+        })
         scheduleSync()
         return success({ updated: items.length })
       } catch (e) {

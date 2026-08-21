@@ -1,4 +1,5 @@
 import { getConnection } from '@main/database/connection'
+import { withTransaction } from '@main/database/transaction'
 import { parseFeed, toFriendlyFeedError, type ParsedFeed } from './rss'
 import { normalizeContentImages } from './contentImages'
 import { getAdapter, runAdapter } from './routes'
@@ -93,8 +94,7 @@ export async function persistParsedFeed(
   let inserted = 0
   let updated = 0
 
-  db.exec('BEGIN')
-  try {
+  withTransaction(db, () => {
     for (const item of parsed.items) {
       if (!item.guid) continue
 
@@ -139,15 +139,7 @@ export async function persistParsedFeed(
         inserted++
       }
     }
-    db.exec('COMMIT')
-  } catch (e) {
-    try {
-      db.exec('ROLLBACK')
-    } catch {
-      void 0
-    }
-    throw e
-  }
+  })
 
   scheduleBadgeUpdate()
   return { inserted, updated }

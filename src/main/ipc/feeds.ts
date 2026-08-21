@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import { getMainWindow } from '@main/app/window'
 import { createAddFeedWindow, closeAddFeedWindow, getAddFeedWindow } from '@main/app/addFeedWindow'
 import { getConnection } from '@main/database/connection'
+import { withTransaction } from '@main/database/transaction'
 import { toFriendlyFeedError } from '@main/services/rss'
 import { refreshFeedFavicon } from '@main/services/favicon'
 import { refreshSingleFeed } from '@main/services/refresher'
@@ -201,19 +202,10 @@ export function registerFeedHandlers() {
   ipcMain.handle('feeds:delete', async (_event, id: number) => {
     try {
       const db = getConnection()
-      db.exec('BEGIN')
-      try {
+      withTransaction(db, () => {
         db.prepare('DELETE FROM articles WHERE feed_id = ?').run(id)
         db.prepare('DELETE FROM feeds WHERE id = ?').run(id)
-        db.exec('COMMIT')
-      } catch (e) {
-        try {
-          db.exec('ROLLBACK')
-        } catch {
-          void 0
-        }
-        throw e
-      }
+      })
       scheduleSync()
       return success({ id })
     } catch (e) {
@@ -226,21 +218,12 @@ export function registerFeedHandlers() {
     async (_event, feeds: { id: number; sort_order: number }[]) => {
       try {
         const db = getConnection()
-        const stmt = db.prepare('UPDATE feeds SET sort_order = ? WHERE id = ?')
-        db.exec('BEGIN')
-        try {
+        withTransaction(db, () => {
+          const stmt = db.prepare('UPDATE feeds SET sort_order = ? WHERE id = ?')
           for (const feed of feeds) {
             stmt.run(feed.sort_order, feed.id)
           }
-          db.exec('COMMIT')
-        } catch (e) {
-          try {
-            db.exec('ROLLBACK')
-          } catch {
-            void 0
-          }
-          throw e
-        }
+        })
         scheduleSync()
         return success({ updated: feeds.length })
       } catch (e) {
