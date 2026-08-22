@@ -1,26 +1,13 @@
 import { BrowserWindow } from 'electron'
 import store, { getSettings } from '@main/config'
-import { getConnection, toSafeNumber } from '@main/database/connection'
-import { withTransaction } from '@main/database/transaction'
+import { getConnection } from '@main/database/connection'
+import { applySnapshot } from './apply'
+import { decideSync } from './decide'
+import { parseSnapshot, serializeSnapshot } from './snapshot'
 import { createSyncProvider } from './providers'
 
-export interface SyncSnapshot {
-  version: 1
-  updatedAt: number
-  categories: { name: string; sortOrder: number }[]
-  feeds: SyncFeed[]
-}
-
-export interface SyncFeed {
-  url: string
-  title: string
-  siteUrl: string | null
-  category: string | null
-  sortOrder: number
-  customTitle: number
-  adapterId?: string | null
-  adapterParams?: string | null
-}
+export type { SyncFeed, SyncSnapshot } from './snapshot'
+export type { SyncAction } from './decide'
 
 export type SyncResult =
   | { status: 'disabled' }
@@ -39,9 +26,8 @@ function getLastDump(): string | null {
   return store.get('syncLastDump') ?? null
 }
 
-function setLastDump(dump: string | null): void {
-  if (dump === null) store.delete('syncLastDump')
-  else store.set('syncLastDump', dump)
+function setLastDump(dump: string): void {
+  store.set('syncLastDump', dump)
 }
 
 export function getLastSyncedAt(): number | null {
@@ -52,150 +38,12 @@ function setLastSyncedAt(time: number): void {
   store.set('syncLastSyncedAt', time)
 }
 
-interface CategoryRow {
-  id: number
-  name: string
-  sort_order: number
-}
-
-interface FeedRow {
-  url: string
-  title: string
-  site_url: string | null
-  category_id: number | null
-  sort_order: number
-  custom_title: number
-  adapter_id: string | null
-  adapter_params: string | null
-}
-
-function serializeSnapshot(): string {
-  const db = getConnection()
-  const cats = db
-    .prepare('SELECT id, name, sort_order FROM categories ORDER BY sort_order ASC, id ASC')
-    .all() as unknown as CategoryRow[]
-  const catNameById = new Map<number, string>(cats.map((c) => [c.id, c.name]))
-  const feeds = db
-    .prepare(
-      'SELECT url, title, site_url, category_id, sort_order, custom_title, adapter_id, adapter_params FROM feeds ORDER BY sort_order ASC, id ASC'
-    )
-    .all() as unknown as FeedRow[]
-
-  const snapshot: SyncSnapshot = {
-    version: 1,
-    updatedAt: Date.now(),
-    categories: cats.map((c) => ({ name: c.name, sortOrder: c.sort_order })),
-    feeds: feeds.map((f) => ({
-      url: f.url,
-      title: f.title,
-      siteUrl: f.site_url,
-      category: f.category_id != null ? (catNameById.get(f.category_id) ?? null) : null,
-      sortOrder: f.sort_order,
-      customTitle: f.custom_title,
-      adapterId: f.adapter_id,
-      adapterParams: f.adapter_params
-    }))
-  }
-  return JSON.stringify(snapshot)
-}
-
-function parseSnapshot(raw: string): SyncSnapshot {
-  const parsed = JSON.parse(raw) as SyncSnapshot
-  if (parsed.version !== 1 || !Array.isArray(parsed.categories) || !Array.isArray(parsed.feeds)) {
-    throw new Error('同步数据格式不正确')
-  }
-  return parsed
-}
-
 function isLocalEmpty(): boolean {
   const db = getConnection()
   const { count } = db.prepare('SELECT COUNT(*) AS count FROM feeds').get() as unknown as {
     count: number
   }
   return count === 0
-}
-
-function applySnapshot(snapshot: SyncSnapshot): void {
-  const db = getConnection()
-  withTransaction(db, () => {
-    const catNameToId = new Map<string, number>()
-    for (const c of snapshot.categories) {
-      const existing = db.prepare('SELECT id FROM categories WHERE name = ?').get(c.name) as
-        { id: number } | undefined
-      if (existing) {
-        db.prepare('UPDATE categories SET sort_order = ? WHERE id = ?').run(
-          c.sortOrder,
-          existing.id
-        )
-        catNameToId.set(c.name, existing.id)
-      } else {
-        const r = db
-          .prepare('INSERT INTO categories (name, sort_order) VALUES (?, ?)')
-          .run(c.name, c.sortOrder)
-        catNameToId.set(c.name, toSafeNumber(r.lastInsertRowid))
-      }
-    }
-
-    const localFeeds = db.prepare('SELECT * FROM feeds').all() as unknown as (FeedRow & {
-      id: number
-    })[]
-    const snapshotByUrl = new Map(snapshot.feeds.map((f) => [f.url, f]))
-    for (const local of localFeeds) {
-      const target = snapshotByUrl.get(local.url)
-      if (!target) {
-        db.prepare('DELETE FROM articles WHERE feed_id = ?').run(local.id)
-        db.prepare('DELETE FROM feeds WHERE id = ?').run(local.id)
-      } else {
-        db.prepare(
-          'UPDATE feeds SET title = ?, site_url = ?, sort_order = ?, custom_title = ?, adapter_id = ?, adapter_params = ? WHERE id = ?'
-        ).run(
-          target.title,
-          target.siteUrl,
-          target.sortOrder,
-          target.customTitle,
-          target.adapterId !== undefined ? target.adapterId : local.adapter_id,
-          target.adapterParams !== undefined ? target.adapterParams : local.adapter_params,
-          local.id
-        )
-      }
-    }
-
-    const localUrlSet = new Set(localFeeds.map((f) => f.url))
-    const insertFeed = db.prepare(
-      'INSERT INTO feeds (url, title, site_url, category_id, sort_order, custom_title, adapter_id, adapter_params) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    )
-    for (const f of snapshot.feeds) {
-      if (localUrlSet.has(f.url)) continue
-      const catId = f.category ? (catNameToId.get(f.category) ?? null) : null
-      insertFeed.run(
-        f.url,
-        f.title,
-        f.siteUrl,
-        catId,
-        f.sortOrder,
-        f.customTitle,
-        f.adapterId ?? null,
-        f.adapterParams ?? null
-      )
-    }
-
-    const setCategory = db.prepare('UPDATE feeds SET category_id = ? WHERE url = ?')
-    for (const f of snapshot.feeds) {
-      const catId = f.category ? (catNameToId.get(f.category) ?? null) : null
-      setCategory.run(catId, f.url)
-    }
-
-    const snapshotCatNames = new Set(snapshot.categories.map((c) => c.name))
-    const localCats = db.prepare('SELECT id, name FROM categories').all() as unknown as {
-      id: number
-      name: string
-    }[]
-    for (const c of localCats) {
-      if (!snapshotCatNames.has(c.name)) {
-        db.prepare('DELETE FROM categories WHERE id = ?').run(c.id)
-      }
-    }
-  })
 }
 
 function notifyRenderer(result: SyncResult): void {
@@ -216,40 +64,34 @@ export async function runSync(): Promise<SyncResult> {
 
   syncing = true
   try {
-    const local = serializeSnapshot()
+    const local = serializeSnapshot(getConnection())
     const remote = await provider.pull()
-    const last = getLastDump()
 
     let result: SyncResult
-
-    if (remote === null) {
-      await provider.push(local)
-      setLastDump(local)
-      setLastSyncedAt(Date.now())
-      result = { status: 'pushed' }
-    } else if (remote === last) {
-      if (local === last) {
+    const action = decideSync(local, remote, getLastDump(), isLocalEmpty())
+    switch (action.type) {
+      case 'noop':
+        // 无传输；顺带把 last 对齐到本机当前状态（覆盖 remote===local 但 last 落后的窗口）
+        setLastDump(local)
+        setLastSyncedAt(Date.now())
         result = { status: 'noop' }
-      } else {
+        break
+      case 'push':
         await provider.push(local)
         setLastDump(local)
         setLastSyncedAt(Date.now())
         result = { status: 'pushed' }
-      }
-    } else {
-      if (last === null && isLocalEmpty()) {
-        applySnapshot(parseSnapshot(remote))
-        setLastDump(remote)
+        break
+      case 'pull':
+        applySnapshot(getConnection(), parseSnapshot(action.remote))
+        // last 记录「应用后本机实际状态」的序列化结果，吸收格式演进等一次性漂移
+        setLastDump(serializeSnapshot(getConnection()))
         setLastSyncedAt(Date.now())
         result = { status: 'pulled' }
-      } else if (local === last) {
-        applySnapshot(parseSnapshot(remote))
-        setLastDump(remote)
-        setLastSyncedAt(Date.now())
-        result = { status: 'pulled' }
-      } else {
+        break
+      case 'conflict':
         result = { status: 'conflict' }
-      }
+        break
     }
 
     notifyRenderer(result)
@@ -275,7 +117,7 @@ export async function resolveConflict(choice: 'local' | 'remote'): Promise<SyncR
   try {
     let result: SyncResult
     if (choice === 'local') {
-      const local = serializeSnapshot()
+      const local = serializeSnapshot(getConnection())
       await provider.push(local)
       setLastDump(local)
       setLastSyncedAt(Date.now())
@@ -285,8 +127,8 @@ export async function resolveConflict(choice: 'local' | 'remote'): Promise<SyncR
       if (remote === null) {
         result = { status: 'error', error: '远端数据不存在，请稍后重试' }
       } else {
-        applySnapshot(parseSnapshot(remote))
-        setLastDump(remote)
+        applySnapshot(getConnection(), parseSnapshot(remote))
+        setLastDump(serializeSnapshot(getConnection()))
         setLastSyncedAt(Date.now())
         result = { status: 'pulled' }
       }
