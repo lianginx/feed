@@ -1,4 +1,4 @@
-import type { AppDatabase } from '@main/database/connection'
+import { toSafeNumber, type AppDatabase } from '@main/database/connection'
 import { withTransaction } from '@main/database/transaction'
 import type { SyncSnapshot } from './snapshot'
 
@@ -31,7 +31,7 @@ export function applySnapshot(db: AppDatabase, snapshot: SyncSnapshot): void {
         const r = db
           .prepare('INSERT INTO categories (name, sort_order) VALUES (?, ?)')
           .run(c.name, c.sortOrder)
-        catNameToId.set(c.name, Number(r.lastInsertRowid))
+        catNameToId.set(c.name, toSafeNumber(r.lastInsertRowid))
       }
     }
 
