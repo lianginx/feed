@@ -1,24 +1,27 @@
 # 数据库设计
 
 > 数据库使用 `node:sqlite`（`DatabaseSync`），文件位于 `app.getPath('userData')/feed.db`。
-> 同时支持 RSS 和 Atom 格式（rss-parser 原生支持两者）。
+> 同时支持 RSS 和 Atom 格式（feedparser 原生支持两者）。
 
 ## feeds 表（订阅源）
 
-| 列名         | 类型                                   | 说明                                     |
-| ------------ | -------------------------------------- | ---------------------------------------- |
-| id           | INTEGER PRIMARY KEY AUTOINCREMENT      | 主键                                     |
-| url          | TEXT NOT NULL UNIQUE                   | RSS/Atom 地址                            |
-| title        | TEXT NOT NULL                          | 订阅源标题                               |
-| description  | TEXT                                   | 描述                                     |
-| site_url     | TEXT                                   | 网站地址                                 |
-| category_id  | INTEGER                                | 分类 ID（外键 → categories.id）          |
-| sort_order   | INTEGER DEFAULT 0                      | 排序权重                                 |
-| favicon_url  | TEXT                                   | 网站图标 URL（多层降级获取，见实现文档） |
-| last_error   | TEXT                                   | 上次刷新错误信息（用于容错展示）         |
-| error_count  | INTEGER DEFAULT 0                      | 连续错误次数（≥5 时自动暂停刷新）        |
-| last_updated | INTEGER                                | 上次更新时间戳                           |
-| created_at   | INTEGER DEFAULT (strftime('%s','now')) | 创建时间                                 |
+| 列名           | 类型                                   | 说明                                     |
+| -------------- | -------------------------------------- | ---------------------------------------- |
+| id             | INTEGER PRIMARY KEY AUTOINCREMENT      | 主键                                     |
+| url            | TEXT NOT NULL UNIQUE                   | RSS/Atom 地址                            |
+| title          | TEXT NOT NULL                          | 订阅源标题                               |
+| description    | TEXT                                   | 描述                                     |
+| site_url       | TEXT                                   | 网站地址                                 |
+| category_id    | INTEGER                                | 分类 ID（外键 → categories.id）          |
+| sort_order     | INTEGER DEFAULT 0                      | 排序权重                                 |
+| favicon_url    | TEXT                                   | 网站图标 URL（多层降级获取，见实现文档） |
+| custom_title   | INTEGER NOT NULL DEFAULT 0             | 标题是否用户自定义（1 = 刷新时不回写标题） |
+| adapter_id     | TEXT                                   | 内置路由适配器 ID（普通 RSS 为 NULL）    |
+| adapter_params | TEXT                                   | 适配器参数（JSON 字符串）                |
+| last_error     | TEXT                                   | 上次刷新错误信息（用于容错展示）         |
+| error_count    | INTEGER DEFAULT 0                      | 连续错误次数（仅记录与 UI 展示，不自动暂停） |
+| last_updated   | INTEGER                                | 上次更新时间戳                           |
+| created_at     | INTEGER DEFAULT (strftime('%s','now')) | 创建时间                                 |
 
 ## categories 表（分类）
 
@@ -43,6 +46,7 @@
 | published_at | INTEGER                                | 发布时间戳                             |
 | is_read      | INTEGER DEFAULT 0                      | 已读标记                               |
 | is_starred   | INTEGER DEFAULT 0                      | 星标标记                               |
+| cover_image  | TEXT                                   | 封面图 URL                             |
 | created_at   | INTEGER DEFAULT (strftime('%s','now')) | 入库时间                               |
 
 > UNIQUE(feed_id, guid) — 同一订阅源内文章唯一，用于去重和更新覆盖。
@@ -59,12 +63,38 @@
 ```sql
 CREATE VIRTUAL TABLE articles_fts USING fts5(
   title, content, author,
+  tokenize='trigram',
   content='articles',
   content_rowid='id'
 );
 ```
 
-通过触发器与 articles 表同步（INSERT / UPDATE / DELETE 时自动同步 FTS 索引）。
+- 使用 `trigram` 分词（支持中文子串匹配）
+- 通过触发器与 articles 表同步（INSERT / UPDATE / DELETE 时自动同步 FTS 索引）
+
+## 其他表
+
+### article_translations（翻译缓存，version 7）
+
+主键 `(article_id, provider, target_lang)`；`source_hash` 变化时译文失效。
+
+```sql
+CREATE TABLE article_translations (
+  article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+  provider TEXT NOT NULL,
+  target_lang TEXT NOT NULL,
+  source_hash TEXT NOT NULL,
+  translated_title TEXT,
+  translated_content TEXT,
+  created_at INTEGER,
+  updated_at INTEGER,
+  PRIMARY KEY (article_id, provider, target_lang)
+);
+```
+
+### _app_state（应用状态键值表，version 9）
+
+`key TEXT PRIMARY KEY, value TEXT NOT NULL`，存放非配置类应用状态。
 
 ## 关系说明
 
@@ -123,17 +153,29 @@ const result = db.prepare(`
 
 ## 数据库迁移
 
-采用 DIY 零依赖方案，使用版本跟踪表 + 顺序 SQL 文件。
+采用 DIY 零依赖方案：版本跟踪表 + `migrations.ts` 内联迁移数组（无 `.sql` 文件）。
 
 ### 目录结构
 
 ```
 src/main/database/
-├── index.ts              # 数据库初始化 + 迁移运行器
-├── connection.ts         # 单例数据库连接
-└── migrations/
-    ├── 001_initial.sql   # 建表 + 索引 + FTS5 + 触发器
-    └── ...
+├── index.ts          # 数据库初始化入口
+├── connection.ts     # 单例数据库连接
+├── migrations.ts     # 迁移数组（version + name + up）
+├── seed.ts           # 默认订阅源播种
+└── defaultFeeds.ts   # 默认订阅源列表数据
+```
+
+### 迁移定义
+
+`migrations.ts` 中每个迁移是 `{ version, name, up }` 对象，`up` 为 SQL 字符串或接收 db 的函数：
+
+```typescript
+export const migrations: Migration[] = [
+  { version: 1, name: 'create-initial-tables', up: `CREATE TABLE ...` },
+  { version: 5, name: 'seed-default-feeds', up: () => {} }, // 逻辑迁移用函数
+  // ...
+]
 ```
 
 ### 版本跟踪表
@@ -146,103 +188,21 @@ CREATE TABLE IF NOT EXISTS _migrations (
 );
 ```
 
-### 迁移文件命名规则
-
-`{序号}_{名称}.sql`，按文件名升序执行。例如：
-
-```
-001_initial.sql
-002_add_indexes.sql
-003_add_favicon_fields.sql
-```
-
 ### 迁移运行原理
 
 1. 启动时查询 `_migrations` 表获取当前最大版本号
-2. 扫描 `migrations/` 目录，找出版本号大于当前版本的文件
-3. 按序号依次在每个事务中执行 SQL
+2. 取 `migrations` 数组中版本号大于当前版本的迁移
+3. 按 version 升序依次在每个事务中执行 `up`
 4. 执行成功后向 `_migrations` 表插入记录
-
-### 迁移文件示例
-
-```sql
--- 001_initial.sql
-CREATE TABLE IF NOT EXISTS categories (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE,
-  sort_order INTEGER DEFAULT 0
-);
-
-CREATE TABLE IF NOT EXISTS feeds (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  url TEXT NOT NULL UNIQUE,
-  title TEXT NOT NULL,
-  description TEXT,
-  site_url TEXT,
-  category_id INTEGER REFERENCES categories(id),
-  sort_order INTEGER DEFAULT 0,
-  favicon_url TEXT,
-  last_error TEXT,
-  error_count INTEGER DEFAULT 0,
-  last_updated INTEGER,
-  created_at INTEGER DEFAULT (strftime('%s','now'))
-);
-
-CREATE TABLE IF NOT EXISTS articles (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  feed_id INTEGER NOT NULL REFERENCES feeds(id),
-  guid TEXT NOT NULL,
-  title TEXT NOT NULL,
-  url TEXT,
-  author TEXT,
-  content TEXT,
-  summary TEXT,
-  published_at INTEGER,
-  is_read INTEGER DEFAULT 0,
-  is_starred INTEGER DEFAULT 0,
-  created_at INTEGER DEFAULT (strftime('%s','now')),
-  UNIQUE(feed_id, guid)
-);
-
-CREATE VIRTUAL TABLE IF NOT EXISTS articles_fts USING fts5(
-  title, content, author,
-  content='articles',
-  content_rowid='id'
-);
-
--- FTS5 同步触发器
-CREATE TRIGGER IF NOT EXISTS articles_ai AFTER INSERT ON articles BEGIN
-  INSERT INTO articles_fts(rowid, title, content, author)
-  VALUES (new.id, new.title, new.content, new.author);
-END;
-
-CREATE TRIGGER IF NOT EXISTS articles_ad AFTER DELETE ON articles BEGIN
-  INSERT INTO articles_fts(articles_fts, rowid, title, content, author)
-  VALUES ('delete', old.id, old.title, old.content, old.author);
-END;
-
-CREATE TRIGGER IF NOT EXISTS articles_au AFTER UPDATE ON articles BEGIN
-  INSERT INTO articles_fts(articles_fts, rowid, title, content, author)
-  VALUES ('delete', old.id, old.title, old.content, old.author);
-  INSERT INTO articles_fts(rowid, title, content, author)
-  VALUES (new.id, new.title, new.content, new.author);
-END;
-
--- 索引
-CREATE INDEX IF NOT EXISTS idx_articles_feed_id ON articles(feed_id);
-CREATE INDEX IF NOT EXISTS idx_articles_is_read ON articles(is_read);
-CREATE INDEX IF NOT EXISTS idx_articles_is_starred ON articles(is_starred);
-CREATE INDEX IF NOT EXISTS idx_articles_published_at ON articles(published_at);
-CREATE INDEX IF NOT EXISTS idx_articles_feed_read_pub ON articles(feed_id, is_read, published_at DESC);
-CREATE INDEX IF NOT EXISTS idx_articles_read_pub ON articles(is_read, published_at DESC);
-```
 
 ### 设计原则
 
-| 决策         | 选择          | 理由                                 |
-| ------------ | ------------- | ------------------------------------ |
-| 迁移文件格式 | `.sql` 纯文本 | 易于审查和版本控制                   |
-| 版本号       | 整数序号      | 简单明确                             |
-| 执行方式     | 单事务包装    | 原子性，失败不回留下半成品状态       |
-| 回滚         | 不支持        | 桌面应用场景下，出错应通过新迁移修复 |
-| 依赖         | 零外部依赖    | 仅 `node:sqlite`                     |
+| 决策     | 选择                     | 理由                                 |
+| -------- | ------------------------ | ------------------------------------ |
+| 迁移载体 | TS 内联（字符串 / 函数） | 与代码同仓库同审查，支持逻辑迁移     |
+| 版本号   | 整数序号                 | 简单明确                             |
+| 执行方式 | 单事务包装               | 原子性，失败不会留下半成品状态       |
+| 回滚     | 不支持                   | 桌面应用场景下，出错应通过新迁移修复 |
+| 依赖     | 零外部依赖               | 仅 `node:sqlite`                     |
+
+> 注意：version 只增不减、不复用。变更一律新增 version，禁止修改已发布迁移。

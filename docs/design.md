@@ -11,34 +11,6 @@
 5. **微妙交互**：200-300ms 过渡动画，精确的 hover/active 状态
 6. **内容优先**：UI 元素不抢内容风头
 
-## 配色方案
-
-```css
-/* 浅色主题 */
-:root {
-  --bg-primary: #fafafa;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f5f5f5;
-  --text-primary: #1a1a1a;
-  --text-secondary: #6b7280;
-  --text-tertiary: #9ca3af;
-  --border: #e5e7eb;
-  --accent: #2563eb;
-}
-
-/* 深色主题 */
-[data-theme='dark'] {
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #171717;
-  --bg-tertiary: #262626;
-  --text-primary: #fafafa;
-  --text-secondary: #a3a3a3;
-  --text-tertiary: #737373;
-  --border: #262626;
-  --accent: #3b82f6;
-}
-```
-
 ## 设计参考
 
 - **Reeder**：时间线同步、极简布局、流畅动画
@@ -46,65 +18,28 @@
 - **Things 3**：极致简约、色彩运用、微交互
 - **Bear**：阅读体验、主题系统、标签
 
-## Tailwind v4 集成
+## 主题实现（现状）
 
-配色方案通过 `@theme inline` 桥接到 Tailwind 工具类，暗色模式使用 `@custom-variant` 改为 `data-theme` 属性驱动。
+配色基于 shadcn-vue 的 CSS 变量体系（oklch 色彩空间），源码即事实，以下文件为准：
 
-### 入口 CSS（src/assets/main.css）
+- `src/renderer/shared/assets/css/main.css` — 入口：引入 tailwindcss、typography、shadcn.css、prose.css、theme.css
+- `src/renderer/shared/assets/css/shadcn.css` — 全部语义变量（`--background`、`--primary` 等）与 `@theme inline` 桥接
+- `src/renderer/shared/assets/css/theme.css` — 应用专属变量（未读点、星标色、canvas、FAB 阴影）
 
-```css
-@import 'tailwindcss';
-
-:root {
-  --bg-primary: #fafafa;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f5f5f5;
-  --text-primary: #1a1a1a;
-  --text-secondary: #6b7280;
-  --text-tertiary: #9ca3af;
-  --border: #e5e7eb;
-  --accent: #2563eb;
-}
-
-[data-theme='dark'] {
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #171717;
-  --bg-tertiary: #262626;
-  --text-primary: #fafafa;
-  --text-secondary: #a3a3a3;
-  --text-tertiary: #737373;
-  --border: #262626;
-  --accent: #3b82f6;
-}
-
-@theme inline {
-  --color-bg-primary: var(--bg-primary);
-  --color-bg-secondary: var(--bg-secondary);
-  --color-bg-tertiary: var(--bg-tertiary);
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-tertiary: var(--text-tertiary);
-  --color-border: var(--border);
-  --color-accent: var(--accent);
-}
-
-@custom-variant dark (&:where([data-theme="dark"] *));
-```
+暗色模式由设置项 `theme`（light / dark / system，默认 system）经 `nativeTheme.themeSource` 应用，CSS 侧通过 `prefers-color-scheme` 自动响应。调整配色直接改上述 CSS 文件，本文档不再维护具体色值。
 
 ### 使用方式
 
 模板中直接用语义化的 Tailwind 类名：
 
 ```vue
-<div class="bg-bg-primary text-text-primary border-border">
-  <aside class="bg-bg-secondary">
-    <p class="text-text-secondary">内容</p>
-    <button class="bg-accent text-white">按钮</button>
+<div class="bg-background text-foreground">
+  <aside class="bg-card">
+    <p class="text-muted-foreground">内容</p>
+    <button class="bg-primary text-primary-foreground">按钮</button>
   </aside>
 </div>
 ```
-
-主题切换只需切换 `<html>` 的 `data-theme` 属性值，所有颜色自动响应。
 
 ## 快捷键方案
 

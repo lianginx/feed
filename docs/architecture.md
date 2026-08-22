@@ -4,7 +4,7 @@
 
 ## ⚠️ 安全注意事项
 
-- **RSS 文章 `articles.content` 为裸存，渲染前必须用 `sanitizeHtml`（DOMPurify）净化**（rss-parser 不做任何 XSS 过滤，Electron 中 `v-html` 风险更高）
+- **RSS 文章 `articles.content` 为裸存，渲染前必须用 `sanitizeHtml`（DOMPurify）净化**（feedparser 不做任何 XSS 过滤，Electron 中 `v-html` 风险更高）
 - **禁止直接 `v-html` 裸渲染**
 - 详见：https://github.com/cure53/DOMPurify#readme
 
@@ -124,8 +124,8 @@ graph TB
 
     subgraph "Main 进程 (Node.js)"
         IPC[IPC Handler]
-        RSS[rss-parser 解析]
-        DB[better-sqlite3 数据库]
+        RSS[feedparser 解析]
+        DB[node:sqlite 数据库]
         Config[electron-store 配置]
         Scheduler[定时更新调度]
         Tray[系统托盘]
@@ -195,10 +195,9 @@ routes/
 
 | 场景           | 策略                                                                       |
 | -------------- | -------------------------------------------------------------------------- |
-| RSS 请求超时   | 默认 15s 超时，超时返回 `{ success: false, error: 'timeout' }`，不自动重试 |
+| RSS 请求超时   | 默认 20s 超时，失败自动重试（最多 3 次，间隔 2s）                          |
 | RSS 解析失败   | 捕获异常，返回友好错误信息，不中断其他 feed 的刷新                         |
-| 网络错误       | 记录到 feed 的 `last_error` 字段，下次刷新时清除                           |
+| 网络错误       | 记录到 feed 的 `last_error` 字段并累加 `error_count`，刷新成功后清除；UI 中展示错误状态 |
 | 无效 feed URL  | 添加时验证 URL 格式 + 尝试解析，失败则提示用户                             |
 | 恶意 HTML      | `articles.content` 裸存（仅 `normalizeContentImages`），渲染前必须经 `sanitizeHtml`（DOMPurify）净化，禁止直接 `v-html` 裸渲染 |
 | 数据库写入失败 | IPC 统一 `{ success, data?, error? }` 格式，渲染层 toast 提示              |
-| 连续错误暂停   | 连续错误 ≥5 次后自动暂停该 feed 的定时刷新，UI 中标记为"已暂停"            |

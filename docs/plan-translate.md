@@ -146,8 +146,8 @@ src/main/services/translate/
     - `languages.test.ts`：toBaiduCode 映射（zh-Hant→cht、ko→kor、fr→fra、es→spa、未知码透传）
     - `detect.test.ts`：中/英/混合文本检测、同语言跳过判断、不确定返回 unknown
     - `providers/baidu.test.ts`：MD5 sign 与百度文档已知向量一致；错误码→中文映射
-    - `cache.test.ts`：better-sqlite3 `:memory:` 手动建表，测命中/未命中/source_hash 变化失效
-26. **设计约束**：被测模块保持不 import electron（cache.ts 只依赖 better-sqlite3），保证可在 node 环境运行
+    - `cache.test.ts`：node:sqlite `:memory:` 手动建表，测命中/未命中/source_hash 变化失效
+26. **设计约束**：被测模块保持不 import electron（cache.ts 只依赖 node:sqlite），保证可在 node 环境运行
 
 ## 明确排除
 - 第二家翻译提供商（架构已就绪）；anylang 的 Scheduler/SchedulerWithCache（一次性整篇翻译用不上）

@@ -43,7 +43,12 @@ API Key 使用 **electron-store 明文存储**（不做加密，与 VSCode/OpenC
 
 ---
 
-## 2. GitHub Gist 云同步
+## 2. GitHub Gist 云同步 ✅（已实现，设计有变）
+
+> 已实现，实际设计与下述原始设计不同，以下仅为历史记录。现状：
+> - 载体三种：GitHub Gist / Gitee 代码片段 / WebDAV（`src/main/services/sync/providers/`）
+> - 同步数据：仅订阅源 + 分类（不含用户配置），快照格式见 `services/sync/index.ts`
+> - 冲突策略：三方状态比较（local / remote / lastSyncDump），冲突时弹窗二选一
 
 ### 目标
 

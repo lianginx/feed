@@ -89,7 +89,7 @@ pull 应用快照后改为 `setLastDump(serializeSnapshot())`（而非存原始�
 
 ### 4. 补充测试
 
-新建 `src/main/__tests__/sync/`（内存 better-sqlite3）：
+新建 `src/main/__tests__/sync/`（内存 `node:sqlite` `:memory:`）：
 
 - 序列化确定性：同数据两次 serialize 结果一致；apply 后再 serialize 与输入一致
 - 决策矩阵：remote 为 null / remote===last±local 变更 / remote 变更×local 未变 / 双方变更 → conflict

@@ -12,8 +12,8 @@
 - **前端**：Vue 3 + TypeScript + Vite（ESM）
 - **UI**：shadcn-vue + TailwindCSS v4（源码级组件）
 - **状态管理**：Vue 组合式 API（零依赖）
-- **RSS 解析**：rss-parser（RSS + Atom）
-- **数据存储**：better-sqlite3（文章）+ electron-store v11（配置）
+- **RSS 解析**：feedparser（RSS + Atom）
+- **数据存储**：node:sqlite（Node 内置 `DatabaseSync`，文章）+ electron-store v11（配置）
 - **HTML 净化**：dompurify（防 XSS，所有文章内容必须净化）
 - **快捷键**：Electron 原生菜单加速器
 - **虚拟滚动**：@tanstack/vue-virtual
@@ -43,14 +43,14 @@
 
 ## 文档索引
 
-| 文档                                 | 内容                                |
-| ------------------------------------ | ----------------------------------- |
-| [architecture.md](./architecture.md) | IPC 通信、错误处理、进程交互        |
-| [database.md](./database.md)         | 数据库 schema、索引、分页、迁移方案 |
-| [design.md](./design.md)             | 设计风格、配色、快捷键方案          |
-| [implementation.md](./implementation.md) | 实现步骤                       |
-| [decisions.md](./decisions.md)       | 技术决策记录                        |
-| [verification.md](./verification.md) | 验证方案（功能 / 安全 / 体验 / 构建） |
-| [phase2.md](./phase2.md)             | 第二期功能规划                      |
-| [alternatives.md](./alternatives.md) | 备选方案对比                        |
-| [release.md](./release.md)           | 发布与分发                          |
+| 文档                                          | 内容                                  |
+| --------------------------------------------- | ------------------------------------- |
+| [architecture.md](./architecture.md)          | IPC 通信、错误处理、进程交互          |
+| [database.md](./database.md)                  | 数据库 schema、索引、分页、迁移方案   |
+| [design.md](./design.md)                      | 设计风格、快捷键方案                  |
+| [decisions.md](./decisions.md)                | 技术决策记录                          |
+| [verification.md](./verification.md)          | 验证方案（功能 / 安全 / 体验 / 构建） |
+| [phase2.md](./phase2.md)                      | 二期功能规划                          |
+| [release.md](./release.md)                    | 发布与分发                            |
+| [refactor-telegram-mtproto.md](./refactor-telegram-mtproto.md) | Telegram MTProto 改造实施计划（二期阻塞中） |
+| plan-\*.md                                    | 已落地功能的实施计划（历史存档）      |
