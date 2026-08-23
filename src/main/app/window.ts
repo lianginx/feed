@@ -3,6 +3,7 @@ import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { getSettings, updateSettings } from '@main/config'
 import { shouldLaunchHidden } from '@main/services/autoLaunch'
+import { ensureDockVisible, syncDockVisibility } from './dock'
 
 let mainWindow: BrowserWindow | null = null
 let quitting = false
@@ -60,9 +61,12 @@ export function ensureMainWindow(): BrowserWindow | null {
   const existing = getMainWindow()
   if (existing && !existing.isDestroyed()) {
     cancelDestroyTimer()
-    if (!existing.isVisible()) existing.show()
-    if (existing.isMinimized()) existing.restore()
-    existing.focus()
+    ensureDockVisible().then(() => {
+      if (existing.isDestroyed()) return
+      existing.show()
+      if (existing.isMinimized()) existing.restore()
+      existing.focus()
+    })
     return existing
   }
   createWindow()
@@ -137,7 +141,12 @@ export function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     if (!shouldLaunchHidden()) {
-      mainWindow?.show()
+      const win = mainWindow
+      ensureDockVisible().then(() => {
+        if (win && !win.isDestroyed()) win.show()
+      })
+    } else {
+      syncDockVisibility()
     }
   })
 
@@ -149,8 +158,10 @@ export function createWindow(): void {
       clearTimeout(saveTimer)
       saveTimer = null
     }
+    syncDockVisibility()
   })
   mainWindow.on('hide', () => {
+    syncDockVisibility()
     if (saveTimer) {
       clearTimeout(saveTimer)
       saveTimer = null
