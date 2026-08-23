@@ -51,10 +51,19 @@ export function createTray(): void {
   ])
 
   tray.setToolTip('Feed')
-  tray.setContextMenu(contextMenu)
 
-  tray.on('double-click', () => {
+  if (process.platform === 'linux') {
+    tray.setContextMenu(contextMenu)
+    return
+  }
+
+  tray.on('click', () => {
     if (isQuitting()) return
     showMainWindow()
+  })
+
+  tray.on('right-click', () => {
+    if (isQuitting() || !tray) return
+    tray.popUpContextMenu(contextMenu)
   })
 }
