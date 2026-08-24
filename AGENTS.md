@@ -28,11 +28,12 @@
 - 最佳实践（性能篇）：https://www.electronjs.org/zh/docs/latest/tutorial/performance
 - 最佳实践（安全篇）：https://www.electronjs.org/zh/docs/latest/tutorial/security
 
-## 提交规范
+## Git 规范
 
 - 每完成一个独立任务节点（功能/重构/修复），主动询问用户是否提交，并给出变更摘要和建议的 commit message，确认后才执行
 - 攒了多个任务时，最终提交尽量按任务颗粒度拆分多个 commit；拆分困难时允许合并
 - 每个 commit 回滚后必须可正常构建运行，禁止提交半成品
+- 分支合并一律使用 `rebase`（`git rebase` / `git cherry-pick`）保持 `main` 线性历史，禁止 `merge --no-ff` 产生 `Merge commit`
 
 Commit Message 格式：`<type>: <中文描述>`，如 `feat: 增加导出功能`
 type：`feat` 新功能 / `fix` 修复 / `refactor` 重构 / `docs` 文档 / `style` 样式 / `chore` 杂项
