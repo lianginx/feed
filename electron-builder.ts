@@ -42,6 +42,7 @@ const config = {
 
   // ---------- macOS 平台 ----------
   mac: {
+    target: [{ target: 'dmg' }, { target: 'zip' }],
     entitlementsInherit: 'build/entitlements.mac.plist',
     // 禁用时间戳，避免 codesign 因网络不可达而卡住。
     timestamp: 'none',

@@ -17,8 +17,6 @@ import { sanitizeHtml } from '@renderer/windows/main/utils/sanitize'
 const { show, mode, info, percent, close, startDownload, install, openReleasePage } =
   useUpdateDialog()
 
-const isMac = window.api.system.platform === 'darwin'
-
 /** 下载进行中（准备中/下载中）：弹窗暂不可关闭，只能等待 */
 const busy = computed(() => mode.value === 'preparing' || mode.value === 'downloading')
 
@@ -55,13 +53,11 @@ const description = computed(() => {
     case 'downloading':
       return `正在下载 v${info.value.newVersion}（${percent.value}%）`
     case 'downloaded':
-      return `v${info.value.newVersion} 已下载完成，可以立即安装。`
+      return `v${info.value.newVersion} 已下载完成，安装到“应用程序”可能需要输入管理员密码。`
     default:
       return `发现新版本 v${info.value.newVersion}，当前版本为 v${info.value.currentVersion}。`
   }
 })
-
-const installText = computed(() => (isMac ? '退出并打开安装包' : '重启安装'))
 </script>
 
 <template>
@@ -128,7 +124,7 @@ const installText = computed(() => (isMac ? '退出并打开安装包' : '重启
         <template v-else-if="mode === 'downloaded'">
           <Button variant="outline" @click="close">取消</Button>
           <Button variant="outline" @click="openReleasePage">打开下载页</Button>
-          <Button @click="install">{{ installText }}</Button>
+          <Button @click="install">重启安装</Button>
         </template>
       </DialogFooter>
     </DialogContent>
