@@ -12,6 +12,7 @@ import { guardIpcHandlers } from './ipc/util'
 import { getSettings } from './config'
 import { createWindow, ensureMainWindow, setIsQuitting } from './app/window'
 import { buildAppMenu } from './app/menu'
+import { registerGlobalShortcuts, unregisterGlobalShortcuts } from './app/globalShortcut'
 import { createTray, getTrayRef } from './app/tray'
 import { registerAppProtocols } from './app/protocol'
 import {
@@ -60,6 +61,8 @@ if (!gotTheLock) {
     createTray()
     setTrayRef(getTrayRef())
 
+    registerGlobalShortcuts()
+
     scheduleBadgeUpdate()
 
     startScheduler()
@@ -80,6 +83,7 @@ if (!gotTheLock) {
 
   app.on('before-quit', () => {
     setIsQuitting(true)
+    unregisterGlobalShortcuts()
     stopScheduler()
   })
 

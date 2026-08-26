@@ -1,4 +1,4 @@
-import { BrowserWindow, nativeTheme, shell, type WebContents } from 'electron'
+import { app, BrowserWindow, nativeTheme, shell, type WebContents } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { getSettings, updateSettings } from '@main/config'
@@ -61,15 +61,20 @@ export function ensureMainWindow(): BrowserWindow | null {
   const existing = getMainWindow()
   if (existing && !existing.isDestroyed()) {
     cancelDestroyTimer()
+    if (existing.isMinimized()) {
+      existing.restore()
+    } else {
+      existing.show()
+    }
+    existing.focus()
     ensureDockVisible().then(() => {
       if (existing.isDestroyed()) return
-      existing.show()
-      if (existing.isMinimized()) existing.restore()
       existing.focus()
+      app.focus({ steal: true })
     })
     return existing
   }
-  createWindow()
+  createWindow({ show: true })
   return mainWindow as BrowserWindow
 }
 
@@ -115,7 +120,8 @@ export function setupExternalNavigation(webContents: WebContents): void {
   })
 }
 
-export function createWindow(): void {
+export function createWindow(options?: { show?: boolean }): void {
+  const showOnReady = options?.show ?? false
   const settings = getSettings()
   nativeTheme.themeSource = settings.theme
   const isDark = nativeTheme.shouldUseDarkColors
@@ -140,7 +146,7 @@ export function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
-    if (!shouldLaunchHidden()) {
+    if (showOnReady || !shouldLaunchHidden()) {
       const win = mainWindow
       ensureDockVisible().then(() => {
         if (win && !win.isDestroyed()) win.show()

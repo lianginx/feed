@@ -2,14 +2,11 @@ import { BrowserWindow, nativeTheme } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { getSettings } from '@main/config'
+import { endShortcutCapture } from './globalShortcut'
 import { setupExternalNavigation } from './window'
 
 let settingsWindow: BrowserWindow | null = null
 
-/**
- * 创建（或聚焦）独立的设置窗口。
- * 单例：已存在则显示并聚焦，否则新建；关闭即销毁。
- */
 export function createSettingsWindow(): void {
   if (settingsWindow && !settingsWindow.isDestroyed()) {
     if (settingsWindow.isMinimized()) settingsWindow.restore()
@@ -47,9 +44,17 @@ export function createSettingsWindow(): void {
 
   settingsWindow.on('closed', () => {
     settingsWindow = null
+    endShortcutCapture()
   })
 
-  // 外部链接统一在系统浏览器中打开，避免在 Electron 中新开窗体（与主窗口一致）
+  settingsWindow.webContents.on('did-start-navigation', () => {
+    endShortcutCapture()
+  })
+
+  settingsWindow.webContents.on('render-process-gone', () => {
+    endShortcutCapture()
+  })
+
   setupExternalNavigation(settingsWindow.webContents)
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {

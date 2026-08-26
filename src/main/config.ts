@@ -32,12 +32,12 @@ export interface SyncConfig {
 
 export interface AppSettings {
   theme: 'light' | 'dark' | 'system'
-  updateInterval: number // RSS 刷新间隔，分钟，默认 30
+  updateInterval: number
   windowBounds: { x?: number; y?: number; width: number; height: number }
-  autoCheckUpdate: boolean // 是否自动检查更新，默认 true
-  updateCheckInterval: number // 自动检查更新间隔，分钟，默认 360（6 小时）
-  sync: SyncConfig // 订阅源同步配置
-  translate: TranslateConfig // 文章翻译配置
+  autoCheckUpdate: boolean
+  updateCheckInterval: number
+  sync: SyncConfig
+  translate: TranslateConfig
   syncLastDump?: string
   syncLastSyncedAt?: number
   syncGistId?: string
@@ -47,9 +47,10 @@ export interface AppSettings {
   siteCookies: Record<string, string>
   proxy: ProxyConfig
   lowMemoryMode: boolean
+  toggleWindowShortcut: string
 }
 
-const defaults: AppSettings = {
+export const defaults: AppSettings = {
   theme: 'system',
   updateInterval: 30,
   windowBounds: { width: 1440, height: 870 },
@@ -61,7 +62,8 @@ const defaults: AppSettings = {
   launchHidden: false,
   siteCookies: {},
   proxy: { mode: 'auto' },
-  lowMemoryMode: false
+  lowMemoryMode: false,
+  toggleWindowShortcut: process.platform === 'darwin' ? 'Control+Command+D' : 'Control+Alt+D'
 }
 
 const store = new Store<AppSettings>({

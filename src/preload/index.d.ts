@@ -54,6 +54,7 @@ interface AppSettings {
   siteCookies: Record<string, string>
   proxy: ProxyConfig
   lowMemoryMode: boolean
+  toggleWindowShortcut: string
 }
 
 interface TranslateConfig {
@@ -172,6 +173,13 @@ interface ConfigApi {
   onChanged: (callback: () => void) => () => void
 }
 
+interface ShortcutApi {
+  beginCapture: () => Promise<ApiResponse<boolean>>
+  endCapture: () => Promise<ApiResponse<boolean>>
+  reset: () => Promise<ApiResponse<{ accelerator: string }>>
+  set: (accelerator: string) => Promise<ApiResponse<{ accelerator: string }>>
+}
+
 interface CacheApi {
   stats: () => Promise<ApiResponse<{ namespace: string; sizeBytes: number; fileCount: number }[]>>
   clear: () => Promise<ApiResponse<{ clearedBytes: number }>>
@@ -257,6 +265,7 @@ interface AppApi {
   categories: CategoryApi
   articles: ArticleApi
   config: ConfigApi
+  shortcut: ShortcutApi
   cache: CacheApi
   opml: OpmlApi
   sync: SyncApi

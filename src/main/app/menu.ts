@@ -28,6 +28,27 @@ function sendToMain(channel: string): void {
   }
 }
 
+let menuEnabledSnapshot: boolean[] | null = null
+
+export function disableAppMenu(): void {
+  const menu = Menu.getApplicationMenu()
+  if (!menu) return
+  menuEnabledSnapshot = menu.items.map((item) => item.enabled)
+  for (const item of menu.items) {
+    item.enabled = false
+  }
+}
+
+export function restoreAppMenu(): void {
+  const menu = Menu.getApplicationMenu()
+  const snapshot = menuEnabledSnapshot
+  menuEnabledSnapshot = null
+  if (!menu || !snapshot) return
+  menu.items.forEach((item, index) => {
+    item.enabled = snapshot[index] ?? true
+  })
+}
+
 export function buildAppMenu(): void {
   const showDevToolsMenu = envBool(import.meta.env.MAIN_VITE_ENABLE_DEVTOOLS)
 

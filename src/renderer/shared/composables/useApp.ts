@@ -14,6 +14,7 @@ const launchHidden = ref(false)
 const siteCookies = ref<Record<string, string>>({})
 const proxyConfig = ref<ProxyConfig>({ mode: 'auto' })
 const lowMemoryMode = ref(false)
+const toggleWindowShortcut = ref('')
 
 export function useApp() {
   async function loadSettings() {
@@ -30,6 +31,7 @@ export function useApp() {
       siteCookies.value = result.data.siteCookies ?? {}
       proxyConfig.value = result.data.proxy ?? { mode: 'auto' }
       lowMemoryMode.value = result.data.lowMemoryMode ?? false
+      toggleWindowShortcut.value = result.data.toggleWindowShortcut
     }
   }
 
@@ -110,6 +112,10 @@ export function useApp() {
     await window.api.config.update({ lowMemoryMode: enabled })
   }
 
+  function setToggleWindowShortcut(accelerator: string) {
+    toggleWindowShortcut.value = accelerator
+  }
+
   return {
     theme,
     updateInterval,
@@ -122,6 +128,7 @@ export function useApp() {
     siteCookies,
     proxyConfig,
     lowMemoryMode,
+    toggleWindowShortcut,
     loadSettings,
     setTheme,
     setUpdateInterval,
@@ -133,6 +140,7 @@ export function useApp() {
     setProxyConfig,
     setAutoLaunch,
     setLaunchHidden,
-    setLowMemoryMode
+    setLowMemoryMode,
+    setToggleWindowShortcut
   }
 }

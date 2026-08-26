@@ -83,6 +83,12 @@ const api = {
       ipcRenderer.invoke('settings:loginSite', input),
     onChanged: (callback: () => void): (() => void) => onChannel('config:changed', callback)
   },
+  shortcut: {
+    beginCapture: () => ipcRenderer.invoke('shortcut:beginCapture'),
+    endCapture: () => ipcRenderer.invoke('shortcut:endCapture'),
+    reset: () => ipcRenderer.invoke('shortcut:reset'),
+    set: (accelerator: string) => ipcRenderer.invoke('shortcut:set', accelerator)
+  },
   cache: {
     stats: () => ipcRenderer.invoke('cache:stats'),
     clear: () => ipcRenderer.invoke('cache:clear')

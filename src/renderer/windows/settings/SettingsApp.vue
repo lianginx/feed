@@ -15,7 +15,8 @@ import {
   Globe,
   Trash2,
   RefreshCw,
-  TriangleAlert
+  TriangleAlert,
+  Keyboard
 } from '@lucide/vue'
 import { Button } from '@renderer/shared/components/ui/button'
 import { Spinner } from '@renderer/shared/components/ui/spinner'
@@ -32,6 +33,7 @@ import { ScrollArea } from '@renderer/shared/components/ui/scroll-area'
 import { useApp, type Theme } from '@renderer/shared/composables/useApp'
 import { useSync } from '@renderer/shared/composables/useSync'
 import { useSyncEvents } from '@renderer/shared/composables/useSyncEvents'
+import ShortcutRecorder from '@renderer/windows/settings/components/shortcut/ShortcutRecorder.vue'
 import type {
   SyncConfig,
   TranslateConfig,
@@ -63,7 +65,9 @@ const {
   proxyConfig,
   setProxyConfig,
   lowMemoryMode,
-  setLowMemoryMode
+  setLowMemoryMode,
+  toggleWindowShortcut,
+  setToggleWindowShortcut
 } = useApp()
 const { runSync, syncing, lastSyncedAt, loadStatus } = useSync()
 
@@ -410,13 +414,14 @@ async function handleSaveTranslate(): Promise<void> {
   }, 2000)
 }
 
-const activeSection = ref<'general' | 'startup' | 'sync' | 'translate' | 'data' | 'sites'>(
-  'general'
-)
+const activeSection = ref<
+  'general' | 'startup' | 'shortcut' | 'sync' | 'translate' | 'data' | 'sites'
+>('general')
 
 const navItems = [
   { id: 'general', label: '常规设置', icon: Settings },
   { id: 'startup', label: '开机启动', icon: Rocket },
+  { id: 'shortcut', label: '快捷键', icon: Keyboard },
   { id: 'sync', label: '订阅同步', icon: Cloud },
   { id: 'translate', label: '文章翻译', icon: Languages },
   { id: 'sites', label: '内置路由', icon: Globe },
@@ -493,7 +498,6 @@ onMounted(async () => {
 
 <template>
   <div class="relative flex gap-2 p-2 h-screen overflow-hidden bg-canvas text-foreground">
-    <!-- 顶部可拖拽区域（macOS hiddenInset 透明标题栏需要它才能拖动窗口） -->
     <div class="absolute inset-x-0 top-0 z-10 h-10 shrink-0" style="app-region: drag" />
 
     <nav class="flex w-44 shrink-0 flex-col gap-2 pt-8 px-1">
@@ -735,6 +739,18 @@ onMounted(async () => {
                   @update:model-value="(v) => setLowMemoryMode(!!v)"
                 />
               </div>
+            </section>
+          </div>
+
+          <div v-else-if="activeSection === 'shortcut'">
+            <section>
+              <h2 class="text-sm font-semibold text-foreground mb-1">全局快捷键</h2>
+              <ShortcutRecorder
+                :accelerator="toggleWindowShortcut"
+                label="显示 / 隐藏主窗口"
+                description="系统任意界面下按下即可呼出或隐藏 Feed 主窗口"
+                @updated="setToggleWindowShortcut"
+              />
             </section>
           </div>
 
