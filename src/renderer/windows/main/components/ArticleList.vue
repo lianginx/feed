@@ -73,18 +73,51 @@ onUnmounted(() => {
 
 watch(
   [selectedView, selectedFeedId, selectedCategoryId, isUnread, isStar, isToday],
-  (
-    // isUnread 单独变化（未读筛选切换）时保留搜索关键词，故不参与判定
-    [view, feedId, categoryId, , star, today],
-    [oldView, oldFeedId, oldCategoryId, , oldStar, oldToday]
+  async (
+    [view, feedId, categoryId, unread, star, today],
+    [oldView, oldFeedId, oldCategoryId, oldUnread, oldStar, oldToday]
   ) => {
-    currentArticle.value = null
+    const isFirstRun = oldView === undefined && oldFeedId === undefined && oldUnread === undefined
+    if (isFirstRun) {
+      currentArticle.value = null
+      resetCollapsed()
+      if (collapseTimer) clearTimeout(collapseTimer)
+      scrollAreaRef.value?.viewport?.scrollTo(0, 0)
+      void reloadFirstPage()
+      return
+    }
+
+    const isUnreadToggled = unread !== oldUnread
     const scopeChanged =
       view !== oldView ||
       feedId !== oldFeedId ||
       categoryId !== oldCategoryId ||
       star !== oldStar ||
       today !== oldToday
+    const onlyUnreadToggled = isUnreadToggled && !scopeChanged
+
+    if (onlyUnreadToggled && currentArticle.value) {
+      const prevSnapshot = [...articles.value]
+      const pinnedId = currentArticle.value.id
+      resetCollapsed()
+      if (collapseTimer) clearTimeout(collapseTimer)
+      scrollAreaRef.value?.viewport?.scrollTo(0, 0)
+      await reloadFirstPage()
+      if (isUnread.value !== unread) return
+      if (searchQuery.value.trim() !== '') return
+      if (unread === true) {
+        const alreadyInList = articles.value.some((a) => a.id === pinnedId)
+        if (!alreadyInList) {
+          const pinned = prevSnapshot.find((a) => a.id === pinnedId)
+          if (pinned) {
+            articles.value.unshift(pinned)
+          }
+        }
+      }
+      return
+    }
+
+    currentArticle.value = null
     if (scopeChanged) {
       searchQuery.value = ''
     }
