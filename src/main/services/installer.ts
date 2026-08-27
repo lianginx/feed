@@ -174,15 +174,19 @@ export async function installZipSilently(
     const pendingPath = `${targetPath}.pending`
     const backupPath = `${targetPath}.backup`
 
-    try {
-      rmSync(pendingPath, { recursive: true, force: true })
-    } catch (_e) {
-      void _e
-    }
-    try {
-      rmSync(backupPath, { recursive: true, force: true })
-    } catch (_e) {
-      void _e
+    for (const p of [pendingPath, backupPath]) {
+      try {
+        rmSync(p, { recursive: true, force: true })
+      } catch (_e) {
+        void _e
+      }
+      if (isInApplications && existsSync(p)) {
+        try {
+          await runWithAdmin(`rm -rf -- ${shellEscape(p)}`)
+        } catch (_e) {
+          void _e
+        }
+      }
     }
 
     await run('ditto', [stagedApp, pendingPath])
@@ -241,8 +245,8 @@ export async function installZipSilently(
         throw err
       }
       const msg = err instanceof Error ? err.message : String(err)
-      if (/Operation not permitted|Permission denied|EBUSY|ENOENT/i.test(msg)) {
-        const cmd = `mv -- ${shellEscape(targetPath)} ${shellEscape(backupPath)} && mv -- ${shellEscape(pendingPath)} ${shellEscape(targetPath)}`
+      if (/Operation not permitted|Permission denied|EBUSY|ENOENT|ENOTEMPTY|ENOTDIR/i.test(msg)) {
+        const cmd = `rm -rf -- ${shellEscape(backupPath)}; mv -- ${shellEscape(targetPath)} ${shellEscape(backupPath)} && mv -- ${shellEscape(pendingPath)} ${shellEscape(targetPath)}`
         try {
           await runWithAdmin(cmd)
           if (!existsSync(join(targetPath, 'Contents', 'Info.plist'))) {
