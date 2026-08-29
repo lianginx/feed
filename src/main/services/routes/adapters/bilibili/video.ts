@@ -129,7 +129,7 @@ export const bilibiliUserVideo: FeedAdapter = {
   injectCookieNames: ['SESSDATA', 'bili_jct', 'DedeUserID'],
   browserExtract: EXTRACT_VIDEO_CARDS,
   buildUrl: (params) => `https://space.bilibili.com/${params.uid ?? ''}/video`,
-  siteUrl: (params) => `https://space.bilibili.com/${params.uid ?? ''}/video`,
+  siteUrl: (params) => `https://space.bilibili.com/${params.uid ?? ''}/upload/video`,
   async parse(raw: string, ctx: AdapterParseContext): Promise<ParsedFeed> {
     const items: ParsedArticle[] = []
     const seen = new Set<string>()
