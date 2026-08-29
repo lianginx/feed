@@ -4,15 +4,23 @@ import { bilibiliUserArticle, bilibiliUserVideo } from './bilibili'
 import { telegramChannelAdapter } from './telegram'
 import { hapigoChangelogAdapter } from './hapigo'
 import { markodenicNewsletterAdapter } from './markodenic'
+import { githubRepoReleases, githubTrending } from './github'
+import { juejinUserPosts, juejinHot } from './juejin'
+import { zhihuHotAdapter } from './zhihu'
 
 /**
  * 全部内置适配器。
- * 新增站点：在 adapters/ 下建 <site>/ 目录写适配器，然后在此数组登记一行即可。
+ * 数组顺序即添加订阅窗口的展示顺序（按知名度/常用度），新增站点插到合适位置。
  */
 const adapters = [
-  v2exAdapter,
   bilibiliUserArticle,
   bilibiliUserVideo,
+  zhihuHotAdapter,
+  v2exAdapter,
+  juejinHot,
+  juejinUserPosts,
+  githubTrending,
+  githubRepoReleases,
   telegramChannelAdapter,
   hapigoChangelogAdapter,
   markodenicNewsletterAdapter

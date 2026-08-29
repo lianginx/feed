@@ -151,13 +151,14 @@ export const bilibiliUserArticle: FeedAdapter = {
   domains: ['bilibili.com'],
   params: [{ key: 'uid', label: 'UP 主 ID', required: true, placeholder: '如 928915' }],
   needsBrowser: false,
+  siteUrl: (params) => `https://space.bilibili.com/${params.uid ?? ''}/`,
   headers: { Referer: 'https://space.bilibili.com/' },
   buildUrl: (params) =>
     `https://api.bilibili.com/x/polymer/web-dynamic/v1/opus/feed/space?host_mid=${params.uid ?? ''}&page=1`,
   async fetchMeta(params) {
     const info = await fetchUpInfo(params.uid ?? '')
     return {
-      title: info.name ? `${info.name} 的专栏` : undefined,
+      title: info.name ? `${info.name} 的哔哩哔哩专栏` : undefined,
       description: info.sign || undefined,
       imageUrl: info.face ? normalizeUrl(info.face) : undefined
     }

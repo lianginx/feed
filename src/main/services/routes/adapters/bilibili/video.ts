@@ -129,6 +129,7 @@ export const bilibiliUserVideo: FeedAdapter = {
   injectCookieNames: ['SESSDATA', 'bili_jct', 'DedeUserID'],
   browserExtract: EXTRACT_VIDEO_CARDS,
   buildUrl: (params) => `https://space.bilibili.com/${params.uid ?? ''}/video`,
+  siteUrl: (params) => `https://space.bilibili.com/${params.uid ?? ''}/video`,
   async parse(raw: string, ctx: AdapterParseContext): Promise<ParsedFeed> {
     const items: ParsedArticle[] = []
     const seen = new Set<string>()
@@ -208,7 +209,7 @@ export const bilibiliUserVideo: FeedAdapter = {
 
     const uid = ctx.params.uid ?? ''
     return {
-      title: upName ? `${upName} 的视频` : 'B 站 UP 主视频',
+      title: upName ? `${upName} 的哔哩哔哩视频` : 'B 站 UP 主视频',
       description: upSign || 'B 站 UP 主投稿视频',
       link: `https://space.bilibili.com/${uid}/video`,
       image: avatar ? { url: normalizeUrl(avatar) } : undefined,

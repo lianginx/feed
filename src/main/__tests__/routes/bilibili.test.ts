@@ -289,7 +289,7 @@ describe('bilibili 用户视频适配器', () => {
       url: 'https://space.bilibili.com/928915/video'
     })
 
-    expect(feed.title).toBe('卢诗翰 的视频')
+    expect(feed.title).toBe('卢诗翰 的哔哩哔哩视频')
     expect(feed.image?.url).toBe('https://i1.hdslb.com/bfs/face/xxx.jpg@120w_120h_1c')
     expect(feed.items).toHaveLength(2)
 
