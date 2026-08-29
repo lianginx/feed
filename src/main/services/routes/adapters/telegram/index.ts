@@ -236,6 +236,7 @@ export const telegramChannelAdapter: FeedAdapter = {
     }
   ],
   needsBrowser: false,
+  siteUrl: (params) => `https://t.me/s/${encodeURIComponent(cleanUsername(params.username ?? ''))}`,
   buildUrl: (params) =>
     `https://t.me/s/${encodeURIComponent(cleanUsername(params.username ?? ''))}`,
   async parse(raw: string, ctx: AdapterParseContext): Promise<ParsedFeed> {

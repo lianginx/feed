@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
-import { runAdapter, registerSource } from '@main/services/routes/core/runner'
+import {
+  runAdapter,
+  registerSource,
+  resolveAdapterSiteUrl
+} from '@main/services/routes/core/runner'
 import { v2exAdapter } from '@main/services/routes/adapters/v2ex'
 import type { FeedAdapter } from '@main/services/routes/core/types'
 
@@ -12,6 +16,26 @@ const TOPIC = {
   created: 1_700_000_000,
   member: { username: 'alice' }
 }
+
+describe('resolveAdapterSiteUrl', () => {
+  it('string 形态直接返回，函数形态按参数生成，未声明返回 undefined', () => {
+    const staticAdapter = { siteUrl: 'https://example.com' } as FeedAdapter
+    expect(resolveAdapterSiteUrl(staticAdapter, {})).toBe('https://example.com')
+
+    const dynamicAdapter = {
+      siteUrl: (p: Record<string, string>) => `https://example.com/u/${p.uid}`
+    } as FeedAdapter
+    expect(resolveAdapterSiteUrl(dynamicAdapter, { uid: '9' })).toBe('https://example.com/u/9')
+
+    const none = {} as FeedAdapter
+    expect(resolveAdapterSiteUrl(none, {})).toBeUndefined()
+  })
+
+  it('内置适配器均声明站点首页，且不与抓取地址共用 JSON API', () => {
+    expect(v2exAdapter.siteUrl).toBe('https://v2ex.com/?tab=hot')
+    expect(v2exAdapter.buildUrl({})).not.toBe(v2exAdapter.siteUrl)
+  })
+})
 
 describe('runAdapter（注入 mock fetcher，不联网）', () => {
   it('HTTP 路径：解析 mock 响应为 ParsedFeed', async () => {
@@ -29,6 +53,81 @@ describe('runAdapter（注入 mock fetcher，不联网）', () => {
   it('HTTP 路径：请求失败时错误向上传播', async () => {
     const http = vi.fn().mockRejectedValue(new Error('网络错误'))
     await expect(runAdapter(v2exAdapter, {}, { fetchers: { http } })).rejects.toThrow('网络错误')
+  })
+
+  it('HTTP 路径：POST 适配器透传 method 与 body', async () => {
+    const postAdapter: FeedAdapter = {
+      id: 'fake-post',
+      name: '测试 POST 站',
+      domains: ['example.com'],
+      params: [{ key: 'uid', label: '用户 ID', required: true }],
+      httpMethod: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      buildUrl: () => 'https://example.com/api/list',
+      buildBody: (p) => JSON.stringify({ user_id: p.uid }),
+      async parse(raw) {
+        return { title: String(JSON.parse(raw).user_id), items: [] }
+      }
+    }
+    const http = vi.fn().mockResolvedValue(JSON.stringify({ user_id: 'u1' }))
+
+    const { feed } = await runAdapter(postAdapter, { uid: 'u1' }, { fetchers: { http } })
+
+    expect(http).toHaveBeenCalledWith('https://example.com/api/list', {
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      body: JSON.stringify({ user_id: 'u1' })
+    })
+    expect(feed.title).toBe('u1')
+  })
+
+  it('HTTP 路径：cookieDomain 适配器注入 Cookie 头并按白名单过滤', async () => {
+    const cookieAdapter: FeedAdapter = {
+      id: 'fake-cookie',
+      name: '测试登录站',
+      domains: ['example.com'],
+      params: [],
+      cookieDomain: '.example.com',
+      injectCookieNames: ['z_c0'],
+      buildUrl: () => 'https://example.com/api',
+      async parse() {
+        return { title: 'T', items: [] }
+      }
+    }
+    const http = vi.fn().mockResolvedValue('ok')
+
+    await runAdapter(
+      cookieAdapter,
+      {},
+      { fetchers: { http }, cookies: { z_c0: 'token', buvid: 'fingerprint' } }
+    )
+
+    const options = http.mock.calls[0][1]
+    // 只注入白名单内的登录态 cookie，指纹类 cookie 被过滤
+    expect(options.headers.Cookie).toBe('z_c0=token')
+  })
+
+  it('HTTP 路径：未声明 cookieDomain 或无配置 cookie 时不注入 Cookie 头', async () => {
+    const http = vi.fn().mockResolvedValue(JSON.stringify([TOPIC]))
+
+    // v2ex 适配器未声明 cookieDomain：即使传了 cookies 也不注入
+    await runAdapter(v2exAdapter, {}, { fetchers: { http }, cookies: { SESSDATA: 'x' } })
+    expect(http.mock.calls[0][1].headers.Cookie).toBeUndefined()
+
+    // 声明了 cookieDomain 但用户未配置登录态：不注入空 Cookie 头
+    const cookieAdapter: FeedAdapter = {
+      id: 'fake-cookie-2',
+      name: '测试登录站',
+      domains: ['example.com'],
+      params: [],
+      cookieDomain: '.example.com',
+      buildUrl: () => 'https://example.com/api',
+      async parse() {
+        return { title: 'T', items: [] }
+      }
+    }
+    await runAdapter(cookieAdapter, {}, { fetchers: { http } })
+    expect(http.mock.calls[1][1].headers.Cookie).toBeUndefined()
   })
 
   it('browser 路径：needsBrowser 适配器走 browser fetcher 并透传 cookie', async () => {

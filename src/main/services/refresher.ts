@@ -2,7 +2,7 @@ import { getConnection } from '@main/database/connection'
 import { withTransaction } from '@main/database/transaction'
 import { parseFeed, toFriendlyFeedError, type ParsedFeed } from './rss'
 import { normalizeContentImages } from './contentImages'
-import { getAdapter, runAdapter } from './routes'
+import { getAdapter, runAdapter, resolveAdapterSiteUrl } from './routes'
 import { getCookiesForAdapter } from './siteCookies'
 import { getCacheFile } from './cache'
 import { fileNameForSource, parseFaviconName, resolveAndCacheFavicon } from './favicon'
@@ -201,6 +201,11 @@ async function refreshFeed(feedId: number): Promise<void> {
           description: meta.description ?? parsed.description,
           image: meta.imageUrl ? { url: meta.imageUrl } : parsed.image
         }
+      }
+      // 站点首页以适配器声明为准：抓取地址常是 JSON API，不适合作为 site_url
+      const siteUrl = resolveAdapterSiteUrl(adapter, params)
+      if (siteUrl) {
+        parsed = { ...parsed, link: siteUrl }
       }
     } else {
       parsed = await fetchWithRetry(feed.url)

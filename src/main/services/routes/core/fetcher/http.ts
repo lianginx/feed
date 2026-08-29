@@ -1,8 +1,12 @@
 import { fetchWithTimeout, BROWSER_USER_AGENT } from '@main/services/http'
 
 export interface FetchPageOptions {
-  /** 附加请求头（如 Referer），合并进默认 UA */
+  /** 附加请求头（如 Referer / Cookie / Content-Type），合并进默认 UA */
   headers?: Record<string, string>
+  /** 请求方法，缺省 GET；POST 用于以 JSON body 传参的站点接口（如掘金） */
+  method?: 'GET' | 'POST'
+  /** POST 请求体（JSON 文本），仅在 method 为 POST 时使用 */
+  body?: string
 }
 
 /**
@@ -11,6 +15,8 @@ export interface FetchPageOptions {
  */
 export async function fetchPage(url: string, options: FetchPageOptions = {}): Promise<string> {
   const res = await fetchWithTimeout(url, {
+    method: options.method,
+    body: options.body,
     headers: { 'User-Agent': BROWSER_USER_AGENT, ...options.headers }
   })
   if (!res.ok) {

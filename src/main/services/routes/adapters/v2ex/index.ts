@@ -47,6 +47,7 @@ export const v2exAdapter: FeedAdapter = {
   domains: ['v2ex.com'],
   params: [],
   needsBrowser: false,
+  siteUrl: 'https://v2ex.com/?tab=hot',
   buildUrl: () => 'https://www.v2ex.com/api/topics/hot.json',
   // V2EX 无需上下文（无参数/无分页），只消费 raw 即可
   async parse(raw: string): Promise<ParsedFeed> {
@@ -63,7 +64,7 @@ export const v2exAdapter: FeedAdapter = {
     return {
       title: 'V2EX - 最热主题',
       description: 'V2EX - 最热主题',
-      link: 'https://www.v2ex.com',
+      link: 'https://v2ex.com/?tab=hot',
       items: (topics as V2exTopic[]).map(mapArticle)
     }
   }

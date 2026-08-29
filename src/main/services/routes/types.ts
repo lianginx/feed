@@ -76,6 +76,10 @@ export interface FeedAdapter {
   browserExtract?: string
   /** 静态请求头（如 Referer），HTTP 抓取时附加 */
   headers?: Record<string, string>
+  /** HTTP 请求方法，缺省 GET；POST 用于以 JSON body 传参的站点接口（如掘金） */
+  httpMethod?: 'POST'
+  /** 构建 POST 请求体（JSON 文本）；httpMethod 为 POST 时必配 */
+  buildBody?: (params: Record<string, string>) => string
   /**
    * 可选：抓取后补充 feed 级元信息（如 UP 主名/头像/简介），由上层（addAdapter / refreshSingleFeed）调用。
    * 适合纯 HTTP 适配器里 UP 主信息不在列表接口的场景。
@@ -88,6 +92,11 @@ export interface FeedAdapter {
     | { title?: string; description?: string; imageUrl?: string }
   /** 由参数构建目标 URL */
   buildUrl(params: Record<string, string>): string
+  /**
+   * 站点首页（人工页面），订阅源 site_url 的权威来源：添加时即写入、刷新时优先于 parsed.link。
+   * 抓取地址（buildUrl）常是 JSON API，直接当站点链接会打开裸数据。缺省回落 parsed.link。
+   */
+  siteUrl?: string | ((params: Record<string, string>) => string)
   /** 解析抓取到的原始内容（HTML 或 JSON 文本）为统一结构 */
   parse(raw: string, ctx: AdapterParseContext): Promise<ParsedFeed>
 }

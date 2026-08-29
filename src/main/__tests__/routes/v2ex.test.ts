@@ -22,7 +22,7 @@ describe('v2exAdapter.parse（本地 fixture，不联网）', () => {
     })
 
     expect(feed.title).toBe('V2EX - 最热主题')
-    expect(feed.link).toBe('https://www.v2ex.com')
+    expect(feed.link).toBe('https://v2ex.com/?tab=hot')
     expect(feed.items).toHaveLength(1)
 
     const item = feed.items[0]

@@ -48,6 +48,7 @@ export const markodenicNewsletterAdapter: FeedAdapter = {
   domains: ['markodenic.tech'],
   params: [],
   needsBrowser: false,
+  siteUrl: NEWSLETTER_URL,
   buildUrl: () => NEWSLETTER_URL,
   async parse(raw: string, ctx): Promise<ParsedFeed> {
     const $ = cheerio.load(raw)

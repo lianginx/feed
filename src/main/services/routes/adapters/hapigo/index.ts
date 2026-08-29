@@ -207,6 +207,7 @@ export const hapigoChangelogAdapter: FeedAdapter = {
   domains: ['hapigo.com', 'updates-cn.hapigo.com'],
   params: [],
   needsBrowser: false,
+  siteUrl: 'https://updates-cn.hapigo.com/',
   buildUrl: () => LLMS_TXT,
   async parse(raw: string): Promise<ParsedFeed> {
     const entries = parseEntries(raw)
@@ -240,7 +241,7 @@ export const hapigoChangelogAdapter: FeedAdapter = {
     return {
       title: 'HapiGo 更新日志',
       description: 'HapiGo 官方更新日志',
-      link: LLMS_TXT,
+      link: 'https://updates-cn.hapigo.com/',
       items
     }
   }

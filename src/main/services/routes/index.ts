@@ -8,7 +8,7 @@ export type {
   SourceRunner
 } from './types'
 export { registerAdapter, getAdapter, listAdapters, findAdaptersByDomain } from './core/registry'
-export { runAdapter, registerSource } from './core/runner'
+export { runAdapter, registerSource, resolveAdapterSiteUrl } from './core/runner'
 export { setConcurrency, getConcurrency } from './core/limit'
 export { fetchPage } from './core/fetcher/http'
 export { fetchBrowserPage } from './core/fetcher/browser'
