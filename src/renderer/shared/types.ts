@@ -83,4 +83,6 @@ export interface AdapterInfo {
   loginUrl?: string
   /** 登录态 cookie 名（全部出现即视为已登录） */
   loginCookieNames?: string[]
+  /** 已添加订阅的参数组合（添加窗口据此做前置判重，口径同主进程） */
+  addedParams: Record<string, string>[]
 }

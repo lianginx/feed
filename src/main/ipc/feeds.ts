@@ -6,8 +6,10 @@ import { withTransaction } from '@main/database/transaction'
 import { toFriendlyFeedError } from '@main/services/rss'
 import { refreshFeedFavicon } from '@main/services/favicon'
 import { refreshSingleFeed } from '@main/services/refresher'
-import { getAdapter, listAdapters } from '@main/services/routes'
+import { getAdapter, listAdapters, resolveAdapterSiteUrl } from '@main/services/routes'
 import { scheduleSync } from '@main/services/sync'
+import type { FeedAdapter } from '@main/services/routes/core/types'
+import { canonicalAdapterParams } from '@shared/lib/adapterParams'
 import { success, error } from './util'
 
 function sendAddResult(data: { success: boolean; error?: string }) {
@@ -20,6 +22,35 @@ function sendAddResult(data: { success: boolean; error?: string }) {
 function notifyFeedAdded(feedId: number) {
   getMainWindow()?.webContents.send('feeds:changed', { feedId })
   closeAddFeedWindow()
+}
+
+/** 适配器订阅的存储 URL：buildUrl 之外追加非空参数片段，保证不同参数（如热榜周期）URL 唯一 */
+function adapterStorageUrl(adapter: FeedAdapter, params: Record<string, string>): string {
+  const entries = Object.keys(params)
+    .filter((key) => (params[key] ?? '').trim() !== '')
+    .sort()
+    .map((key) => `${key}=${encodeURIComponent(params[key])}`)
+  const base = adapter.buildUrl(params)
+  return entries.length ? `${base}#${entries.join('&')}` : base
+}
+
+/** 同适配器下是否已存在参数完全一致的订阅（与存储 URL 的新旧格式无关） */
+function hasSameAdapterFeed(
+  db: ReturnType<typeof getConnection>,
+  adapterId: string,
+  params: Record<string, string>
+): boolean {
+  const canonical = canonicalAdapterParams(params)
+  const rows = db
+    .prepare('SELECT adapter_params FROM feeds WHERE adapter_id = ?')
+    .all(adapterId) as { adapter_params: string | null }[]
+  return rows.some((row) => {
+    try {
+      return canonicalAdapterParams(JSON.parse(row.adapter_params ?? '{}')) === canonical
+    } catch {
+      return false
+    }
+  })
 }
 
 async function addRss(params: { url: string; title?: string; categoryId?: number }) {
@@ -65,26 +96,30 @@ async function addAdapterSource(input: {
       }
     }
 
-    const url = adapter.buildUrl(input.params)
     const db = getConnection()
-    const existing = db.prepare('SELECT id FROM feeds WHERE url = ?').get(url)
-    if (existing) {
+    // 判重按「适配器 + 参数」而非 URL：参数可能不在 URL 上（如掘金热榜的周期在 POST body）
+    if (hasSameAdapterFeed(db, adapter.id, input.params)) {
       sendAddResult({ success: false, error: '该订阅源已存在' })
       return
     }
+    const url = adapterStorageUrl(adapter, input.params)
     const customTitle = input.title?.trim() ? 1 : 0
-    const title = input.title?.trim() || url
+    // 初始标题用适配器名兜底：首刷成功后会被 parsed title 覆盖，失败时也不至于露出原始 URL
+    const title = input.title?.trim() || adapter.name
+    // site_url 用适配器声明的站点首页：首刷失败时侧边栏「打开站点」也不会落到抓取用的 API 地址
+    const siteUrl = resolveAdapterSiteUrl(adapter, input.params) ?? null
     const feedId = toSafeNumber(
       db
         .prepare(
-          `INSERT INTO feeds (url, title, custom_title, category_id, adapter_id, adapter_params)
-         VALUES (?, ?, ?, ?, ?, ?)`
+          `INSERT INTO feeds (url, title, custom_title, category_id, site_url, adapter_id, adapter_params)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           url,
           title,
           customTitle,
           input.categoryId || null,
+          siteUrl,
           adapter.id,
           JSON.stringify(input.params)
         ).lastInsertRowid
@@ -129,6 +164,21 @@ export function registerFeedHandlers() {
 
   ipcMain.handle('feeds:listAdapters', async () => {
     try {
+      const db = getConnection()
+      // 已添加的参数组合按 adapter_id 分组带返，渲染层据此做添加前的前置校验
+      const rows = db
+        .prepare('SELECT adapter_id, adapter_params FROM feeds WHERE adapter_id IS NOT NULL')
+        .all() as { adapter_id: string; adapter_params: string | null }[]
+      const addedByAdapter = new Map<string, Record<string, string>[]>()
+      for (const row of rows) {
+        try {
+          const list = addedByAdapter.get(row.adapter_id) ?? []
+          list.push(JSON.parse(row.adapter_params ?? '{}'))
+          addedByAdapter.set(row.adapter_id, list)
+        } catch {
+          // 参数 JSON 损坏的行不参与前置校验
+        }
+      }
       const adapters = listAdapters().map((a) => ({
         id: a.id,
         name: a.name,
@@ -138,7 +188,8 @@ export function registerFeedHandlers() {
         needsBrowser: a.needsBrowser ?? false,
         cookieDomain: a.cookieDomain,
         loginUrl: a.loginUrl,
-        loginCookieNames: a.loginCookieNames
+        loginCookieNames: a.loginCookieNames,
+        addedParams: addedByAdapter.get(a.id) ?? []
       }))
       return success(adapters)
     } catch (e) {

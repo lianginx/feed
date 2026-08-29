@@ -106,6 +106,8 @@ interface AdapterInfo {
   params: AdapterParam[]
   needsBrowser: boolean
   cookieDomain?: string
+  /** 已添加订阅的参数组合（添加窗口据此做前置判重） */
+  addedParams: Record<string, string>[]
 }
 
 interface FeedApi {

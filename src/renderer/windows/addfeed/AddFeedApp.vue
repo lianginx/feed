@@ -10,6 +10,7 @@ import { Alert, AlertTitle } from '@renderer/shared/components/ui/alert'
 import { ScrollArea } from '@renderer/shared/components/ui/scroll-area'
 import AdapterParamsForm from '@renderer/windows/addfeed/components/AdapterParamsForm.vue'
 import { isValidRssUrl } from '@renderer/windows/addfeed/utils/url'
+import { isParamsAdded } from '@shared/lib/adapterParams'
 import type { AdapterInfo } from '@renderer/shared/types'
 
 const { loadSettings } = useApp()
@@ -32,6 +33,12 @@ const selectedAdapter = computed(() => adapters.value.find((a) => a.id === selec
 const canAddAdapter = computed(
   () => selectedAdapter.value !== undefined && !submittingAdapter.value
 )
+
+const isCurrentComboAdded = computed(() => {
+  const adapter = selectedAdapter.value
+  if (!adapter) return false
+  return isParamsAdded(adapterParams.value, adapter.addedParams ?? [])
+})
 
 let stopAddResult: (() => void) | null = null
 let stopInitialUrl: (() => void) | null = null
@@ -82,10 +89,18 @@ function selectRss() {
 
 function selectAdapter(a: AdapterInfo) {
   selectedId.value = a.id
-  // 切换路由时重置参数，只保留当前路由声明的字段；boolean 开关默认「是」
   const next: Record<string, string> = {}
   for (const p of a.params) {
-    next[p.key] = p.type === 'boolean' ? 'true' : ''
+    if (p.type === 'boolean') {
+      next[p.key] = 'true'
+    } else if (p.type === 'select' && p.options?.length) {
+      const available = p.options.find(
+        (opt) => !isParamsAdded({ ...next, [p.key]: opt.value }, a.addedParams ?? [])
+      )
+      next[p.key] = (available ?? p.options[0]).value
+    } else {
+      next[p.key] = ''
+    }
   }
   adapterParams.value = next
 }
@@ -110,6 +125,8 @@ function handleAddRss() {
 
 function handleAddAdapter() {
   error.value = ''
+  // 与添加按钮的禁用态一致：参数组合已存在时不响应 Enter
+  if (isCurrentComboAdded.value) return
   const adapter = selectedAdapter.value
   if (!adapter) {
     error.value = '请选择内置路由'
@@ -130,55 +147,60 @@ function handleAddAdapter() {
 </script>
 
 <template>
-  <div class="relative flex gap-2 p-2 h-screen overflow-hidden bg-canvas text-foreground">
+  <div class="relative flex p-2 h-screen overflow-hidden bg-canvas text-foreground">
     <!-- 顶部可拖拽区域（macOS hiddenInset 透明标题栏） -->
     <div class="absolute inset-x-0 top-0 z-10 h-10 shrink-0" style="app-region: drag" />
 
-    <nav class="flex w-44 shrink-0 flex-col gap-1 pt-10 px-1">
+    <nav class="flex w-46 shrink-0 flex-col gap-1 pt-10 pl-1">
       <div class="px-3 pb-1 text-[11px] uppercase tracking-wide text-foreground/45">订阅源</div>
       <button
         type="button"
-        class="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-sidebar-accent data-[activated=true]:bg-sidebar-accent"
+        class="mr-3 flex items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-sidebar-accent data-[activated=true]:bg-sidebar-accent"
         :data-activated="isRssSelected"
         @click="selectRss"
       >
         <span
-          class="flex size-5 shrink-0 items-center justify-center rounded bg-sidebar-accent text-sidebar-foreground/80"
+          class="flex size-5 shrink-0 items-center justify-center rounded bg-[#EE802F] text-white"
         >
           <Rss class="size-3.5" />
         </span>
         <span class="truncate">RSS 订阅源</span>
       </button>
 
-      <div
-        v-if="adapters.length > 0"
-        class="px-3 pb-1 pt-3 text-[11px] uppercase tracking-wide text-foreground/45"
-      >
-        内置路由
+      <div v-if="adapters.length > 0" class="flex min-h-0 flex-1 flex-col">
+        <div class="px-3 pb-1 pt-3 text-[11px] uppercase tracking-wide text-foreground/45">
+          内置路由
+        </div>
+        <ScrollArea class="min-h-0 flex-1 pr-3">
+          <div class="flex flex-col gap-1">
+            <button
+              v-for="a in adapters"
+              :key="a.id"
+              type="button"
+              class="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-sidebar-accent data-[activated=true]:bg-sidebar-accent"
+              :data-activated="selectedId === a.id"
+              @click="selectAdapter(a)"
+            >
+              <span
+                class="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded"
+              >
+                <img
+                  v-if="!failedIcons.has(a.id)"
+                  :src="faviconUrl(a.id)"
+                  alt=""
+                  class="h-full w-full object-contain"
+                  loading="lazy"
+                  @error="failedIcons.add(a.id)"
+                />
+                <span v-else class="bg-card text-[10px] font-semibold text-sidebar-foreground/70">{{
+                  (a.name || '?').charAt(0)
+                }}</span>
+              </span>
+              <span class="truncate">{{ a.name }}</span>
+            </button>
+          </div>
+        </ScrollArea>
       </div>
-      <button
-        v-for="a in adapters"
-        :key="a.id"
-        type="button"
-        class="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-sidebar-accent data-[activated=true]:bg-sidebar-accent"
-        :data-activated="selectedId === a.id"
-        @click="selectAdapter(a)"
-      >
-        <span
-          class="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded bg-sidebar-accent text-[10px] font-semibold"
-        >
-          <img
-            v-if="!failedIcons.has(a.id)"
-            :src="faviconUrl(a.id)"
-            alt=""
-            class="h-full w-full object-contain"
-            loading="lazy"
-            @error="failedIcons.add(a.id)"
-          />
-          <span v-else class="text-sidebar-foreground/70">{{ (a.name || '?').charAt(0) }}</span>
-        </span>
-        <span class="truncate">{{ a.name }}</span>
-      </button>
     </nav>
 
     <main class="min-w-0 flex-1">
@@ -261,14 +283,22 @@ function handleAddAdapter() {
               </div>
 
               <div class="grid gap-4">
-                <AdapterParamsForm v-model="adapterParams" :params="selectedAdapter.params" />
+                <AdapterParamsForm
+                  v-model="adapterParams"
+                  :params="selectedAdapter.params"
+                  :added-params="selectedAdapter.addedParams ?? []"
+                  @enter="handleAddAdapter"
+                />
                 <p v-if="selectedAdapter.cookieDomain" class="text-xs text-muted-foreground">
                   该路由可能需要登录 Cookie，可在「设置 → 内置路由」中配置。
                 </p>
                 <div class="flex justify-end pt-2">
-                  <Button :disabled="!canAddAdapter" @click="handleAddAdapter">
+                  <Button
+                    :disabled="!canAddAdapter || isCurrentComboAdded"
+                    @click="handleAddAdapter"
+                  >
                     <Spinner v-if="submittingAdapter" />
-                    {{ submittingAdapter ? '添加中…' : '添加' }}
+                    {{ submittingAdapter ? '添加中…' : isCurrentComboAdded ? '已添加' : '添加' }}
                   </Button>
                 </div>
               </div>

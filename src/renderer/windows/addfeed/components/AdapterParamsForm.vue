@@ -10,18 +10,27 @@ import {
   SelectValue
 } from '@renderer/shared/components/ui/select'
 import type { AdapterParam } from '@renderer/shared/types'
+import { isParamsAdded } from '@shared/lib/adapterParams'
 
 const props = defineProps<{
   params: AdapterParam[]
   modelValue: Record<string, string>
+  /** 已添加订阅的参数组合：select 选项与之撞车时禁用（添加前置校验） */
+  addedParams?: Record<string, string>[]
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: Record<string, string>]
+  enter: []
 }>()
 
 function update(key: string, value: string): void {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
+}
+
+function isOptionAdded(param: AdapterParam, value: string): boolean {
+  if (!props.addedParams?.length) return false
+  return isParamsAdded({ ...props.modelValue, [param.key]: value }, props.addedParams)
 }
 </script>
 
@@ -54,7 +63,12 @@ function update(key: string, value: string): void {
             <SelectValue :placeholder="p.placeholder" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem v-for="opt in p.options ?? []" :key="opt.value" :value="opt.value">
+            <SelectItem
+              v-for="opt in p.options ?? []"
+              :key="opt.value"
+              :value="opt.value"
+              :disabled="isOptionAdded(p, opt.value)"
+            >
               {{ opt.label }}
             </SelectItem>
           </SelectContent>
@@ -79,6 +93,7 @@ function update(key: string, value: string): void {
         :type="p.type === 'number' ? 'number' : p.type === 'url' ? 'url' : 'text'"
         :placeholder="p.placeholder"
         @update:model-value="(v) => update(p.key, String(v))"
+        @keyup.enter="emit('enter')"
       />
     </div>
   </div>
