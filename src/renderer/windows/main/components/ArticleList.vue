@@ -16,6 +16,7 @@ import NewArticlesBadge from '@renderer/windows/main/components/article-list/New
 const {
   articles,
   currentArticle,
+  navTarget,
   loading,
   loadingMore,
   hasMore,
@@ -59,6 +60,7 @@ async function ensureFilled() {
 }
 
 let collapseTimer: ReturnType<typeof setTimeout> | null = null
+let navScrollTimer: ReturnType<typeof setTimeout> | null = null
 
 function onToggleDateCollapse(dateKey: string) {
   toggleDateCollapse(dateKey)
@@ -67,8 +69,28 @@ function onToggleDateCollapse(dateKey: string) {
   collapseTimer = setTimeout(() => void ensureFilled(), 250)
 }
 
+watch(navTarget, async (target) => {
+  if (!target) return
+  const group = groups.value.find((g) => g.articles.some((a) => a.id === target.id))
+  const needExpand = group !== undefined && isDateCollapsed(group.dateKey)
+  if (needExpand) {
+    toggleDateCollapse(group.dateKey)
+  }
+  await nextTick()
+  if (navScrollTimer) clearTimeout(navScrollTimer)
+  const scrollIntoView = () => {
+    document.querySelector(`[data-article-id="${target.id}"]`)?.scrollIntoView({ block: 'nearest' })
+  }
+  if (needExpand) {
+    navScrollTimer = setTimeout(scrollIntoView, 220)
+  } else {
+    scrollIntoView()
+  }
+})
+
 onUnmounted(() => {
   if (collapseTimer) clearTimeout(collapseTimer)
+  if (navScrollTimer) clearTimeout(navScrollTimer)
 })
 
 watch(
@@ -174,7 +196,8 @@ async function onClickNewArticles() {
                 <div
                   v-for="article in group.articles"
                   :key="`article-${article.id}`"
-                  class="pl-6 pr-5 border-t border-border/50 transition-colors hover:bg-sidebar-accent/60"
+                  :data-article-id="article.id"
+                  class="pl-6 pr-5 border-t border-border/50 hover:bg-sidebar-accent/60"
                   :class="{ 'bg-sidebar-accent/80': article.id === currentArticle?.id }"
                 >
                   <ArticleListItem

@@ -12,6 +12,7 @@ const PAGE_SIZE = 60
 
 const articles = ref<Article[]>([])
 const currentArticle = ref<ArticleDetail | null>(null)
+const navTarget = ref<{ id: number } | null>(null)
 const loading = ref(false)
 const loadingMore = ref(false)
 const hasMore = ref(false)
@@ -21,6 +22,7 @@ const searchApplied = ref(0)
 
 let cursor: ArticleListCursor | null = null
 let requestSeq = 0
+let openSeq = 0
 
 export function useArticles() {
   const { loadFeeds, feeds, selectedFeedId, selectedCategoryId } = useFeeds()
@@ -111,7 +113,9 @@ export function useArticles() {
   }
 
   async function openArticle(id: number) {
+    const seq = ++openSeq
     const result = await window.api.articles.get(id)
+    if (seq !== openSeq) return
     if (result.success && result.data) {
       currentArticle.value = result.data
       if (!result.data.is_read) {
@@ -123,6 +127,24 @@ export function useArticles() {
         }
       }
     }
+  }
+
+  async function navigateArticle(dir: 1 | -1) {
+    const current = currentArticle.value
+    if (!current) return
+    const list = articles.value
+    if (list.length === 0) return
+    const index = list.findIndex((a) => a.id === current.id)
+    let targetIndex: number
+    if (index === -1) {
+      targetIndex = dir === 1 ? 0 : list.length - 1
+    } else {
+      targetIndex = index + dir
+      if (targetIndex < 0 || targetIndex >= list.length) return
+    }
+    const target = list[targetIndex]
+    navTarget.value = { id: target.id }
+    await openArticle(target.id)
   }
 
   async function toggleStar(id: number) {
@@ -186,6 +208,7 @@ export function useArticles() {
   return {
     articles,
     currentArticle,
+    navTarget,
     loading,
     loadingMore,
     hasMore,
@@ -198,6 +221,7 @@ export function useArticles() {
     applySearch,
     goNewArticles,
     openArticle,
+    navigateArticle,
     toggleStar,
     toggleRead,
     markAllRead,

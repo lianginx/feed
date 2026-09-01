@@ -7,6 +7,7 @@ import { useFeedsEvents } from '@renderer/windows/main/composables/useFeedsEvent
 import { useAppEvents } from '@renderer/windows/main/composables/useAppEvents'
 import { useSyncEvents } from '@renderer/shared/composables/useSyncEvents'
 import { registerTabShortcut } from '@renderer/windows/main/composables/useTabShortcut'
+import { registerArticleKeyNav } from '@renderer/windows/main/composables/useArticleKeyNav'
 import { useAddCategoryDialog } from '@renderer/windows/main/composables/useAddCategoryDialog'
 import { useConfirmDialog } from '@renderer/windows/main/composables/useConfirmDialog'
 import { useSync } from '@renderer/shared/composables/useSync'
@@ -32,6 +33,7 @@ useSyncEvents((result) => {
   }
 })
 registerTabShortcut()
+registerArticleKeyNav()
 
 const {
   showAddCategory,
