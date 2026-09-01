@@ -57,7 +57,6 @@ xattr -cr /Applications/Feed.app
 | Telegram 频道   | 频道消息            | 频道用户名（如 `NewlearnerChannel`） | 否           |
 | HapiGo 更新日志 | HapiGo 官方更新日志 | 无                                   | 否           |
 | Marko Denic Newsletter | Web 开发技巧与资源 | 无                              | 否           |
-| GitHub Releases | 追踪开源仓库的版本发布 | 仓库（如 `lianginx/feed`，也支持粘贴仓库地址） | 否 |
 | GitHub Trending | GitHub 热门仓库榜单 | 语言（可选）、周期（今日/本周/本月） | 否           |
 | 掘金专栏        | 掘金用户发布的文章  | 用户 ID（也支持粘贴个人主页地址）    | 否           |
 | 掘金热榜        | 掘金最热文章        | 周期（本周/本月/历史，可选）         | 否           |
@@ -111,7 +110,7 @@ xattr -cr /Applications/Feed.app
 应用会自动检查更新并在后台下载，重启后完成升级；也可以随时点菜单栏「检查更新…」手动检查。
 
 ### 我订阅的网站没有 RSS 怎么办？
-先看看**内置路由**里有没有适配过——目前内置 V2EX 热帖、B 站 UP 主专栏与视频、Telegram 频道、HapiGo 更新日志、GitHub Releases / Trending、掘金专栏、知乎热榜（见[内置路由](#内置路由)），直接选择即可订阅。若没有对应站点，也可以参考[内置路由](#内置路由)章节里提到的 RSSHub 方案。
+先看看**内置路由**里有没有适配过——目前内置 V2EX 热帖、B 站 UP 主专栏与视频、Telegram 频道、HapiGo 更新日志、GitHub Trending、掘金专栏、知乎热榜（见[内置路由](#内置路由)），直接选择即可订阅。若没有对应站点，也可以参考[内置路由](#内置路由)章节里提到的 RSSHub 方案。
 
 ### 内置路由是怎么实现的？
 普通网站（如 V2EX、Telegram）：应用直接帮你把网站上的公开内容整理成文章列表，就像你自己打开网页看一样。

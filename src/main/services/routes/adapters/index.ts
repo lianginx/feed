@@ -4,7 +4,7 @@ import { bilibiliUserArticle, bilibiliUserVideo } from './bilibili'
 import { telegramChannelAdapter } from './telegram'
 import { hapigoChangelogAdapter } from './hapigo'
 import { markodenicNewsletterAdapter } from './markodenic'
-import { githubRepoReleases, githubTrending } from './github'
+import { githubTrending } from './github'
 import { juejinUserPosts, juejinHot } from './juejin'
 import { zhihuHotAdapter } from './zhihu'
 
@@ -20,7 +20,6 @@ const adapters = [
   juejinHot,
   juejinUserPosts,
   githubTrending,
-  githubRepoReleases,
   telegramChannelAdapter,
   hapigoChangelogAdapter,
   markodenicNewsletterAdapter
