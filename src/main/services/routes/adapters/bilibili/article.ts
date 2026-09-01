@@ -55,10 +55,12 @@ function parseBiliDateZh(text: string): string | undefined {
 }
 
 /**
- * 提取 opus 正文为 HTML，兼容两种发布形式：
+ * 提取 opus 正文为 HTML，兼容三种发布形式：
+ * - 相册式图文动态：多图轮播（horizontal-scroll-album）在正文之上；大图客户端懒加载，
+ *   SSR 仅指示器缩略图带真 src，剥掉尺寸后缀即可取原图；
  * - 图文动态：单个 <p><span> 内用 \n 分段，图片（bili-album 相册）在末尾；
  * - 专栏文章：多个 <p> 段落正常排版，图片（opus-para-pic）穿插在段落之间。
- * 统一按 .opus-module-content 的直接子节点顺序输出 <p> 段落与 <img> 配图。
+ * 相册图先输出，再按 .opus-module-content 的直接子节点顺序输出 <p> 段落与 <img> 配图。
  */
 function extractOpusBody($: cheerio.CheerioAPI): string {
   const parts: string[] = []
@@ -71,6 +73,10 @@ function extractOpusBody($: cheerio.CheerioAPI): string {
     seen.add(key)
     parts.push(`<img src="${clean}" />`)
   }
+  $('.horizontal-scroll-album__indicator__thumbnail img').each((_, img) => {
+    const src = $(img).attr('src')
+    if (src) pushPic(src)
+  })
   $('.opus-module-content')
     .children()
     .each((_, el) => {

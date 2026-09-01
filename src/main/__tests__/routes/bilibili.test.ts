@@ -134,6 +134,57 @@ describe('bilibili 用户专栏适配器', () => {
     expect(content).not.toContain('@1192w')
   })
 
+  it('相册式图文动态：从轮播指示器提取原图，相册图在正文之前输出', async () => {
+    // SSR 只渲染指示器缩略图（@80w_80h_1c），大图客户端懒加载；第三条与第一条同图
+    const ALBUM_HTML =
+      '<div class="horizontal-scroll-album">' +
+      '<div class="horizontal-scroll-album__indicator">' +
+      '<div class="horizontal-scroll-album__indicator__track">' +
+      '<div class="horizontal-scroll-album__indicator__thumbnail is-active">' +
+      '<img src="//i0.hdslb.com/bfs/new_dyn/d33f0670a52c578a04c2821f0e6abd3113.jpg@80w_80h_1c"></div>' +
+      '<div class="horizontal-scroll-album__indicator__thumbnail">' +
+      '<img src="//i0.hdslb.com/bfs/new_dyn/805a034b478a9126097874c38bd2dff313.jpg@80w_80h_1c"></div>' +
+      '<div class="horizontal-scroll-album__indicator__thumbnail">' +
+      '<img src="//i0.hdslb.com/bfs/new_dyn/d33f0670a52c578a04c2821f0e6abd3113.jpg@80w_80h_1c"></div>' +
+      '</div></div></div>' +
+      '<div class="opus-module-content opus-paragraph-children">' +
+      '<p><span>看完了鬼灭，说不上来的震撼。</span></p>' +
+      '</div>'
+    vi.mocked(fetchWithTimeout).mockImplementationOnce(
+      async () => ({ ok: true, text: async () => ALBUM_HTML }) as Response
+    )
+    const feed = await bilibiliUserArticle.parse(
+      JSON.stringify({
+        data: {
+          items: [
+            {
+              content: '鬼灭之刃無限城第一章猗窩座再来',
+              jump_url: '//www.bilibili.com/opus/album1',
+              opus_id: 'album1'
+            }
+          ]
+        }
+      }),
+      {
+        params: { uid: '928915' },
+        url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/opus/feed/space?host_mid=928915'
+      }
+    )
+    const content = feed.items[0].content ?? ''
+    // 指示器缩略图剥掉 @ 尺寸后缀取原图，// 补 https
+    expect(content).toContain(
+      '<img src="https://i0.hdslb.com/bfs/new_dyn/d33f0670a52c578a04c2821f0e6abd3113.jpg" />'
+    )
+    expect(content).toContain(
+      '<img src="https://i0.hdslb.com/bfs/new_dyn/805a034b478a9126097874c38bd2dff313.jpg" />'
+    )
+    // 同图去重：同一路径（跨 CDN 节点）只输出一次
+    expect(content.match(/d33f0670a52c578a04c2821f0e6abd3113/g)).toHaveLength(1)
+    // 相册图在正文段落之前
+    expect(content.indexOf('<img')).toBeLessThan(content.indexOf('<p>看完了鬼灭'))
+    expect(content).not.toContain('@80w_80h_1c')
+  })
+
   it('详情页抓取失败时正文不落兜底（content 缺失），列表 content 仍作摘要', async () => {
     vi.mocked(fetchWithTimeout).mockImplementationOnce(async () => ({ ok: false }) as Response)
     const feed = await bilibiliUserArticle.parse(
