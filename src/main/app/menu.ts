@@ -182,9 +182,15 @@ export function buildAppMenu(): void {
         },
         { type: 'separator' },
         {
+          id: 'menu-translate-separator',
+          type: 'separator',
+          visible: false
+        },
+        {
           id: 'menu-translate',
           label: '翻译当前文章',
           accelerator: 'Alt+T',
+          visible: false,
           enabled: false,
           click: () => sendToMain('menu:translate')
         },
@@ -192,6 +198,7 @@ export function buildAppMenu(): void {
           id: 'menu-translate-refresh',
           label: '强制刷新翻译',
           accelerator: 'Alt+Shift+T',
+          visible: false,
           enabled: false,
           click: () => sendToMain('menu:translateRefresh')
         }
@@ -235,16 +242,21 @@ export function buildAppMenu(): void {
       const refresh = menu?.getMenuItemById('menu-refresh-feed')
       const translate = menu?.getMenuItemById('menu-translate')
       const translateRefresh = menu?.getMenuItemById('menu-translate-refresh')
+      const translateSep = menu?.getMenuItemById('menu-translate-separator')
       if (read) read.enabled = state.hasArticle
       if (star) star.enabled = state.hasArticle
       if (refresh) refresh.enabled = state.hasFeedContext
+      const translateVisible = Boolean(state.translateConfigured)
       if (translate) {
+        translate.visible = translateVisible
         translate.enabled = Boolean(state.hasArticle && state.translateConfigured)
         translate.label = state.isTranslated ? '显示原文' : '翻译当前文章'
       }
       if (translateRefresh) {
+        translateRefresh.visible = translateVisible
         translateRefresh.enabled = Boolean(state.hasArticle && state.translateConfigured)
       }
+      if (translateSep) translateSep.visible = translateVisible
     }
   )
 }

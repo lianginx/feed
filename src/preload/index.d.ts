@@ -62,6 +62,7 @@ interface TranslateConfig {
   baiduAppid?: string
   baiduSecretKey?: string
   targetLang: string
+  autoTranslate: boolean
 }
 
 interface TranslateResult {

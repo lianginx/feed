@@ -23,6 +23,8 @@ const translated = ref<{
   degraded: boolean
 } | null>(null)
 const shown = ref(false)
+// watch 依赖模块级状态且带副作用（自动翻译发请求），只能在多个调用方间注册一次
+let watchersStarted = false
 
 export function useTranslate() {
   const { translateConfig } = useApp()
@@ -36,14 +38,21 @@ export function useTranslate() {
       : translateConfig.value.provider === 'edge'
   )
 
-  async function performTranslate(articleId: number, forceRefresh: boolean): Promise<void> {
+  const autoTranslate = computed(() => translateConfig.value.autoTranslate)
+
+  async function performTranslate(
+    articleId: number,
+    forceRefresh: boolean,
+    auto = false
+  ): Promise<void> {
     const result = await window.api.translate.article(articleId, undefined, forceRefresh)
     if (result.success && result.data) {
       const data = result.data as TranslateResult
       // 展示前校验 articleId：翻译请求进行中切了文章，旧响应不落盘不展示
       if (currentArticle.value?.id !== articleId) return
       if (data.skipped) {
-        toast.info('文章已为目标语言，无需翻译')
+        // 自动翻译时跳过属常态（目标语言一致），静默避免反复打扰
+        if (!auto) toast.info('文章已为目标语言，无需翻译')
         return
       }
       translated.value = {
@@ -56,8 +65,23 @@ export function useTranslate() {
       if (data.degraded) {
         toast.info('部分段落翻译失败，已保留原文')
       }
-    } else {
+    } else if (!auto) {
+      // 自动翻译失败不打扰（如网络异常），需要详情时可手动翻译触发
       toast.error(`翻译失败：${result.error || '未知错误'}`)
+    }
+  }
+
+  async function startTranslate(
+    articleId: number,
+    forceRefresh: boolean,
+    auto = false
+  ): Promise<void> {
+    const seq = ++reqSeq
+    translating.value = true
+    try {
+      await performTranslate(articleId, forceRefresh, auto)
+    } finally {
+      if (seq === reqSeq) translating.value = false
     }
   }
 
@@ -68,40 +92,34 @@ export function useTranslate() {
     }
     const article = currentArticle.value
     if (!article || translating.value) return
-
-    const seq = ++reqSeq
-    translating.value = true
-    try {
-      await performTranslate(article.id, false)
-    } finally {
-      if (seq === reqSeq) translating.value = false
-    }
+    await startTranslate(article.id, false)
   }
 
   async function refresh(): Promise<void> {
     const article = currentArticle.value
     if (!article || translating.value) return
-    const seq = ++reqSeq
-    translating.value = true
-    try {
-      await performTranslate(article.id, true)
-    } finally {
-      if (seq === reqSeq) translating.value = false
-    }
+    await startTranslate(article.id, true)
   }
 
-  watch(currentArticle, () => {
-    translated.value = null
-    shown.value = false
-  })
+  if (!watchersStarted) {
+    watchersStarted = true
 
-  // 关闭翻译/清空凭据后：清空已显示的译文回到原文，避免按钮隐藏后无法切回（评审建议 6）
-  watch(configured, (val) => {
-    if (!val) {
+    watch(currentArticle, (article) => {
       translated.value = null
       shown.value = false
-    }
-  })
+      // 自动翻译：不拦截在途请求，靠 reqSeq 让新请求顶掉旧请求
+      if (!article || !autoTranslate.value || !configured.value) return
+      void startTranslate(article.id, false, true)
+    })
+
+    // 关闭翻译/清空凭据后：清空已显示的译文回到原文，避免按钮隐藏后无法切回（评审建议 6）
+    watch(configured, (val) => {
+      if (!val) {
+        translated.value = null
+        shown.value = false
+      }
+    })
+  }
 
   return { translating, translated, shown, configured, toggle, refresh }
 }

@@ -8,7 +8,11 @@ const updateInterval = ref(30)
 const autoCheckUpdate = ref(true)
 const updateCheckInterval = ref(360)
 const syncConfig = ref<SyncConfig>({ provider: 'none' })
-const translateConfig = ref<TranslateConfig>({ provider: 'none', targetLang: 'zh' })
+const translateConfig = ref<TranslateConfig>({
+  provider: 'none',
+  targetLang: 'zh',
+  autoTranslate: false
+})
 const autoLaunch = ref(false)
 const launchHidden = ref(false)
 const siteCookies = ref<Record<string, string>>({})
@@ -25,7 +29,11 @@ export function useApp() {
       autoCheckUpdate.value = result.data.autoCheckUpdate
       updateCheckInterval.value = result.data.updateCheckInterval
       syncConfig.value = result.data.sync ?? { provider: 'none' }
-      translateConfig.value = result.data.translate ?? { provider: 'none', targetLang: 'zh' }
+      translateConfig.value = result.data.translate ?? {
+        provider: 'none',
+        targetLang: 'zh',
+        autoTranslate: false
+      }
       autoLaunch.value = result.data.autoLaunch
       launchHidden.value = result.data.launchHidden
       siteCookies.value = result.data.siteCookies ?? {}

@@ -12,3 +12,5 @@ out
 .opencode/
 .agents/
 .pi-subagents/
+
+.zcode/

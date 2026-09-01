@@ -23,6 +23,8 @@ export interface TranslateConfig {
   baiduAppid?: string
   baiduSecretKey?: string
   targetLang: string
+  /** 打开文章时自动翻译为目标语言 */
+  autoTranslate: boolean
 }
 
 /** 一次翻译的结果（由主进程翻译服务返回） */

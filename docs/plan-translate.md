@@ -157,6 +157,22 @@ src/main/services/translate/
 - 术语表/专有名词词典（占位符已覆盖 URL/code 保护，词典留待后续）
 - 翻译质量评分/对比评测
 
+## 增补：自动翻译（autoTranslate）
+
+1. 配置：`TranslateConfig` 加 `autoTranslate: boolean`（默认 `false`）；`readSettings` 的 defaults 合并让旧存量配置自动补值，无需迁移
+2. 触发：`useTranslate` 模块级单例 `watch(currentArticle)`——打开文章后若开启自动翻译且 `configured`，调 `startTranslate(article.id, false, auto=true)` 直接显示译文；不拦截在途请求，靠 `reqSeq` 让新请求顶掉旧请求
+3. **watch 单注册约束**：`useTranslate()` 被 `App.vue`（经 `useMenuCommands`）与 `ArticleReader.vue` 多处调用，watch 依赖模块级状态且带网络副作用，必须用模块级 `watchersStarted` 标志保证只注册一次——否则每次打开文章并发发起两个翻译请求（限流器按调用创建不共享配额，百度接口双倍消耗）
+4. 静默策略：`auto` 模式下 `skipped`（已为目标语言，中文用户开中文文章属常态）与翻译失败不弹 toast；`degraded`（部分段落失败）保留提示
+5. 不完整翻译不入缓存是既有策略（`if (!degraded)` 才写缓存，失败直接抛出）：自动翻译下曾降级/超限/失败的文章每次打开会重试，成本可接受（重试仅发生在用户主动打开时）
+6. 设置页：翻译区块统一**即时保存**（与全应用其他设置一致，移除草稿 + 「保存翻译设置」按钮）；provider/目标语言/自动翻译 Select/Switch 即时生效，百度凭据 Input blur（`@change`）时保存；「测试翻译」用已保存配置。禁用翻译（`none`）时隐藏目标语言/自动翻译/测试按钮/凭据，仅留服务选择与提示
+7. 菜单：`menu-translate` / `menu-translate-refresh` 及其分隔线未配置翻译时 `visible: false` 整体隐藏（初始即隐藏，渲染层 `menu:updateState` 按 `translateConfigured` 收敛），与工具栏按钮行为一致
+
+## Verification（自动翻译增补）
+
+12. 自动翻译：开启开关后打开外文文章 → 自动翻译并直接显示译文，无需点按钮；打开中文文章 → 无任何提示；关闭开关 → 恢复手动
+13. 禁用翻译：设置页翻译区块仅剩服务选择与提示；主窗口工具栏按钮与「文章」菜单翻译项均隐藏；重新选择服务后立即恢复
+14. 设置页即时保存：切换 provider/目标语言/拨动开关立即生效（主窗口同步响应）；凭据输入框失焦保存；「测试翻译」测的是已保存配置
+
 ## Verification
 1. `pnpm typecheck` + `pnpm lint:fix`（AGENTS.md 强制）+ `pnpm test`（vitest 全绿）
 2. **anylang 冒烟**：`pnpm dev` 主进程加载无报错（isomorphic-fetch 兼容）；`pnpm build` 打包通过

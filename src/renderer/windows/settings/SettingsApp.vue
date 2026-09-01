@@ -321,12 +321,7 @@ async function handleSaveSync(): Promise<void> {
 
 useSyncEvents()
 
-const translateProvider = ref<TranslateConfig['provider']>(translateConfig.value.provider)
-const translateAppidInput = ref(translateConfig.value.baiduAppid ?? '')
-const translateSecretKeyInput = ref(translateConfig.value.baiduSecretKey ?? '')
-const translateTargetLang = ref(translateConfig.value.targetLang)
 const showTranslateSecretKey = ref(false)
-const translateSaved = ref(false)
 const translateError = ref<string | null>(null)
 const translating = ref(false)
 const translateTestResult = ref<string | null>(null)
@@ -347,71 +342,49 @@ const targetLanguageOptions = [
   { value: 'es', label: '西班牙语' }
 ]
 
-function buildTranslateConfig(): TranslateConfig | null {
-  const config: TranslateConfig = {
-    provider: translateProvider.value,
-    targetLang: translateTargetLang.value
-  }
-  if (translateProvider.value === 'baidu') {
-    if (!translateAppidInput.value.trim() || !translateSecretKeyInput.value) {
-      translateError.value = '请先填写百度翻译 AppID 与密钥'
-      return null
-    }
-    config.baiduAppid = translateAppidInput.value.trim()
-    config.baiduSecretKey = translateSecretKeyInput.value
-  } else if (translateProvider.value === 'none') {
-    translateError.value = '请先选择翻译服务'
-    return null
-  }
-  return config
+function handleProviderChange(provider: TranslateConfig['provider']): void {
+  translateTestResult.value = null
+  translateError.value = null
+  void setTranslateConfig({ provider })
+}
+
+function handleBaiduAppidChange(e: Event): void {
+  void setTranslateConfig({ baiduAppid: (e.target as HTMLInputElement).value.trim() })
+}
+
+function handleBaiduSecretKeyChange(e: Event): void {
+  void setTranslateConfig({ baiduSecretKey: (e.target as HTMLInputElement).value })
 }
 
 async function handleTestTranslate(): Promise<void> {
   translateTestResult.value = null
   translateError.value = null
-  const config = buildTranslateConfig()
-  if (!config) return
+  if (translateConfig.value.provider === 'none') {
+    translateError.value = '请先选择翻译服务'
+    return
+  }
+  if (
+    translateConfig.value.provider === 'baidu' &&
+    (!translateConfig.value.baiduAppid || !translateConfig.value.baiduSecretKey)
+  ) {
+    translateError.value = '请先填写百度翻译 AppID 与密钥'
+    return
+  }
   translating.value = true
   try {
-    const result = await window.api.translate.test(config)
+    // 展开为普通对象：reactive proxy 无法被结构化克隆，直接传会在 IPC 序列化时抛 DataCloneError
+    const result = await window.api.translate.test({ ...translateConfig.value })
     if (result.success) {
       translateTestResult.value = '测试成功'
+      setTimeout(() => {
+        translateTestResult.value = null
+      }, 2000)
     } else {
       translateError.value = `测试失败：${result.error || '未知错误'}`
     }
   } finally {
     translating.value = false
   }
-}
-
-async function handleSaveTranslate(): Promise<void> {
-  translateError.value = null
-  if (translateProvider.value === 'baidu') {
-    if (!translateAppidInput.value.trim()) {
-      translateError.value = '请填写百度翻译 AppID'
-      return
-    }
-    if (!translateSecretKeyInput.value) {
-      translateError.value = '请填写百度翻译密钥'
-      return
-    }
-  }
-  const partial: Partial<TranslateConfig> = {
-    provider: translateProvider.value,
-    targetLang: translateTargetLang.value
-  }
-  if (translateProvider.value === 'baidu') {
-    partial.baiduAppid = translateAppidInput.value.trim()
-    partial.baiduSecretKey = translateSecretKeyInput.value
-  } else {
-    partial.baiduAppid = ''
-    partial.baiduSecretKey = ''
-  }
-  await setTranslateConfig(partial)
-  translateSaved.value = true
-  setTimeout(() => {
-    translateSaved.value = false
-  }, 2000)
 }
 
 const activeSection = ref<
@@ -472,11 +445,6 @@ onMounted(async () => {
   syncWebdavUsernameInput.value = syncConfig.value.webdavUsername ?? ''
   syncWebdavPasswordInput.value = syncConfig.value.webdavPassword ?? ''
   syncSaved.value = false
-  translateProvider.value = translateConfig.value.provider
-  translateAppidInput.value = translateConfig.value.baiduAppid ?? ''
-  translateSecretKeyInput.value = translateConfig.value.baiduSecretKey ?? ''
-  translateTargetLang.value = translateConfig.value.targetLang
-  translateSaved.value = false
   translateTestResult.value = null
 
   initProxyInputs()
@@ -908,9 +876,9 @@ onMounted(async () => {
                 </div>
                 <div class="w-44 shrink-0">
                   <Select
-                    :model-value="translateProvider"
+                    :model-value="translateConfig.provider"
                     @update:model-value="
-                      (v) => (translateProvider = v as TranslateConfig['provider'])
+                      (v) => handleProviderChange(v as TranslateConfig['provider'])
                     "
                   >
                     <SelectTrigger>
@@ -925,23 +893,25 @@ onMounted(async () => {
                 </div>
               </div>
 
-              <template v-if="translateProvider === 'baidu'">
+              <template v-if="translateConfig.provider === 'baidu'">
                 <div class="flex items-center justify-between gap-6 py-3">
                   <span class="text-sm shrink-0">AppID</span>
                   <Input
-                    v-model="translateAppidInput"
+                    :model-value="translateConfig.baiduAppid ?? ''"
                     placeholder="百度翻译开放平台 appid"
                     class="w-72"
+                    @change="handleBaiduAppidChange"
                   />
                 </div>
                 <div class="flex items-center justify-between gap-6 py-3">
                   <span class="text-sm shrink-0">密钥</span>
                   <div class="relative w-72">
                     <Input
-                      v-model="translateSecretKeyInput"
+                      :model-value="translateConfig.baiduSecretKey ?? ''"
                       :type="showTranslateSecretKey ? 'text' : 'password'"
                       placeholder="密钥"
                       class="w-full pr-9"
+                      @change="handleBaiduSecretKeyChange"
                     />
                     <button
                       type="button"
@@ -956,35 +926,47 @@ onMounted(async () => {
                 </div>
               </template>
 
-              <div class="flex items-center justify-between gap-6 py-3">
-                <span class="text-sm shrink-0">目标语言</span>
-                <div class="w-44 shrink-0">
-                  <Select
-                    :model-value="translateTargetLang"
-                    @update:model-value="(v) => (translateTargetLang = v as string)"
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem
-                        v-for="opt in targetLanguageOptions"
-                        :key="opt.value"
-                        :value="opt.value"
-                      >
-                        {{ opt.label }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+              <template v-if="translateConfig.provider !== 'none'">
+                <div class="flex items-center justify-between gap-6 py-3">
+                  <span class="text-sm shrink-0">目标语言</span>
+                  <div class="w-44 shrink-0">
+                    <Select
+                      :model-value="translateConfig.targetLang"
+                      @update:model-value="(v) => setTranslateConfig({ targetLang: v as string })"
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem
+                          v-for="opt in targetLanguageOptions"
+                          :key="opt.value"
+                          :value="opt.value"
+                        >
+                          {{ opt.label }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
+
+                <div class="flex items-center justify-between gap-6 py-3">
+                  <div class="min-w-0">
+                    <div class="text-sm">自动翻译</div>
+                    <div class="mt-0.5 text-xs text-muted-foreground">
+                      打开文章时自动翻译为目标语言
+                    </div>
+                  </div>
+                  <Switch
+                    :model-value="translateConfig.autoTranslate"
+                    @update:model-value="(v) => setTranslateConfig({ autoTranslate: !!v })"
+                  />
+                </div>
+              </template>
 
               <div class="mt-5 flex items-center gap-3">
-                <Button variant="outline" size="sm" @click="handleSaveTranslate">
-                  <Save class="size-3.5" />
-                  保存翻译设置
-                </Button>
                 <Button
+                  v-if="translateConfig.provider !== 'none'"
                   variant="outline"
                   size="sm"
                   :disabled="translating"
@@ -994,12 +976,8 @@ onMounted(async () => {
                   <CheckCircle2 v-else class="size-3.5" />
                   {{ translating ? '测试中…' : '测试翻译' }}
                 </Button>
-                <span v-if="translateSaved" class="text-xs text-primary flex items-center gap-1">
-                  <CheckCircle2 class="size-3" />
-                  已保存
-                </span>
                 <span
-                  v-else-if="translateTestResult"
+                  v-if="translateTestResult"
                   class="text-xs text-primary flex items-center gap-1"
                 >
                   <CheckCircle2 class="size-3" />
@@ -1011,13 +989,13 @@ onMounted(async () => {
               </div>
 
               <p
-                v-if="translateProvider === 'edge'"
+                v-if="translateConfig.provider === 'edge'"
                 class="mt-4 text-xs text-muted-foreground leading-relaxed"
               >
                 微软翻译的公共接口，免费、无需注册与 API key。
               </p>
               <p
-                v-if="translateProvider === 'baidu'"
+                v-if="translateConfig.provider === 'baidu'"
                 class="mt-4 text-xs text-muted-foreground leading-relaxed"
               >
                 在
@@ -1025,6 +1003,12 @@ onMounted(async () => {
                   >百度翻译开放平台</a
                 >
                 创建应用获取 AppID 与密钥。
+              </p>
+              <p
+                v-if="translateConfig.provider === 'none'"
+                class="mt-4 text-xs text-muted-foreground leading-relaxed"
+              >
+                翻译已禁用，选择翻译服务后可翻译文章。
               </p>
             </section>
           </div>

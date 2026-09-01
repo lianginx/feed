@@ -20,6 +20,7 @@ export interface TranslateConfig {
   baiduAppid?: string
   baiduSecretKey?: string
   targetLang: string
+  autoTranslate: boolean
 }
 
 export interface SyncConfig {
@@ -57,7 +58,7 @@ export const defaults: AppSettings = {
   autoCheckUpdate: true,
   updateCheckInterval: 360,
   sync: { provider: 'none' },
-  translate: { provider: 'edge', targetLang: 'zh' },
+  translate: { provider: 'edge', targetLang: 'zh', autoTranslate: false },
   autoLaunch: false,
   launchHidden: false,
   siteCookies: {},
