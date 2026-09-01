@@ -148,7 +148,7 @@ function extractContent(item: FeedparserItem): string {
  * 过滤外部 URL，仅放行 http/https 协议（封面图/主页等外部内容入库前校验）。
  * 非法协议（如 javascript:/data:）或无效 URL 返回 undefined。
  */
-function sanitizeHttpUrl(url: string | undefined): string | undefined {
+export function sanitizeHttpUrl(url: string | undefined): string | undefined {
   if (!url) return undefined
   try {
     const { protocol } = new URL(url)

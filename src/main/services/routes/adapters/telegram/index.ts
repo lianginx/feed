@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio'
-import { normalizeUrl } from '@main/services/routes/core/extract'
+import { normalizeUrl, escapeHtml } from '@main/services/routes/core/extract'
 import type { ParsedArticle, ParsedFeed } from '@main/services/rss'
 import type { AdapterParseContext, FeedAdapter } from '@main/services/routes/core/types'
 
@@ -27,15 +27,6 @@ const TYPE = {
 } as const
 
 type MsgType = keyof typeof TYPE
-
-/** HTML 转义文本插值（转发来源/回复引用拼接进正文前） */
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
 
 /** 清理频道用户名：去掉前导 @（用户常手输 @username，t.me 不认 %40 前缀） */
 function cleanUsername(name: string): string {
@@ -185,13 +176,15 @@ function buildMessageHtml(
   // 文档附件：文件名 + 大小，链接指向消息页（t.me 预览页无文件直链）
   $item.find('.tgme_widget_message_document_wrap').each((_, el) => {
     const $doc = $(el)
-    const title = escapeHtml($doc.find('.tgme_widget_message_document_title').text().trim())
-    if (!title) return
+    // 未转义原文本仅作纯文本标题回退（渲染非 v-html，实体值会字面显示）
+    const rawTitle = $doc.find('.tgme_widget_message_document_title').text().trim()
+    if (!rawTitle) return
+    const title = escapeHtml(rawTitle)
     const extra = escapeHtml($doc.find('.tgme_widget_message_document_extra').text().trim())
     const href = $doc.attr('href')
     const link = href ? `<a href="${normalizeUrl(href)}">${title}</a>` : title
     parts.push(`<p>${link}${extra ? `（${extra}）` : ''}</p>`)
-    documentTitles.push(title)
+    documentTitles.push(rawTitle)
   })
 
   return { html: parts.join(''), text, firstImage: media[0], documentTitles }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { htmlToText, firstImage } from '@main/services/routes/core/extract'
+import { htmlToText, firstImage, escapeHtml } from '@main/services/routes/core/extract'
 
 describe('extract 通用工具', () => {
   it('htmlToText 提取纯文本并压缩空白', () => {
@@ -12,5 +12,15 @@ describe('extract 通用工具', () => {
       'https://a/b.jpg'
     )
     expect(firstImage('<p>no img</p>')).toBeUndefined()
+  })
+
+  it('escapeHtml 转义五个 HTML 特殊字符', () => {
+    expect(escapeHtml(`<a href="x">&y'z</a>`)).toBe(
+      '&lt;a href=&quot;x&quot;&gt;&amp;y&#39;z&lt;/a&gt;'
+    )
+  })
+
+  it('escapeHtml 普通文本原样返回', () => {
+    expect(escapeHtml('普通文本 123（兼容）。')).toBe('普通文本 123（兼容）。')
   })
 })

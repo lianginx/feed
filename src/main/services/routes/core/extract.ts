@@ -21,3 +21,13 @@ export function firstImage(html: string): string | undefined {
   const $ = cheerio.load(html || '')
   return $('img').first().attr('src')
 }
+
+/** 纯文本插值进 HTML 前做转义，防止内容里的 < > & " ' 被浏览器当标签/属性解析 */
+export function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}

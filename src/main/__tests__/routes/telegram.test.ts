@@ -225,6 +225,27 @@ describe('telegram 频道适配器', () => {
     expect(item?.content).toContain('（50 MB）')
   })
 
+  it('纯文档消息标题回退用未转义附件名，正文仍转义', async () => {
+    const msg = wrapMessage(
+      '<a class="tgme_widget_message_document_wrap" href="https://t.me/OutsightChina/8">' +
+        '<div class="tgme_widget_message_document_icon accent_bg"></div>' +
+        '<div class="tgme_widget_message_document">' +
+        "<div class='tgme_widget_message_document_title accent_color'>John's_notes.pdf</div>" +
+        '<div class="tgme_widget_message_document_extra">1 MB</div>' +
+        '</div></a>',
+      '8'
+    )
+    const feed = await telegramChannelAdapter.parse(page([msg]), {
+      params: { username: 'OutsightChina' },
+      url: 'https://t.me/s/OutsightChina'
+    })
+    const item = feed.items.find((i) => i.guid === 'https://t.me/OutsightChina/8')
+    // 标题按纯文本渲染：文件名单引号原样显示，不出现 &#39; 实体
+    expect(item?.title).toBe("📄 John's_notes.pdf")
+    // 正文 HTML 插值仍然转义
+    expect(item?.content).toContain('John&#39;s_notes.pdf')
+  })
+
   it('页面无消息且无频道历史容器时抛友好错误', async () => {
     await expect(
       telegramChannelAdapter.parse('<html><body>empty</body></html>', {

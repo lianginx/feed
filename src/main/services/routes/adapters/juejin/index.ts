@@ -1,5 +1,5 @@
-import { normalizeUrl } from '@main/services/routes/core/extract'
-import type { ParsedArticle, ParsedFeed } from '@main/services/rss'
+import { normalizeUrl, escapeHtml } from '@main/services/routes/core/extract'
+import { sanitizeHttpUrl, type ParsedArticle, type ParsedFeed } from '@main/services/rss'
 import type { AdapterParseContext, FeedAdapter } from '@main/services/routes/core/types'
 
 /**
@@ -33,18 +33,40 @@ function parseUserId(params: Record<string, string>): string {
   return raw.match(/juejin\.cn\/user\/(\d+)/)?.[1] ?? raw
 }
 
+/**
+ * 拼接正文：封面图 + 摘要 + 阅读全文跳转链接。
+ * 掘金详情接口需登录/安全令牌，列表接口仅给 brief_content（纯文本无图），
+ * 故以列表字段组装可读正文，让阅读器有图、有内容、可跳转原文。
+ */
+function buildContentHtml(
+  info: JuejinArticleItem['article_info'],
+  link?: string
+): string | undefined {
+  // 封面 scheme 白名单（拦 javascript:/data:）+ 属性值转义，防注入
+  const cover = info?.cover_image ? sanitizeHttpUrl(normalizeUrl(info.cover_image)) : undefined
+  const brief = (info?.brief_content ?? '').trim()
+  if (!cover && !brief) return undefined
+  const parts: string[] = []
+  if (cover) parts.push(`<img src="${escapeHtml(cover)}" />`)
+  if (brief) parts.push(`<p>${escapeHtml(brief).replace(/\n/g, '<br>')}</p>`)
+  if (link) parts.push(`<p><a href="${escapeHtml(link)}">阅读全文</a></p>`)
+  return parts.join('')
+}
+
 /** 作者名/头像取自条目自带的 author_user_info，无需额外请求 */
 function mapArticleItem(item: JuejinArticleItem, guidPrefix: string): ParsedArticle | undefined {
   const info = item.article_info ?? {}
   const title = (info.title ?? '').trim()
   if (!item.article_id && !title) return undefined
   const brief = (info.brief_content ?? '').trim()
+  const link = item.article_id ? `https://juejin.cn/post/${item.article_id}` : undefined
   return {
     guid: `${guidPrefix}-${item.article_id ?? title ?? brief}`,
     title: title || '(无标题)',
-    link: item.article_id ? `https://juejin.cn/post/${item.article_id}` : undefined,
+    link,
     summary: brief || undefined,
     contentSnippet: brief || undefined,
+    content: buildContentHtml(info, link),
     coverImage: info.cover_image ? normalizeUrl(info.cover_image) : undefined,
     pubDate: info.ctime ? new Date(info.ctime * 1000).toISOString() : undefined,
     author: item.author_user_info?.user_name?.trim() || undefined
