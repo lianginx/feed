@@ -6,6 +6,7 @@ import { useArticleView } from '@renderer/windows/main/composables/useArticleVie
 import { useArticles } from '@renderer/windows/main/composables/useArticles'
 import { useUpdater } from '@renderer/windows/main/composables/useUpdater'
 import { useTranslate } from '@renderer/windows/main/composables/useTranslate'
+import { useFeedbackDialog } from '@renderer/windows/main/composables/useFeedbackDialog'
 
 export function useMenuCommands(): void {
   const { requestSearchFocus } = useSearchFocus()
@@ -21,6 +22,7 @@ export function useMenuCommands(): void {
   const { isStar, isUnread, isToday, selectedView } = useArticleView()
   const { currentArticle, toggleStar, toggleRead, markAllRead, markScopeRead } = useArticles()
   const { shown, configured, toggle, refresh } = useTranslate()
+  const { open: openFeedbackDialog } = useFeedbackDialog()
 
   // 同步菜单可用状态：无选中文章时禁用 ⌘E/⌘D；未选中订阅源/分类时禁用 ⌘R；
   // 未配置翻译凭据时禁用翻译项，译文显示时菜单项变「显示原文」
@@ -97,6 +99,9 @@ export function useMenuCommands(): void {
       }),
       window.api.menu.onCheckForUpdates(() => {
         void checkForUpdates()
+      }),
+      window.api.menu.onFeedback(() => {
+        openFeedbackDialog()
       }),
       window.api.menu.onToggleStar(() => {
         if (currentArticle.value) {

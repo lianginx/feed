@@ -123,6 +123,7 @@ const api = {
       onChannel('menu:toggleUnread', callback),
     onCheckForUpdates: (callback: () => void): (() => void) =>
       onChannel('menu:checkForUpdates', callback),
+    onFeedback: (callback: () => void): (() => void) => onChannel('menu:feedback', callback),
     onToggleStar: (callback: () => void): (() => void) => onChannel('menu:toggleStar', callback),
     onTranslate: (callback: () => void): (() => void) => onChannel('menu:translate', callback),
     onTranslateRefresh: (callback: () => void): (() => void) =>

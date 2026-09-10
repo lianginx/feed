@@ -1,5 +1,6 @@
 import { app, ipcMain, Menu } from 'electron'
 import { envBool } from '@main/env'
+import { getFeedbackStatus } from '@main/services/feedback'
 import { ensureMainWindow, isQuitting } from './window'
 import { createSettingsWindow } from './settingsWindow'
 import { createAddFeedWindow } from './addFeedWindow'
@@ -73,6 +74,14 @@ export function buildAppMenu(): void {
           label: '检查更新…',
           click: () => sendToMain('menu:checkForUpdates')
         },
+        ...(getFeedbackStatus().enabled
+          ? [
+              {
+                label: '意见反馈…',
+                click: () => sendToMain('menu:feedback')
+              }
+            ]
+          : []),
         { type: 'separator' },
         {
           label: '退出',

@@ -5,24 +5,27 @@ export type FeedbackView = 'form' | 'mine' | 'detail'
 
 const show = ref(false)
 const view = ref<FeedbackView>('form')
-const enabled = ref(false)
+const category = ref('')
+const content = ref('')
+const contact = ref('')
 const categories = ref<FeedbackCategoryOption[]>([])
 const mineItems = ref<MyFeedbackItem[]>([])
 const mineLoading = ref(false)
 const mineError = ref('')
 const selectedItem = ref<MyFeedbackItem | null>(null)
-let statusLoaded = false
+let categoriesLoaded = false
 
 export function useFeedbackDialog(): {
   show: typeof show
   view: typeof view
-  enabled: typeof enabled
+  category: typeof category
+  content: typeof content
+  contact: typeof contact
   categories: typeof categories
   mineItems: typeof mineItems
   mineLoading: typeof mineLoading
   mineError: typeof mineError
   selectedItem: typeof selectedItem
-  loadStatus: () => Promise<void>
   loadMine: () => Promise<void>
   open: () => void
   close: () => void
@@ -31,12 +34,11 @@ export function useFeedbackDialog(): {
   toDetail: (item: MyFeedbackItem) => void
   backToList: () => void
 } {
-  async function loadStatus(): Promise<void> {
-    if (statusLoaded) return
-    statusLoaded = true
+  async function loadCategories(): Promise<void> {
+    if (categoriesLoaded) return
+    categoriesLoaded = true
     const res = await window.api.feedback.status()
     if (res.success && res.data) {
-      enabled.value = res.data.enabled
       categories.value = res.data.categories
     }
   }
@@ -55,6 +57,11 @@ export function useFeedbackDialog(): {
   }
 
   function open(): void {
+    if (show.value) return
+    void loadCategories()
+    category.value = ''
+    content.value = ''
+    contact.value = ''
     view.value = 'form'
     show.value = true
   }
@@ -84,13 +91,14 @@ export function useFeedbackDialog(): {
   return {
     show,
     view,
-    enabled,
+    category,
+    content,
+    contact,
     categories,
     mineItems,
     mineLoading,
     mineError,
     selectedItem,
-    loadStatus,
     loadMine,
     open,
     close,

@@ -254,6 +254,7 @@ interface MenuApi {
   onToggleRead: (callback: () => void) => () => void
   onToggleUnread: (callback: () => void) => () => void
   onCheckForUpdates: (callback: () => void) => () => void
+  onFeedback: (callback: () => void) => () => void
   onToggleStar: (callback: () => void) => () => void
   onTranslate: (callback: () => void) => () => void
   onTranslateRefresh: (callback: () => void) => () => void
