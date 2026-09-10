@@ -1,5 +1,11 @@
 import type { UpdaterStatus } from '@shared/types/updater'
 import type { ArticleDetail, ArticleListParams, ArticleListResult } from '@shared/types/articles'
+import type {
+  FeedbackStatus,
+  FeedbackSubmitInput,
+  FeedbackSubmitResult,
+  MyFeedbackItem
+} from '@shared/types/feedback'
 
 interface ApiResponse<T = unknown> {
   success: boolean
@@ -262,8 +268,16 @@ interface ClipboardApi {
   writeText: (text: string) => Promise<ApiResponse<unknown>>
 }
 
+interface FeedbackApi {
+  status: () => Promise<ApiResponse<FeedbackStatus>>
+  context: () => Promise<ApiResponse<Record<string, string>>>
+  submit: (input: FeedbackSubmitInput) => Promise<ApiResponse<FeedbackSubmitResult>>
+  mine: () => Promise<ApiResponse<MyFeedbackItem[]>>
+}
+
 interface AppApi {
   clipboard: ClipboardApi
+  feedback: FeedbackApi
   feeds: FeedApi
   categories: CategoryApi
   articles: ArticleApi

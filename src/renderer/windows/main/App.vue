@@ -16,6 +16,7 @@ import SidebarNav from '@renderer/windows/main/components/sidebar/SidebarNav.vue
 import ArticleList from '@renderer/windows/main/components/ArticleList.vue'
 import ArticleReader from '@renderer/windows/main/components/ArticleReader.vue'
 import DialogAddCategory from '@renderer/windows/main/components/dialog/DialogAddCategory.vue'
+import DialogFeedback from '@renderer/windows/main/components/dialog/DialogFeedback.vue'
 import DialogConfirm from '@renderer/windows/main/components/dialog/DialogConfirm.vue'
 import DialogUpdate from '@renderer/windows/main/components/dialog/DialogUpdate.vue'
 import DialogSyncConflict from '@renderer/windows/main/components/dialog/DialogSyncConflict.vue'
@@ -152,6 +153,8 @@ async function handleSyncConflictChoice(choice: 'local' | 'remote'): Promise<voi
   />
 
   <DialogUpdate />
+
+  <DialogFeedback />
 
   <DialogSyncConflict
     :open="pendingConflict"

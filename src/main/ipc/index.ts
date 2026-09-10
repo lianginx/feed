@@ -6,6 +6,7 @@ import { registerOpmlHandlers } from './opml'
 import { registerSyncHandlers } from './sync'
 import { registerTranslateHandlers } from './translate'
 import { registerClipboardHandlers } from './clipboard'
+import { registerFeedbackHandlers } from './feedback'
 
 export function registerAllHandlers(): void {
   registerFeedHandlers()
@@ -16,4 +17,5 @@ export function registerAllHandlers(): void {
   registerSyncHandlers()
   registerTranslateHandlers()
   registerClipboardHandlers()
+  registerFeedbackHandlers()
 }

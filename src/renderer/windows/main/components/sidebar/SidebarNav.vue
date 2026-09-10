@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { watch, nextTick } from 'vue'
+import { watch, nextTick, onMounted } from 'vue'
+import { MessageCircle } from '@lucide/vue'
 import { Collapsible, CollapsibleContent } from '@renderer/shared/components/ui/collapsible'
 import {
   ContextMenu,
@@ -11,11 +12,14 @@ import {
 import {
   SidebarHeader,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarMenuButton,
   SidebarMenuSub
 } from '@renderer/shared/components/ui/sidebar'
 import { useFeeds } from '@renderer/windows/main/composables/useFeeds'
+import { useFeedbackDialog } from '@renderer/windows/main/composables/useFeedbackDialog'
 import { useAddCategoryDialog } from '@renderer/windows/main/composables/useAddCategoryDialog'
 import { useFeedDnD } from '@renderer/windows/main/composables/useFeedDnD'
 import { useFeedEditDialog } from '@renderer/windows/main/composables/useFeedEditDialog'
@@ -37,6 +41,11 @@ const {
 const { showAddCategory, handleEditCategory, handleDeleteCategory } = useAddCategoryDialog()
 const { editingFeed, showEditFeed, close: closeEditFeed } = useFeedEditDialog()
 const {
+  enabled: feedbackEnabled,
+  loadStatus: loadFeedbackStatus,
+  open: openFeedbackDialog
+} = useFeedbackDialog()
+const {
   dragCategoryId,
   collapsedCategories,
   uncategorizedCollapsed,
@@ -45,6 +54,10 @@ const {
   onDragLeaveCategory,
   onDropToCategory
 } = useFeedDnD()
+
+onMounted(() => {
+  void loadFeedbackStatus()
+})
 
 async function handleMarkAllReadByCategory(catId: number | null): Promise<void> {
   await window.api.categories.markAllRead(catId)
@@ -195,6 +208,15 @@ watch(scrollTargetFeedId, async (feedId) => {
       </ContextMenuContent>
     </ContextMenu>
   </SidebarContent>
+
+  <SidebarFooter v-if="feedbackEnabled" class="px-3 pb-3">
+    <SidebarMenuButton style="app-region: no-drag" @click="openFeedbackDialog">
+      <span class="flex items-center gap-2">
+        <MessageCircle class="size-4" />
+        <span>意见反馈</span>
+      </span>
+    </SidebarMenuButton>
+  </SidebarFooter>
 
   <DialogEditFeed v-model:open="showEditFeed" :feed="editingFeed" @saved="closeEditFeed" />
 </template>

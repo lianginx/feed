@@ -12,6 +12,7 @@ const props = withDefaults(
     ScrollAreaRootProps & {
       class?: HTMLAttributes['class']
       viewportClass?: HTMLAttributes['class']
+      hideScrollbar?: boolean
     }
   >(),
   {
@@ -23,7 +24,7 @@ const emit = defineEmits<{
   scroll: [event: Event]
 }>()
 
-const delegatedProps = reactiveOmit(props, 'class', 'viewportClass')
+const delegatedProps = reactiveOmit(props, 'class', 'viewportClass', 'hideScrollbar')
 
 const viewportRef = useTemplateRef<InstanceType<typeof ScrollAreaViewport>>('viewport')
 
@@ -50,7 +51,8 @@ function onViewportScroll(event: Event): void {
     >
       <slot />
     </ScrollAreaViewport>
-    <ScrollBar />
+    <!-- 隐藏用 display:none 而非移除：视口只为已注册滚动条的轴开启滚动 -->
+    <ScrollBar :class="props.hideScrollbar ? 'hidden' : undefined" />
     <ScrollAreaCorner />
   </ScrollAreaRoot>
 </template>

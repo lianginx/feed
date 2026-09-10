@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { UpdaterStatus } from '@shared/types/updater'
 import type { ArticleListParams } from '@shared/types/articles'
+import type { FeedbackSubmitInput } from '@shared/types/feedback'
 
 function onChannel<A extends unknown[]>(
   channel: string,
@@ -17,6 +18,12 @@ function onChannel<A extends unknown[]>(
 const api = {
   clipboard: {
     writeText: (text: string) => ipcRenderer.invoke('clipboard:writeText', text)
+  },
+  feedback: {
+    status: () => ipcRenderer.invoke('feedback:status'),
+    context: () => ipcRenderer.invoke('feedback:context'),
+    submit: (input: FeedbackSubmitInput) => ipcRenderer.invoke('feedback:submit', input),
+    mine: () => ipcRenderer.invoke('feedback:mine')
   },
   system: {
     platform: process.platform

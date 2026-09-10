@@ -17,5 +17,6 @@ declare global {
     readonly MAIN_VITE_ENABLE_DEVTOOLS?: string
     readonly MAIN_VITE_DEBUG_FETCH_WINDOW?: string
     readonly MAIN_VITE_DEBUG_FETCH_LOG?: string
+    readonly MAIN_VITE_FEEDBACK_API_BASE_URL?: string
   }
 }
