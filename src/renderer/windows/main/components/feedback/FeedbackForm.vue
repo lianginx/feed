@@ -31,7 +31,7 @@ const CONTACT_MAX = 200
 defineProps<{ categories: FeedbackCategoryOption[] }>()
 const emit = defineEmits<{ openMine: [] }>()
 
-const { show, close } = useFeedbackDialog()
+const { show, close, category, content, contact } = useFeedbackDialog()
 
 const CONTEXT_ITEMS: { key: string; label: string }[] = [
   { key: 'app_version', label: '应用版本' },
@@ -42,10 +42,9 @@ const CONTEXT_ITEMS: { key: string; label: string }[] = [
   { key: 'install_id', label: '匿名标识' }
 ]
 
-const category = ref('')
-const content = ref('')
-const contact = ref('')
-const error = ref('')
+const categoryError = ref('')
+const contentError = ref('')
+const submitError = ref('')
 const submitting = ref(false)
 const context = ref<Record<string, string>>({})
 
@@ -71,10 +70,9 @@ watch(
   show,
   (val) => {
     if (val) {
-      category.value = ''
-      content.value = ''
-      contact.value = ''
-      error.value = ''
+      categoryError.value = ''
+      contentError.value = ''
+      submitError.value = ''
       submitting.value = false
       void loadContext()
     }
@@ -82,17 +80,20 @@ watch(
   { immediate: true }
 )
 
+watch(category, () => {
+  categoryError.value = ''
+})
+
+watch(content, () => {
+  contentError.value = ''
+})
+
 async function handleSubmit(): Promise<void> {
   if (submitting.value) return
-  if (!category.value) {
-    error.value = '请选择反馈类别'
-    return
-  }
-  if (contentLength.value < CONTENT_MIN) {
-    error.value = `请至少填写 ${CONTENT_MIN} 个字符`
-    return
-  }
-  error.value = ''
+  categoryError.value = category.value ? '' : '请选择反馈类别'
+  contentError.value = contentLength.value >= CONTENT_MIN ? '' : `请至少填写 ${CONTENT_MIN} 个字符`
+  if (categoryError.value || contentError.value) return
+  submitError.value = ''
   submitting.value = true
   const res = await window.api.feedback.submit({
     category: category.value,
@@ -101,7 +102,7 @@ async function handleSubmit(): Promise<void> {
   })
   submitting.value = false
   if (!res.success) {
-    error.value = res.error || '提交失败，请稍后重试'
+    submitError.value = res.error || '提交失败，请稍后重试'
     return
   }
   close()
@@ -124,6 +125,7 @@ async function handleSubmit(): Promise<void> {
             </SelectItem>
           </SelectContent>
         </Select>
+        <p v-if="categoryError" class="text-xs text-destructive">{{ categoryError }}</p>
       </div>
 
       <div class="grid gap-1.5">
@@ -140,6 +142,7 @@ async function handleSubmit(): Promise<void> {
           class="min-h-40 resize-none"
           placeholder="请描述你遇到的问题、发生场景、期望结果，或希望改进的地方。"
         />
+        <p v-if="contentError" class="text-xs text-destructive">{{ contentError }}</p>
       </div>
 
       <div class="grid gap-1.5">
@@ -185,7 +188,7 @@ async function handleSubmit(): Promise<void> {
     </div>
   </ScrollArea>
 
-  <p v-if="error" class="mt-2 text-sm text-destructive">{{ error }}</p>
+  <p v-if="submitError" class="mt-2 text-sm text-destructive">{{ submitError }}</p>
 
   <DialogFooter class="mt-2">
     <Button variant="outline" class="mr-auto" @click="emit('openMine')">
