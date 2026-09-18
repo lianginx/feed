@@ -25,6 +25,12 @@ function openInBrowser(url: string | null) {
   if (url) window.open(url, '_blank')
 }
 
+function handleClick(event: MouseEvent): void {
+  emit('select', props.article.id)
+  const button = event.currentTarget as HTMLButtonElement | null
+  button?.blur()
+}
+
 async function copyShareText() {
   const { title, summary, url, feed_title } = props.article
   const parts = [`${title}\n`]
@@ -45,7 +51,7 @@ async function copyShareText() {
     <ContextMenuTrigger class="block">
       <button
         class="flex flex-col w-full py-4 text-left"
-        @click="emit('select', props.article.id)"
+        @click="handleClick"
         @dblclick="openInBrowser(props.article.url)"
       >
         <div class="flex gap-2 h-21">
