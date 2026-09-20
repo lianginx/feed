@@ -61,7 +61,7 @@ function handleCategoryDrop(event: DragEvent): void {
     class="relative flex w-full items-center rounded-md text-sm transition-colors"
     :class="
       selectedCategoryId === catId
-        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+        ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
         : dragOverCategoryId === catId
           ? 'bg-sidebar-accent/80 text-sidebar-accent-foreground'
           : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'

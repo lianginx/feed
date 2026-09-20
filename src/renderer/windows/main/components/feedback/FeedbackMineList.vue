@@ -41,7 +41,7 @@ async function copyId(id: string): Promise<void> {
 <template>
   <div class="flex min-h-0 flex-col overflow-y-auto rounded-lg border border-border">
     <div
-      class="sticky top-0 z-10 grid shrink-0 grid-cols-[4.5rem_1fr_10rem_2rem] items-center gap-3 border-b border-border bg-card px-4 py-2 text-xs text-muted-foreground"
+      class="sticky top-0 z-10 grid shrink-0 grid-cols-[4.5rem_1fr_10rem_2rem] items-center gap-3 border-b border-border bg-background px-4 py-2 text-xs text-muted-foreground"
     >
       <span>状态</span>
       <span>问题描述</span>

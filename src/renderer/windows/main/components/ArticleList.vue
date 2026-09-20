@@ -197,8 +197,10 @@ async function onClickNewArticles() {
                   v-for="article in group.articles"
                   :key="`article-${article.id}`"
                   :data-article-id="article.id"
-                  class="pl-6 pr-5 border-t border-border/50 hover:bg-sidebar-accent/60"
-                  :class="{ 'bg-sidebar-accent/80': article.id === currentArticle?.id }"
+                  class="pl-6 pr-5 border-t border-border/80 dark:border-border/50 hover:bg-sidebar-accent/60 dark:hover:bg-sidebar-accent"
+                  :class="{
+                    'bg-sidebar-accent/80 dark:bg-sidebar-accent': article.id === currentArticle?.id
+                  }"
                 >
                   <ArticleListItem
                     :article="article"

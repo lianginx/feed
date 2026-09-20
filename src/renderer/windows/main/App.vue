@@ -112,16 +112,16 @@ async function handleSyncConflictChoice(choice: 'local' | 'remote'): Promise<voi
 
 <template>
   <SidebarProvider
-    :style="{ '--sidebar-width': '20rem' }"
+    :style="{ '--sidebar-width': 'clamp(15rem, 19vw, 23rem)' }"
     class="h-screen overflow-hidden bg-canvas"
   >
     <Sidebar collapsible="none" class="shrink-0 border-r border-sidebar-border">
       <SidebarNav />
     </Sidebar>
-    <div class="flex-4 max-w-104 min-w-0">
+    <div class="flex-[3.5] max-w-104 min-w-0">
       <ArticleList />
     </div>
-    <div class="flex-8 min-w-0 border-l border-border/60 bg-card">
+    <div class="flex-8 min-w-0 border-l border-border dark:border-border/60 bg-card">
       <ArticleReader />
     </div>
   </SidebarProvider>

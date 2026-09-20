@@ -147,7 +147,7 @@ function handleAddAdapter() {
 </script>
 
 <template>
-  <div class="relative flex p-2 h-screen overflow-hidden bg-canvas text-foreground">
+  <div class="relative flex p-2 h-screen overflow-hidden bg-sidebar text-foreground">
     <!-- 顶部可拖拽区域（macOS hiddenInset 透明标题栏） -->
     <div class="absolute inset-x-0 top-0 z-10 h-10 shrink-0" style="app-region: drag" />
 
@@ -204,7 +204,7 @@ function handleAddAdapter() {
     </nav>
 
     <main class="min-w-0 flex-1">
-      <ScrollArea class="h-full rounded-xl bg-card">
+      <ScrollArea class="h-full rounded-xl border border-border bg-card">
         <div class="p-8">
           <Transition name="params" mode="out-in">
             <div v-if="isRssSelected" key="rss">
