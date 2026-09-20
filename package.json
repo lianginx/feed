@@ -1,6 +1,6 @@
 {
   "name": "feed",
-  "version": "0.25.2",
+  "version": "0.25.3",
   "productName": "Feed",
   "appId": "com.lianginx.feed",
   "type": "module",
