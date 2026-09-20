@@ -31,6 +31,25 @@ describe('parseBiliDate（B 站空间页日期文本 → ISO，实测格式规�
     expect(parseBiliDate('12-30', jan)).toBe(new Date('2025-12-30T00:00:00+08:00').toISOString())
   })
 
+  it('当年 M月D日（改版后格式）', () => {
+    expect(parseBiliDate('8月5日', now)).toBe(new Date('2026-08-05T00:00:00+08:00').toISOString())
+    expect(parseBiliDate('7月26日', now)).toBe(new Date('2026-07-26T00:00:00+08:00').toISOString())
+  })
+
+  it('跨年 M月D日：1 月看到 12月30日 属去年', () => {
+    const jan = new Date('2026-01-15T10:00:00+08:00')
+    expect(parseBiliDate('12月30日', jan)).toBe(new Date('2025-12-30T00:00:00+08:00').toISOString())
+  })
+
+  it('往年 YYYY年M月D日（改版后格式）', () => {
+    expect(parseBiliDate('2021年9月23日', now)).toBe(
+      new Date('2021-09-23T00:00:00+08:00').toISOString()
+    )
+    expect(parseBiliDate('2020年9月25日', now)).toBe(
+      new Date('2020-09-25T00:00:00+08:00').toISOString()
+    )
+  })
+
   it('往年 YYYY-MM-DD', () => {
     expect(parseBiliDate('2024-09-02', now)).toBe(
       new Date('2024-09-02T00:00:00+08:00').toISOString()

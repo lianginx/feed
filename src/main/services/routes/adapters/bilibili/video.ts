@@ -7,10 +7,18 @@ function normalizeUrl(url: string): string {
   return url.startsWith('//') ? 'https:' + url : url
 }
 
+/** 按东八区当日 00:00 构造 ISO 时间 */
+function toIsoDate(year: number | string, month: string, day: string): string {
+  return new Date(
+    `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00+08:00`
+  ).toISOString()
+}
+
 /**
  * 解析 B 站卡片日期文本为 ISO 时间。
- * 实测 B 站空间页分级显示：刚刚 / x分钟前 / x小时前 / 昨天 / MM-DD(当年) / YYYY-MM-DD(往年)。
- * 相对时间基于 now（默认当前时间）反推；跨年 MM-DD（1 月看到 12-30 属去年）自动校正。
+ * 实测 B 站空间页分级显示：刚刚 / x分钟前 / x小时前 / 昨天 / M月D日(当年) / YYYY年M月D日(往年)；
+ * 旧版曾用 MM-DD / YYYY-MM-DD，继续兼容。
+ * 相对时间基于 now（默认当前时间）反推；跨年 M月D日 / MM-DD（1 月看到 12月30日 属去年）自动校正。
  * 无法识别返回 undefined。
  */
 export function parseBiliDate(text: string, now: Date = new Date()): string | undefined {
@@ -18,32 +26,28 @@ export function parseBiliDate(text: string, now: Date = new Date()): string | un
   const nowMs = now.getTime()
 
   // 相对时间：刚刚 / x分钟前 / x小时前 / 昨天
-  if (t === '刚刚') {
-    return new Date(nowMs).toISOString()
-  }
-  let m = t.match(/^(\d+)\s*分钟前$/)
-  if (m) return new Date(nowMs - Number(m[1]) * 60_000).toISOString()
-  m = t.match(/^(\d+)\s*小时前$/)
-  if (m) return new Date(nowMs - Number(m[1]) * 3_600_000).toISOString()
-  if (t === '昨天') {
-    return new Date(nowMs - 86_400_000).toISOString()
-  }
+  if (t === '刚刚') return new Date(nowMs).toISOString()
+  const minutesAgo = t.match(/^(\d+)\s*分钟前$/)
+  if (minutesAgo) return new Date(nowMs - Number(minutesAgo[1]) * 60_000).toISOString()
+  const hoursAgo = t.match(/^(\d+)\s*小时前$/)
+  if (hoursAgo) return new Date(nowMs - Number(hoursAgo[1]) * 3_600_000).toISOString()
+  if (t === '昨天') return new Date(nowMs - 86_400_000).toISOString()
 
-  // 往年 YYYY-MM-DD
-  const withYear = t.match(/^(\d{4})-(\d{2})-(\d{2})$/)
-  if (withYear) {
-    return new Date(`${withYear[1]}-${withYear[2]}-${withYear[3]}T00:00:00+08:00`).toISOString()
-  }
+  // 往年：YYYY-MM-DD / YYYY年M月D日
+  const withYear =
+    t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/) ?? t.match(/^(\d{4})年(\d{1,2})月(\d{1,2})日$/)
+  if (withYear) return toIsoDate(withYear[1], withYear[2], withYear[3])
 
-  // 当年 MM-DD（含跨年校正：MM-DD 只会是过去日期，若落在未来则属去年）
-  const monthDay = t.match(/^(\d{2})-(\d{2})$/)
+  // 当年：M月D日 / MM-DD（只可能是过去日期，若落在未来则属去年）
+  const monthDay = t.match(/^(\d{1,2})月(\d{1,2})日$/) ?? t.match(/^(\d{2})-(\d{2})$/)
   if (monthDay) {
     const year = now.getFullYear()
-    const parsed = new Date(`${year}-${monthDay[1]}-${monthDay[2]}T00:00:00+08:00`)
-    if (parsed.getTime() > nowMs) {
-      return new Date(`${year - 1}-${monthDay[1]}-${monthDay[2]}T00:00:00+08:00`).toISOString()
-    }
-    return parsed.toISOString()
+    const parsed = new Date(
+      `${year}-${monthDay[1].padStart(2, '0')}-${monthDay[2].padStart(2, '0')}T00:00:00+08:00`
+    )
+    return parsed.getTime() > nowMs
+      ? toIsoDate(year - 1, monthDay[1], monthDay[2])
+      : parsed.toISOString()
   }
 
   return undefined
