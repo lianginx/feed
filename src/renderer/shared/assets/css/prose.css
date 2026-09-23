@@ -1,3 +1,8 @@
+/* 长 URL / 无空格长串强制折行，避免溢出阅读区最大宽度 */
+.prose {
+  overflow-wrap: anywhere;
+}
+
 /* 内联代码 - 柔和背景 + 对比前景色 */
 .prose :where(code):not(:where(pre code, pre *)) {
   background-color: var(--muted);
