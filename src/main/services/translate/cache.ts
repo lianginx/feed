@@ -7,6 +7,7 @@ export interface TranslationRecord {
   target_lang: string
   source_hash: string
   translated_title: string | null
+  translated_summary: string | null
   translated_content: string | null
   created_at: number
   updated_at: number
@@ -41,11 +42,12 @@ export function getTranslation(
 export function saveTranslation(db: AppDatabase, rec: TranslationRecord): void {
   db.prepare(
     `INSERT INTO article_translations
-      (article_id, provider, target_lang, source_hash, translated_title, translated_content, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      (article_id, provider, target_lang, source_hash, translated_title, translated_summary, translated_content, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(article_id, provider, target_lang) DO UPDATE SET
        source_hash = excluded.source_hash,
        translated_title = excluded.translated_title,
+       translated_summary = excluded.translated_summary,
        translated_content = excluded.translated_content,
        created_at = article_translations.created_at,
        updated_at = excluded.updated_at`
@@ -55,6 +57,7 @@ export function saveTranslation(db: AppDatabase, rec: TranslationRecord): void {
     rec.target_lang,
     rec.source_hash,
     rec.translated_title,
+    rec.translated_summary,
     rec.translated_content,
     rec.created_at,
     rec.updated_at
@@ -63,6 +66,35 @@ export function saveTranslation(db: AppDatabase, rec: TranslationRecord): void {
   if (now - lastCleanupAt <= CLEANUP_INTERVAL_MS) return
   lastCleanupAt = now
   cleanupTranslations(db)
+}
+
+/**
+ * 补写译文头部（标题/摘要）：命中缓存时按需补翻后回填。
+ * COALESCE 保证只覆盖本次真正补翻成功的字段；同时抬高 updated_at，
+ * 避免刚补翻的缓存行被保留策略立刻清掉。
+ */
+export function updateTranslationHeader(
+  db: AppDatabase,
+  articleId: number,
+  provider: string,
+  targetLang: string,
+  translatedTitle: string | null,
+  translatedSummary: string | null
+): void {
+  db.prepare(
+    `UPDATE article_translations
+     SET translated_title = COALESCE(?, translated_title),
+         translated_summary = COALESCE(?, translated_summary),
+         updated_at = ?
+     WHERE article_id = ? AND provider = ? AND target_lang = ?`
+  ).run(
+    translatedTitle,
+    translatedSummary,
+    Math.floor(Date.now() / 1000),
+    articleId,
+    provider,
+    targetLang
+  )
 }
 
 export function cleanupTranslations(db: AppDatabase): void {

@@ -176,6 +176,14 @@ export function useArticles() {
     })
   }
 
+  /** 翻译完成后就地更新列表条目的译文标题与摘要（避免整页重载丢失滚动位置与分页游标） */
+  function applyTranslatedArticle(id: number, title: string, summary: string | null) {
+    const item = articles.value.find((a) => a.id === id)
+    if (!item) return
+    item.translated_title = title
+    if (summary) item.translated_summary = summary
+  }
+
   async function markAllRead(feedId?: number) {
     await window.api.articles.markAllRead(feedId)
     markAllLocalRead()
@@ -226,6 +234,7 @@ export function useArticles() {
     toggleRead,
     markAllRead,
     markScopeRead,
+    applyTranslatedArticle,
     closeArticle
   }
 }

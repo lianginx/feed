@@ -962,6 +962,19 @@ onMounted(async () => {
                     @update:model-value="(v) => setTranslateConfig({ autoTranslate: !!v })"
                   />
                 </div>
+
+                <div class="flex items-center justify-between gap-6 py-3">
+                  <div class="min-w-0">
+                    <div class="text-sm">列表显示译文</div>
+                    <div class="mt-0.5 text-xs text-muted-foreground">
+                      文章列表用译文标题显示已有译文的文章；不会自动翻译未翻译的文章
+                    </div>
+                  </div>
+                  <Switch
+                    :model-value="translateConfig.showInList"
+                    @update:model-value="(v) => setTranslateConfig({ showInList: !!v })"
+                  />
+                </div>
               </template>
 
               <div class="mt-5 flex items-center gap-3">

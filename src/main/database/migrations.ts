@@ -210,5 +210,12 @@ CREATE TABLE IF NOT EXISTS _app_state (
   value TEXT NOT NULL
 );
 `
+  },
+  {
+    version: 10,
+    name: 'add-translated-summary',
+    up: `
+ALTER TABLE article_translations ADD COLUMN translated_summary TEXT;
+`
   }
 ]

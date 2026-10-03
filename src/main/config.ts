@@ -21,6 +21,8 @@ export interface TranslateConfig {
   baiduSecretKey?: string
   targetLang: string
   autoTranslate: boolean
+  /** 文章列表用译文标题显示已有译文的文章（不会触发翻译） */
+  showInList: boolean
 }
 
 export interface SyncConfig {
@@ -58,7 +60,7 @@ export const defaults: AppSettings = {
   autoCheckUpdate: true,
   updateCheckInterval: 360,
   sync: { provider: 'none' },
-  translate: { provider: 'edge', targetLang: 'zh', autoTranslate: false },
+  translate: { provider: 'edge', targetLang: 'zh', autoTranslate: false, showInList: false },
   autoLaunch: false,
   launchHidden: false,
   siteCookies: {},

@@ -4,6 +4,7 @@ import {
   computeSourceHash,
   getTranslation,
   saveTranslation,
+  updateTranslationHeader,
   cleanupTranslations
 } from '@main/services/translate/cache'
 
@@ -20,6 +21,7 @@ function createDb() {
       target_lang TEXT NOT NULL,
       source_hash TEXT NOT NULL,
       translated_title TEXT,
+      translated_summary TEXT,
       translated_content TEXT,
       created_at INTEGER,
       updated_at INTEGER,
@@ -33,6 +35,7 @@ const base = {
   provider: 'baidu',
   target_lang: 'zh',
   translated_title: '标题',
+  translated_summary: '摘要',
   translated_content: '<p>内容</p>',
   created_at: Math.floor(Date.now() / 1000),
   updated_at: Math.floor(Date.now() / 1000)
@@ -53,7 +56,31 @@ describe('cache', () => {
     saveTranslation(db, { article_id: 1, source_hash: hash, ...base })
     const rec = getTranslation(db, 1, 'baidu', 'zh', hash)
     expect(rec?.translated_title).toBe('标题')
+    expect(rec?.translated_summary).toBe('摘要')
     expect(rec?.translated_content).toBe('<p>内容</p>')
+  })
+
+  it('updateTranslationHeader 只覆盖传入的字段（null 保持原值）', () => {
+    const hash = computeSourceHash('Title', 'Content')
+    saveTranslation(db, { article_id: 1, source_hash: hash, ...base })
+    const before = getTranslation(db, 1, 'baidu', 'zh', hash)
+
+    updateTranslationHeader(db, 1, 'baidu', 'zh', '新标题', null)
+    const afterTitle = getTranslation(db, 1, 'baidu', 'zh', hash)
+    expect(afterTitle?.translated_title).toBe('新标题')
+    expect(afterTitle?.translated_summary).toBe('摘要')
+    expect(afterTitle!.updated_at).toBeGreaterThanOrEqual(before!.updated_at)
+
+    updateTranslationHeader(db, 1, 'baidu', 'zh', null, '新摘要')
+    const afterSummary = getTranslation(db, 1, 'baidu', 'zh', hash)
+    expect(afterSummary?.translated_title).toBe('新标题')
+    expect(afterSummary?.translated_summary).toBe('新摘要')
+    expect(afterSummary?.translated_content).toBe('<p>内容</p>')
+  })
+
+  it('updateTranslationHeader 不存在的记录不报错', () => {
+    expect(() => updateTranslationHeader(db, 99, 'baidu', 'zh', '标题', '摘要')).not.toThrow()
+    expect(getTranslation(db, 99, 'baidu', 'zh', 'hash')).toBeNull()
   })
 
   it('source_hash 变化（内容更新）后失效', () => {

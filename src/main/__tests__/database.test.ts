@@ -53,7 +53,7 @@ describe('database init', () => {
       version: number
       name: string
     }[]
-    expect(applied.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
+    expect(applied.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
     const adapterFeeds = db
       .prepare('SELECT url, adapter_id, adapter_params FROM feeds WHERE adapter_id IS NOT NULL')
@@ -92,7 +92,7 @@ describe('database init', () => {
       .all() as unknown as {
       version: number
     }[]
-    expect(applied.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
+    expect(applied.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
   })
 
   it('用户清空全部订阅后重启，不会被重新写入默认订阅源', () => {

@@ -16,6 +16,10 @@ export interface Article {
   feed_title: string
   favicon_url?: string | null
   cover_image?: string | null
+  /** 当前翻译服务下的译文标题；仅当设置开启「列表显示译文」且存在缓存译文时返回 */
+  translated_title?: string | null
+  /** 当前翻译服务下的译文摘要；无缓存或未翻译时为 null */
+  translated_summary?: string | null
 }
 
 export interface ArticleDetail extends Article {

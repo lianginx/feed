@@ -25,11 +25,15 @@ export interface TranslateConfig {
   targetLang: string
   /** 打开文章时自动翻译为目标语言 */
   autoTranslate: boolean
+  /** 文章列表用译文标题显示已有译文的文章（不会触发翻译） */
+  showInList: boolean
 }
 
 /** 一次翻译的结果（由主进程翻译服务返回） */
 export interface TranslateResult {
   title: string
+  /** 译文摘要；未翻译（失败或跳过）时为 null */
+  summary: string | null
   content: string
   /** 部分段落翻译失败，已保留原文 */
   degraded: boolean

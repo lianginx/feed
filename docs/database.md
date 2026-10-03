@@ -74,9 +74,10 @@ CREATE VIRTUAL TABLE articles_fts USING fts5(
 
 ## 其他表
 
-### article_translations（翻译缓存，version 7）
+### article_translations（翻译缓存，version 7；version 10 增加译文摘要）
 
-主键 `(article_id, provider, target_lang)`；`source_hash` 变化时译文失效。
+主键 `(article_id, provider, target_lang)`；`source_hash` = `sha256(title + '\n' + content)`，变化时译文失效。
+`translated_summary` 由 v10 迁移加入（列表摘要需要中文，且不能从译文正文截取）：历史行该列为 NULL，命中缓存时按需补翻一次并回填。
 
 ```sql
 CREATE TABLE article_translations (
@@ -85,6 +86,7 @@ CREATE TABLE article_translations (
   target_lang TEXT NOT NULL,
   source_hash TEXT NOT NULL,
   translated_title TEXT,
+  translated_summary TEXT, -- version 10 新增
   translated_content TEXT,
   created_at INTEGER,
   updated_at INTEGER,

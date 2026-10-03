@@ -3,7 +3,14 @@ import { getSettings, type TranslateConfig } from '@main/config'
 import type { TranslatorInstanceMembers } from './providers'
 import { createTranslateProvider } from './providers'
 import { extractPieces, packPieces, rebuildHtml, type TranslateUnit } from './html'
-import { getTranslation, saveTranslation, computeSourceHash } from './cache'
+import {
+  getTranslation,
+  saveTranslation,
+  updateTranslationHeader,
+  computeSourceHash,
+  type TranslationRecord
+} from './cache'
+import { toTranslatableSummary } from './summary'
 import { detectLanguage, isSameLanguage, SAMPLE_LIMIT, toDetectedLang } from './detect'
 import type { BaiduApiError } from './providers/baidu'
 import { EdgeTranslator } from './providers/edge'
@@ -11,6 +18,8 @@ import { createRateLimiter, type RateLimiter } from './rateLimit'
 
 export interface TranslateResult {
   title: string
+  /** 译文摘要；未翻译（失败或跳过）时为 null，调用方回退原文摘要 */
+  summary: string | null
   content: string
   degraded: boolean
   skipped: boolean
@@ -23,13 +32,15 @@ const MAX_RETRIES = 2
 interface ArticleRow {
   id: number
   title: string
+  summary: string | null
   content: string | null
 }
 
 function getArticle(id: number): ArticleRow | null {
   const db = getConnection()
-  const row = db.prepare('SELECT id, title, content FROM articles WHERE id = ?').get(id) as
-    ArticleRow | undefined
+  const row = db
+    .prepare('SELECT id, title, summary, content FROM articles WHERE id = ?')
+    .get(id) as ArticleRow | undefined
   return row ?? null
 }
 
@@ -57,8 +68,10 @@ export async function translateArticle(
   const sourceHash = computeSourceHash(article.title, content)
   const cached = getTranslation(getConnection(), id, settings.translate.provider, to, sourceHash)
   if (cached && !forceRefresh) {
+    const header = await backfillHeader(article, cached, to)
     return {
-      title: cached.translated_title ?? article.title,
+      title: header.title ?? article.title,
+      summary: header.summary,
       content: cached.translated_content ?? content,
       degraded: false,
       skipped: false
@@ -76,7 +89,7 @@ export async function translateArticle(
 
   let detected = detectLanguage(sampleText)
   if (isSameLanguage(detected, to)) {
-    return { title: article.title, content, degraded: false, skipped: true }
+    return { title: article.title, summary: null, content, degraded: false, skipped: true }
   }
 
   if (provider instanceof EdgeTranslator) {
@@ -84,26 +97,35 @@ export async function translateArticle(
     if (edgeDetected) detected = toDetectedLang(edgeDetected)
   }
   if (isSameLanguage(detected, to)) {
-    return { title: article.title, content, degraded: false, skipped: true }
+    return { title: article.title, summary: null, content, degraded: false, skipped: true }
   }
 
   if (!provider) throw new Error('未配置翻译服务，请在设置中启用翻译')
 
   const throttle = createProviderThrottle(provider)
 
-  let translatedTitle = article.title
+  const summaryText = toTranslatableSummary(article.summary)
+  const hasTitle = Boolean(article.title.trim())
+  const headerTexts: string[] = []
+  if (hasTitle) headerTexts.push(article.title)
+  if (summaryText) headerTexts.push(summaryText)
+
+  let translatedTitle: string | null = null
+  let translatedSummary: string | null = null
   let titleRequestCount = 0
-  if (article.title.trim()) {
+  if (headerTexts.length > 0) {
     titleRequestCount = 1
-    const [t] = await translateWithRetry(
+    const results = await translateWithRetry(
       provider,
-      [article.title],
+      headerTexts,
       'auto',
       to,
       MAX_RETRIES,
       throttle
     )
-    translatedTitle = t ?? article.title
+    let cursor = 0
+    if (hasTitle) translatedTitle = results[cursor++] ?? null
+    if (summaryText) translatedSummary = results[cursor] ?? null
   }
 
   const batches = packPieces(pieces, provider.getLengthLimit())
@@ -157,13 +179,73 @@ export async function translateArticle(
       target_lang: to,
       source_hash: sourceHash,
       translated_title: translatedTitle,
+      translated_summary: translatedSummary,
       translated_content: rebuilt.html,
       created_at: Math.floor(Date.now() / 1000),
       updated_at: Math.floor(Date.now() / 1000)
     })
   }
 
-  return { title: translatedTitle, content: rebuilt.html, degraded, skipped: false }
+  return {
+    title: translatedTitle ?? article.title,
+    summary: translatedSummary,
+    content: rebuilt.html,
+    degraded,
+    skipped: false
+  }
+}
+
+/**
+ * 命中缓存时补翻缺失的头部文本（标题请求失败过的旧记录、v10 之前没有译文摘要的历史缓存）。
+ * 最多发 1 次请求，失败静默降级为原文，不阻塞阅读，也不影响正文缓存。
+ */
+async function backfillHeader(
+  article: ArticleRow,
+  cached: TranslationRecord,
+  to: string
+): Promise<{ title: string | null; summary: string | null }> {
+  const summaryText = toTranslatableSummary(article.summary)
+  const needTitle = !cached.translated_title && Boolean(article.title.trim())
+  const needSummary = !cached.translated_summary && Boolean(summaryText)
+  const current = {
+    title: cached.translated_title,
+    summary: cached.translated_summary
+  }
+  if (!needTitle && !needSummary) return current
+
+  const settings = getSettings()
+  const provider = createTranslateProvider(settings.translate)
+  if (!provider) return current
+
+  const texts: string[] = []
+  if (needTitle) texts.push(article.title)
+  if (needSummary) texts.push(summaryText)
+
+  const throttle = createProviderThrottle(provider)
+  let results: (string | null)[]
+  try {
+    results = await translateWithRetry(provider, texts, 'auto', to, MAX_RETRIES, throttle)
+  } catch {
+    return current
+  }
+
+  let cursor = 0
+  const title = needTitle ? (results[cursor++] ?? null) : null
+  const summary = needSummary ? (results[cursor] ?? null) : null
+  if (title || summary) {
+    updateTranslationHeader(
+      getConnection(),
+      article.id,
+      settings.translate.provider,
+      to,
+      title,
+      summary
+    )
+  }
+  return {
+    title: title ?? current.title,
+    summary: summary ?? current.summary
+  }
 }
 
 export async function testTranslate(config: TranslateConfig): Promise<void> {

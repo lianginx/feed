@@ -69,10 +69,14 @@ interface TranslateConfig {
   baiduSecretKey?: string
   targetLang: string
   autoTranslate: boolean
+  /** 文章列表用译文标题显示已有译文的文章（不会触发翻译） */
+  showInList: boolean
 }
 
 interface TranslateResult {
   title: string
+  /** 译文摘要；未翻译（失败或跳过）时为 null */
+  summary: string | null
   content: string
   degraded: boolean
   skipped: boolean

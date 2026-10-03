@@ -88,8 +88,10 @@ export async function persistParsedFeed(
     WHERE feed_id = ? AND guid = ?
   `)
   const selectStmt = db.prepare(
-    'SELECT id, content, published_at FROM articles WHERE feed_id = ? AND guid = ?'
+    'SELECT id, title, content, published_at FROM articles WHERE feed_id = ? AND guid = ?'
   )
+  // 标题变化后旧译文标题不再对应当前原文，直接丢弃缓存行（列表按 article_id 关联，无法校验 source_hash）
+  const deleteTranslationStmt = db.prepare('DELETE FROM article_translations WHERE article_id = ?')
 
   let inserted = 0
   let updated = 0
@@ -107,7 +109,7 @@ export async function persistParsedFeed(
         : Math.floor(Date.now() / 1000)
 
       const existing = selectStmt.get(feedId, item.guid) as
-        { id: number; content: string; published_at: number | null } | undefined
+        { id: number; title: string; content: string; published_at: number | null } | undefined
 
       if (existing) {
         const effectiveContent = degraded && existing.content ? existing.content : sanitizedContent
@@ -123,6 +125,9 @@ export async function persistParsedFeed(
           feedId,
           item.guid
         )
+        if (item.title !== existing.title) {
+          deleteTranslationStmt.run(existing.id)
+        }
         updated++
       } else {
         insertStmt.run(

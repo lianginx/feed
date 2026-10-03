@@ -152,7 +152,7 @@ src/main/services/translate/
 ## 明确排除
 - 第二家翻译提供商（架构已就绪）；anylang 的 Scheduler/SchedulerWithCache（一次性整篇翻译用不上）
 - 渲染层组件测试与 IPC handler 测试（v1 不引入，UI 靠手动验证清单）
-- 文章列表标题翻译、选中片段翻译、译文手动管理
+- 文章列表标题翻译（后续已在「增补：列表译文标题与译文搜索」中实现）、选中片段翻译、译文手动管理
 - provider 动态语言列表（现硬编码，留待第二家时再抽象）
 - 术语表/专有名词词典（占位符已覆盖 URL/code 保护，词典留待后续）
 - 翻译质量评分/对比评测
@@ -188,3 +188,28 @@ src/main/services/translate/
 9. 手动：**未配置凭据时工具栏不显示翻译按钮、菜单项禁用**；到设置启用翻译并填凭据保存后，按钮/菜单项立即出现可用（无需重启）
 10. **菜单/快捷键**：选中文章后「文章→翻译当前文章」可点、**Option+T** 触发翻译、译文显示时菜单变「显示原文」、无文章或未配置时禁用
 11. dev IPC 日志正常、guardIpcHandlers 不拦截
+
+## 增补：列表译文标题与译文搜索（showInList）
+
+需求：列表条目在已有译文缓存时直接显示译文标题（历史缓存同样生效），未翻译的新文章保持原文且**不触发翻译**；翻译完成的瞬间列表对应条目就地更新；中文关键词也能搜到译文内容。
+
+1. 配置：`TranslateConfig` 加 `showInList: boolean`（默认 `false`，设置 → 翻译 区块新增「列表显示译文」开关）；`readSettings` 的 defaults 合并让旧存量配置自动补值，无需迁移
+2. 查询：抽出 `src/main/services/articleList.ts`（纯逻辑，便于单测），`ipc/articles.ts` 仅负责读配置与包壳；`showInList && provider !== 'none'` 时列表 SQL 追加 `LEFT JOIN article_translations`（`article_id + provider + target_lang`，命中主键索引），**只带出 `translated_title`，不取 `translated_content`**（避免 IPC 负载）；关闭开关或未配置服务时 SQL 与旧实现完全一致
+3. 展示：`ArticleListItem` 渲染 `translated_title || title` 与 `translated_summary || summary`，原生 `title` 属性挂英文原标题/原摘要作为悬停逃生舱
+4. 即时更新：`useTranslate` 在翻译成功且非 `degraded`/`skipped` 时就地回写 `articles` 条目的标题与摘要（与"只有非降级才写缓存"的策略一致）；回写放在"当前文章校验"之前——翻译已写入主进程缓存，用户切走后列表同样应更新；不用整页重载，避免丢失滚动位置与分页游标
+5. 配置联动：`ArticleList` 监听 `showInList / provider / targetLang` 变化重新拉第一页（译文是否带出由主进程按当前配置决定，渲染层的配置镜像滞后也不会查错）
+6. 搜索并集：搜索同时命中原文与译文，两路取并集后统一排序分页——原文分支用 FTS5 `MATCH`（沿用短词 LIKE 兜底），译文分支用 `translated_title/translated_summary/translated_content` 的 `LIKE`；两分支共用同一套过滤条件与游标参数，外层 `ORDER BY published_at DESC, id DESC LIMIT limit+1` 保持既有分页语义，`UNION` 负责去重。**FTS5 的 `MATCH` 不能与普通条件在同一条 `WHERE` 里用 `OR` 混合**（会报 `unable to use function MATCH in the requested context`），因此必须走"分支内 MATCH + 外层并集"的写法；搜索是否命中译文跟随 `showInList` 开关
+7. 缓存一致性：列表 JOIN 无法校验 `source_hash`（SQLite 无 sha256），改为在 `refresher` 中"文章标题真的变化时删除该文章的翻译缓存行"；仅正文变化不删（译标题仍对应原标题，阅读区本来就会因 hash 不匹配重译并覆盖）
+8. **译文摘要独立翻译**（v10 迁移加 `translated_summary` 列）：摘要与标题合在同一批 `translateBatch([title, summary])` 发送（请求数不变、语义上各自独立翻译），**不从译文正文截取**；因为 Atom 无 description 时 `summary` 会回退成正文纯文本（实测最长 2.9 万字符），送翻前统一按 `SUMMARY_CHAR_LIMIT = 300` 折叠空白并截断（`src/main/services/translate/summary.ts`），避免正文被翻两遍
+9. 头部补翻：命中缓存时若 `translated_title` 或 `translated_summary` 缺失（v10 之前的历史缓存、或标题请求失败过的记录），补发 1 次请求并回填（`updateTranslationHeader`，COALESCE 只覆盖补翻成功的字段），失败静默降级原文，不阻塞阅读、不影响正文缓存
+10. 不做的部分：按译文搜索的 FTS 独立索引（译文表保留上限 500 行，`LIKE` 足够）
+
+## Verification（列表译文增补）
+
+15. 开启「列表显示译文」后重新打开列表：已有缓存的文章显示中文标题与中文摘要（v10 之前的历史缓存首次打开该文章时补翻摘要并回填）；无缓存的仍为英文；**未翻译文章不产生翻译请求**（主进程日志无 `translate:article`）
+16. 打开一篇未翻译文章自动翻译完成 → 返回列表该条已变中文标题与摘要；悬停标题/摘要分别显示英文原标题与原摘要
+17. 关闭开关 → 列表回落英文（无需重启）；切换 provider / 目标语言 → 列表按新配置重新拉取
+18. 搜索：中文关键词命中译文标题、译文摘要与译文正文，英文关键词仍命中原文；原文与译文同时命中的文章只出现一次；搜索结果翻页正常
+19. 刷新订阅源导致文章标题变化 → 该文章译文缓存行被清除，列表不再显示过期译标题
+20. 长摘要（Atom 无 description，摘要回退全文）只送翻前 300 字符，翻译请求次数与改前一致（标题+摘要同一批）
+

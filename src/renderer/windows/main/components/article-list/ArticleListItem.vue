@@ -64,18 +64,22 @@ async function copyShareText() {
               <h3
                 class="line-clamp-2 font-semibold text-sm"
                 :class="props.article.is_read ? 'text-muted-foreground' : 'text-foreground'"
+                :title="props.article.translated_title ? props.article.title : undefined"
               >
-                {{ props.article.title }}
+                {{ props.article.translated_title || props.article.title }}
               </h3>
             </div>
             <p
-              v-if="props.article.summary"
+              v-if="props.article.translated_summary || props.article.summary"
               class="text-xs line-clamp-2"
               :class="
                 props.article.is_read ? 'text-muted-foreground/70' : 'text-muted-foreground/90'
               "
+              :title="
+                props.article.translated_summary ? (props.article.summary ?? undefined) : undefined
+              "
             >
-              {{ props.article.summary }}
+              {{ props.article.translated_summary || props.article.summary }}
             </p>
           </div>
           <img

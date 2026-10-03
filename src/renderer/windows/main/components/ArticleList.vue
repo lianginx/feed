@@ -4,6 +4,7 @@ import { ScrollArea } from '@renderer/shared/components/ui/scroll-area'
 import { Collapsible, CollapsibleContent } from '@renderer/shared/components/ui/collapsible'
 import { useArticles } from '@renderer/windows/main/composables/useArticles'
 import { useFeeds } from '@renderer/windows/main/composables/useFeeds'
+import { useApp } from '@renderer/shared/composables/useApp'
 import { useArticleView } from '@renderer/windows/main/composables/useArticleView'
 import { useArticleGroups } from '@renderer/windows/main/composables/useArticleGroups'
 import { useStickyDateHeaders } from '@renderer/windows/main/composables/useStickyDateHeaders'
@@ -32,6 +33,7 @@ const {
 } = useArticles()
 const { selectedFeedId, selectedCategoryId } = useFeeds()
 const { selectedView, isUnread, isStar, isToday } = useArticleView()
+const { translateConfig } = useApp()
 
 const scrollAreaRef = useTemplateRef<InstanceType<typeof ScrollArea>>('scrollArea')
 
@@ -155,6 +157,16 @@ watch(searchApplied, () => {
   resetCollapsed()
   scrollAreaRef.value?.viewport?.scrollTo(0, 0)
 })
+
+// 列表译文相关配置变化后重新拉取第一页（主进程按当前配置决定是否带出译文标题、是否搜索译文）
+watch(
+  [
+    () => translateConfig.value.showInList,
+    () => translateConfig.value.provider,
+    () => translateConfig.value.targetLang
+  ],
+  () => void reloadFirstPage()
+)
 
 watch([() => articles.value.length, loadingMore], () => {
   if (!loadingMore.value) void ensureFilled()

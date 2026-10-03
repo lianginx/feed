@@ -28,7 +28,7 @@ let watchersStarted = false
 
 export function useTranslate() {
   const { translateConfig } = useApp()
-  const { currentArticle } = useArticles()
+  const { currentArticle, applyTranslatedArticle } = useArticles()
 
   /** 已配置凭据（渲染层复刻 createTranslateProvider 的完整性判断，两处需保持一致；
    *  因配置已由主进程下发到渲染层，本地 computed 免去额外 IPC，仍属合理做法） */
@@ -40,6 +40,9 @@ export function useTranslate() {
 
   const autoTranslate = computed(() => translateConfig.value.autoTranslate)
 
+  /** 列表是否展示译文标题（开启后翻译完成的文章条目就地换成中文标题） */
+  const showInList = computed(() => translateConfig.value.showInList)
+
   async function performTranslate(
     articleId: number,
     forceRefresh: boolean,
@@ -48,6 +51,10 @@ export function useTranslate() {
     const result = await window.api.translate.article(articleId, undefined, forceRefresh)
     if (result.success && result.data) {
       const data = result.data as TranslateResult
+      // 列表回写：翻译已成功写入主进程缓存，即使用户已切走该文章也应更新列表条目
+      if (showInList.value && !data.skipped && !data.degraded) {
+        applyTranslatedArticle(articleId, data.title, data.summary)
+      }
       // 展示前校验 articleId：翻译请求进行中切了文章，旧响应不落盘不展示
       if (currentArticle.value?.id !== articleId) return
       if (data.skipped) {

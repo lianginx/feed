@@ -1,105 +1,22 @@
 import { ipcMain } from 'electron'
 import { getConnection } from '@main/database/connection'
+import { getSettings } from '@main/config'
+import { queryArticleList, type ArticleListTranslateOptions } from '@main/services/articleList'
 import { success, error } from './util'
 import { scheduleBadgeUpdate } from '@main/services/badge'
-import type { ArticleListCursor, ArticleListParams } from '@shared/types/articles'
+import type { ArticleListParams } from '@shared/types/articles'
 
-function buildArticleConditions(params: ArticleListParams): {
-  conditions: string[]
-  queryParams: Record<string, number | string>
-} {
-  const conditions: string[] = []
-  const queryParams: Record<string, number | string> = {}
-
-  if (params.feedId !== undefined) {
-    conditions.push('a.feed_id = @feedId')
-    queryParams.feedId = params.feedId
-  } else if (params.categoryId === null) {
-    conditions.push('f.category_id IS NULL')
-  } else if (params.categoryId !== undefined) {
-    conditions.push('f.category_id = @categoryId')
-    queryParams.categoryId = params.categoryId
-  }
-
-  if (params.isUnread) {
-    conditions.push('a.is_read = 0')
-  }
-  if (params.isStar) {
-    conditions.push('a.is_starred = 1')
-  }
-  if (params.isToday) {
-    const now = new Date()
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000
-    conditions.push('a.published_at >= @todayStart')
-    queryParams.todayStart = todayStart
-  }
-
-  return { conditions, queryParams }
+/** 列表译文查询选项：仅在开启「列表显示译文」且已配置翻译服务时启用 */
+function currentTranslateOptions(): ArticleListTranslateOptions | null {
+  const { translate } = getSettings()
+  if (!translate.showInList || translate.provider === 'none') return null
+  return { provider: translate.provider, targetLang: translate.targetLang }
 }
 
 export function registerArticleHandlers(): void {
   ipcMain.handle('articles:list', async (_event, params: ArticleListParams) => {
     try {
-      const db = getConnection()
-      const { conditions, queryParams } = buildArticleConditions(params)
-      const query = params.query?.trim()
-
-      if (query) {
-        const terms = query.split(/\s+/).filter(Boolean)
-        if (terms.every((t) => t.length >= 3)) {
-          queryParams.match = terms.map((t) => `"${t.replace(/"/g, '""')}"`).join(' OR ')
-          conditions.push('articles_fts MATCH @match')
-        } else {
-          terms.forEach((term, i) => {
-            queryParams[`like${i}`] = `%${term}%`
-            conditions.push(
-              `(fts.title LIKE @like${i} OR fts.content LIKE @like${i} OR fts.author LIKE @like${i})`
-            )
-          })
-        }
-      }
-
-      if (params.cursor) {
-        if (params.cursor.publishedAt === null) {
-          conditions.push('a.published_at IS NULL AND a.id < @cursorId')
-          queryParams.cursorId = params.cursor.id
-        } else {
-          conditions.push(
-            '(a.published_at < @cursorPub OR (a.published_at = @cursorPub AND a.id < @cursorId) OR a.published_at IS NULL)'
-          )
-          queryParams.cursorPub = params.cursor.publishedAt
-          queryParams.cursorId = params.cursor.id
-        }
-      }
-
-      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
-      const fromClause = query
-        ? 'FROM articles_fts fts\n        JOIN articles a ON a.id = fts.rowid\n        JOIN feeds f ON a.feed_id = f.id'
-        : 'FROM articles a\n        JOIN feeds f ON a.feed_id = f.id'
-
-      const limit = Math.min(Math.max(params.limit ?? 60, 1), 200)
-      const rows = db
-        .prepare(
-          `
-        SELECT a.id, a.feed_id, a.title, a.author, a.summary, a.published_at, a.is_read, a.is_starred, a.url, a.cover_image,
-          f.title as feed_title, f.favicon_url
-        ${fromClause}
-        ${whereClause}
-        ORDER BY a.published_at DESC, a.id DESC
-        LIMIT ${limit + 1}
-      `
-        )
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .all(queryParams) as any[]
-
-      const hasMore = rows.length > limit
-      const page = hasMore ? rows.slice(0, limit) : rows
-      const last = page[page.length - 1] as { published_at: number | null; id: number } | undefined
-      const nextCursor: ArticleListCursor | null = last
-        ? { publishedAt: last.published_at, id: last.id }
-        : null
-
-      return success({ articles: page, hasMore, nextCursor })
+      return success(queryArticleList(getConnection(), params, currentTranslateOptions()))
     } catch (e) {
       return error((e as Error).message)
     }

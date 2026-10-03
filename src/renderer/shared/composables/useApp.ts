@@ -11,7 +11,8 @@ const syncConfig = ref<SyncConfig>({ provider: 'none' })
 const translateConfig = ref<TranslateConfig>({
   provider: 'none',
   targetLang: 'zh',
-  autoTranslate: false
+  autoTranslate: false,
+  showInList: false
 })
 const autoLaunch = ref(false)
 const launchHidden = ref(false)
@@ -32,7 +33,8 @@ export function useApp() {
       translateConfig.value = result.data.translate ?? {
         provider: 'none',
         targetLang: 'zh',
-        autoTranslate: false
+        autoTranslate: false,
+        showInList: false
       }
       autoLaunch.value = result.data.autoLaunch
       launchHidden.value = result.data.launchHidden
