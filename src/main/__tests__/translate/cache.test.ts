@@ -83,6 +83,27 @@ describe('cache', () => {
     expect(getTranslation(db, 99, 'baidu', 'zh', 'hash')).toBeNull()
   })
 
+  it('头部失败（null）重存时不清掉已成功的译文', () => {
+    const hash1 = computeSourceHash('Title', 'Content')
+    saveTranslation(db, { article_id: 1, source_hash: hash1, ...base })
+
+    const hash2 = computeSourceHash('Title', 'Content changed')
+    saveTranslation(db, {
+      article_id: 1,
+      source_hash: hash2,
+      ...base,
+      translated_title: null,
+      translated_summary: null,
+      translated_content: '<p>新正文译文</p>',
+      updated_at: base.updated_at + 10
+    })
+
+    const rec = getTranslation(db, 1, 'baidu', 'zh', hash2)
+    expect(rec?.translated_content).toBe('<p>新正文译文</p>')
+    expect(rec?.translated_title).toBe('标题')
+    expect(rec?.translated_summary).toBe('摘要')
+  })
+
   it('source_hash 变化（内容更新）后失效', () => {
     const hash1 = computeSourceHash('Title', 'Content')
     const hash2 = computeSourceHash('Title', 'Content changed')

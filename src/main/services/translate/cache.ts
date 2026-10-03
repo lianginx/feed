@@ -39,6 +39,11 @@ export function getTranslation(
   return row ?? null
 }
 
+/**
+ * 写入/更新译文缓存。
+ * 头部字段（标题/摘要）用 COALESCE：正文变化触发重译时若头部批次失败，
+ * 不会被 NULL 覆盖掉上一次已成功的译文（缺失部分由 backfillHeader 在下次命中缓存时补翻）。
+ */
 export function saveTranslation(db: AppDatabase, rec: TranslationRecord): void {
   db.prepare(
     `INSERT INTO article_translations
@@ -46,8 +51,8 @@ export function saveTranslation(db: AppDatabase, rec: TranslationRecord): void {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(article_id, provider, target_lang) DO UPDATE SET
        source_hash = excluded.source_hash,
-       translated_title = excluded.translated_title,
-       translated_summary = excluded.translated_summary,
+       translated_title = COALESCE(excluded.translated_title, article_translations.translated_title),
+       translated_summary = COALESCE(excluded.translated_summary, article_translations.translated_summary),
        translated_content = excluded.translated_content,
        created_at = article_translations.created_at,
        updated_at = excluded.updated_at`

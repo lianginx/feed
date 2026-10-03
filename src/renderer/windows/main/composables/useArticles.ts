@@ -180,7 +180,9 @@ export function useArticles() {
   function applyTranslatedArticle(id: number, title: string, summary: string | null) {
     const item = articles.value.find((a) => a.id === id)
     if (!item) return
-    item.translated_title = title
+    // 头部翻译失败时主进程回退成原文标题，与原文相同即视为未翻译（缓存里该字段为 NULL），
+    // 否则会出现"英文标题却带「译」标志"的假象
+    if (title && title !== item.title) item.translated_title = title
     if (summary) item.translated_summary = summary
   }
 

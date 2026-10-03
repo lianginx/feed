@@ -25,7 +25,7 @@ export interface TranslateConfig {
   targetLang: string
   /** 打开文章时自动翻译为目标语言 */
   autoTranslate: boolean
-  /** 文章列表用译文标题显示已有译文的文章（不会触发翻译） */
+  /** 文章列表用译文标题与摘要显示已有译文的文章（不会触发翻译） */
   showInList: boolean
 }
 

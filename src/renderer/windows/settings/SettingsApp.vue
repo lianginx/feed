@@ -967,7 +967,7 @@ onMounted(async () => {
                   <div class="min-w-0">
                     <div class="text-sm">列表显示译文</div>
                     <div class="mt-0.5 text-xs text-muted-foreground">
-                      文章列表用译文标题显示已有译文的文章；不会自动翻译未翻译的文章
+                      文章列表用译文标题与摘要显示已有译文的文章；不会自动翻译未翻译的文章
                     </div>
                   </div>
                   <Switch

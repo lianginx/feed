@@ -40,7 +40,7 @@ export function useTranslate() {
 
   const autoTranslate = computed(() => translateConfig.value.autoTranslate)
 
-  /** 列表是否展示译文标题（开启后翻译完成的文章条目就地换成中文标题） */
+  /** 列表是否展示译文（开启后翻译完成的文章条目就地换成中文标题与摘要） */
   const showInList = computed(() => translateConfig.value.showInList)
 
   async function performTranslate(

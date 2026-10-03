@@ -21,7 +21,7 @@ export interface TranslateConfig {
   baiduSecretKey?: string
   targetLang: string
   autoTranslate: boolean
-  /** 文章列表用译文标题显示已有译文的文章（不会触发翻译） */
+  /** 文章列表用译文标题与摘要显示已有译文的文章（不会触发翻译） */
   showInList: boolean
 }
 

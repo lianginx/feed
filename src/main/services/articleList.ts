@@ -8,7 +8,7 @@ import type {
 
 /**
  * 文章列表查询（从 IPC handler 抽出为纯逻辑，便于单测）。
- * - 开启「列表显示译文」时联查 article_translations，带出译文标题；
+ * - 开启「列表显示译文」时联查 article_translations，带出译文标题与摘要；
  * - 搜索同时命中原文（FTS）与译文（LIKE），两路取并集后统一排序分页。
  */
 

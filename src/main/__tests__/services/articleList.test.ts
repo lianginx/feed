@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { DatabaseSync } from 'node:sqlite'
-import { queryArticleList, type ArticleListTranslateOptions } from '@main/services/articleList'
+import {
+  buildArticleListQuery,
+  queryArticleList,
+  type ArticleListTranslateOptions
+} from '@main/services/articleList'
 import type { Article } from '@shared/types/articles'
 
 function createDb(): DatabaseSync {
@@ -228,5 +232,46 @@ describe('articleList 查询', () => {
     expect(result.articles).toHaveLength(0)
     expect(result.hasMore).toBe(false)
     expect(result.nextCursor).toBeNull()
+  })
+
+  it('published_at 为 NULL 的文章走独立游标分支，可分页翻过去', () => {
+    db.prepare(
+      `INSERT INTO articles (id, feed_id, guid, title, author, content, summary, published_at)
+       VALUES (4, 1, 'g4', 'No Date Post', 'dave', '<p>content four</p>', 'summary four', NULL)`
+    ).run()
+    addTranslation(db, 1, { title: '第一篇 文章' })
+    addTranslation(db, 4, { title: '第四篇 文章' })
+
+    const first = queryArticleList(db, { query: '文章', limit: 1 }, edgeZh)
+    expect(ids(first.articles)).toEqual([1])
+    expect(first.nextCursor).toEqual({ publishedAt: 300, id: 1 })
+
+    const second = queryArticleList(
+      db,
+      { query: '文章', limit: 1, cursor: first.nextCursor },
+      edgeZh
+    )
+    expect(ids(second.articles)).toEqual([4])
+    expect(second.nextCursor).toEqual({ publishedAt: null, id: 4 })
+    expect(second.hasMore).toBe(false)
+
+    const third = queryArticleList(
+      db,
+      { query: '文章', limit: 1, cursor: second.nextCursor },
+      edgeZh
+    )
+    expect(third.articles).toHaveLength(0)
+  })
+
+  it('不查译文时 SQL 不涉及 article_translations（防默认路径回归）', () => {
+    const plain = buildArticleListQuery({ query: 'Hello', limit: 10 }, null)
+    expect(plain.sql).not.toContain('article_translations')
+
+    const withTranslate = buildArticleListQuery({ query: 'Hello', limit: 10 }, edgeZh)
+    expect(withTranslate.sql).toContain('article_translations')
+
+    const listOnly = buildArticleListQuery({ limit: 10 }, null)
+    expect(listOnly.sql).not.toContain('article_translations')
+    expect(listOnly.sql).not.toContain('translated_')
   })
 })

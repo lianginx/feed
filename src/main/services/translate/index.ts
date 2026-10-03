@@ -11,6 +11,7 @@ import {
   type TranslationRecord
 } from './cache'
 import { toTranslatableSummary } from './summary'
+import { planHeaderBackfill, mapHeaderResults } from './header'
 import { detectLanguage, isSameLanguage, SAMPLE_LIMIT, toDetectedLang } from './detect'
 import type { BaiduApiError } from './providers/baidu'
 import { EdgeTranslator } from './providers/edge'
@@ -198,40 +199,33 @@ export async function translateArticle(
 /**
  * 命中缓存时补翻缺失的头部文本（标题请求失败过的旧记录、v10 之前没有译文摘要的历史缓存）。
  * 最多发 1 次请求，失败静默降级为原文，不阻塞阅读，也不影响正文缓存。
+ * 不受「列表显示译文」开关约束：补的是缓存本身，开启开关后列表才能立刻拿到中文摘要。
  */
 async function backfillHeader(
   article: ArticleRow,
   cached: TranslationRecord,
   to: string
 ): Promise<{ title: string | null; summary: string | null }> {
-  const summaryText = toTranslatableSummary(article.summary)
-  const needTitle = !cached.translated_title && Boolean(article.title.trim())
-  const needSummary = !cached.translated_summary && Boolean(summaryText)
+  const plan = planHeaderBackfill(cached, article.title, article.summary)
   const current = {
     title: cached.translated_title,
     summary: cached.translated_summary
   }
-  if (!needTitle && !needSummary) return current
+  if (plan.texts.length === 0) return current
 
   const settings = getSettings()
   const provider = createTranslateProvider(settings.translate)
   if (!provider) return current
 
-  const texts: string[] = []
-  if (needTitle) texts.push(article.title)
-  if (needSummary) texts.push(summaryText)
-
   const throttle = createProviderThrottle(provider)
   let results: (string | null)[]
   try {
-    results = await translateWithRetry(provider, texts, 'auto', to, MAX_RETRIES, throttle)
+    results = await translateWithRetry(provider, plan.texts, 'auto', to, MAX_RETRIES, throttle)
   } catch {
     return current
   }
 
-  let cursor = 0
-  const title = needTitle ? (results[cursor++] ?? null) : null
-  const summary = needSummary ? (results[cursor] ?? null) : null
+  const { title, summary } = mapHeaderResults(plan, results)
   if (title || summary) {
     updateTranslationHeader(
       getConnection(),

@@ -158,14 +158,19 @@ watch(searchApplied, () => {
   scrollAreaRef.value?.viewport?.scrollTo(0, 0)
 })
 
-// 列表译文相关配置变化后重新拉取第一页（主进程按当前配置决定是否带出译文标题、是否搜索译文）
+// 列表译文相关配置变化后重新拉取第一页（主进程按当前配置决定是否带出译文标题与摘要、是否搜索译文）。
+// 启动时配置从默认值 hydrate 成持久化值也可能触发一次，与首屏那次请求重复；由 useArticles 的
+// requestSeq 丢弃过期响应，仅多一次极轻的查询，换取"不必分辨 hydrate 与真实变更"的简单性。
 watch(
   [
     () => translateConfig.value.showInList,
     () => translateConfig.value.provider,
     () => translateConfig.value.targetLang
   ],
-  () => void reloadFirstPage()
+  () => {
+    scrollAreaRef.value?.viewport?.scrollTo(0, 0)
+    void reloadFirstPage()
+  }
 )
 
 watch([() => articles.value.length, loadingMore], () => {
