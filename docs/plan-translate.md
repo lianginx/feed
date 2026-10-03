@@ -195,7 +195,7 @@ src/main/services/translate/
 
 1. 配置：`TranslateConfig` 加 `showInList: boolean`（默认 `false`，设置 → 翻译 区块新增「列表显示译文」开关）；`readSettings` 的 defaults 合并让旧存量配置自动补值，无需迁移
 2. 查询：抽出 `src/main/services/articleList.ts`（纯逻辑，便于单测），`ipc/articles.ts` 仅负责读配置与包壳；`showInList && provider !== 'none'` 时列表 SQL 追加 `LEFT JOIN article_translations`（`article_id + provider + target_lang`，命中主键索引），**只带出 `translated_title`，不取 `translated_content`**（避免 IPC 负载）；关闭开关或未配置服务时 SQL 与旧实现完全一致
-3. 展示：`ArticleListItem` 渲染 `translated_title || title` 与 `translated_summary || summary`，原生 `title` 属性挂英文原标题/原摘要作为悬停逃生舱
+3. 展示：`ArticleListItem` 渲染 `translated_title || title` 与 `translated_summary || summary`，原生 `title` 属性挂英文原标题/原摘要作为悬停逃生舱；标题首行行内前置一个描边「译」标志（`isTranslated` = 标题或摘要至少一处来自译文）——标志参与文本流，标题换行后第二行仍从左边距开始，不会为标志留出一列
 4. 即时更新：`useTranslate` 在翻译成功且非 `degraded`/`skipped` 时就地回写 `articles` 条目的标题与摘要（与"只有非降级才写缓存"的策略一致）；回写放在"当前文章校验"之前——翻译已写入主进程缓存，用户切走后列表同样应更新；不用整页重载，避免丢失滚动位置与分页游标
 5. 配置联动：`ArticleList` 监听 `showInList / provider / targetLang` 变化重新拉第一页（译文是否带出由主进程按当前配置决定，渲染层的配置镜像滞后也不会查错）
 6. 搜索并集：搜索同时命中原文与译文，两路取并集后统一排序分页——原文分支用 FTS5 `MATCH`（沿用短词 LIKE 兜底），译文分支用 `translated_title/translated_summary/translated_content` 的 `LIKE`；两分支共用同一套过滤条件与游标参数，外层 `ORDER BY published_at DESC, id DESC LIMIT limit+1` 保持既有分页语义，`UNION` 负责去重。**FTS5 的 `MATCH` 不能与普通条件在同一条 `WHERE` 里用 `OR` 混合**（会报 `unable to use function MATCH in the requested context`），因此必须走"分支内 MATCH + 外层并集"的写法；搜索是否命中译文跟随 `showInList` 开关
@@ -207,7 +207,7 @@ src/main/services/translate/
 ## Verification（列表译文增补）
 
 15. 开启「列表显示译文」后重新打开列表：已有缓存的文章显示中文标题与中文摘要（v10 之前的历史缓存首次打开该文章时补翻摘要并回填）；无缓存的仍为英文；**未翻译文章不产生翻译请求**（主进程日志无 `translate:article`）
-16. 打开一篇未翻译文章自动翻译完成 → 返回列表该条已变中文标题与摘要；悬停标题/摘要分别显示英文原标题与原摘要
+16. 打开一篇未翻译文章自动翻译完成 → 返回列表该条已变中文标题与摘要，且信息行出现「译」标志；悬停标题/摘要分别显示英文原标题与原摘要
 17. 关闭开关 → 列表回落英文（无需重启）；切换 provider / 目标语言 → 列表按新配置重新拉取
 18. 搜索：中文关键词命中译文标题、译文摘要与译文正文，英文关键词仍命中原文；原文与译文同时命中的文章只出现一次；搜索结果翻页正常
 19. 刷新订阅源导致文章标题变化 → 该文章译文缓存行被清除，列表不再显示过期译标题

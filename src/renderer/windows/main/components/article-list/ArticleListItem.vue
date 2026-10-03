@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Star } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { formatRelativeDay } from '@renderer/windows/main/utils/dayjs'
@@ -14,6 +15,11 @@ import type { Article } from '@shared/types/articles'
 const props = defineProps<{
   article: Article
 }>()
+
+/** 条目当前显示了译文（标题或摘要至少有一处来自译文），用于展示「译」标志 */
+const isTranslated = computed(() =>
+  Boolean(props.article.translated_title || props.article.translated_summary)
+)
 
 const emit = defineEmits<{
   select: [id: number]
@@ -66,7 +72,12 @@ async function copyShareText() {
                 :class="props.article.is_read ? 'text-muted-foreground' : 'text-foreground'"
                 :title="props.article.translated_title ? props.article.title : undefined"
               >
-                {{ props.article.translated_title || props.article.title }}
+                <span
+                  v-if="isTranslated"
+                  class="inline-flex h-4 w-4 items-center justify-center mr-1 rounded-sm border border-primary/30 align-text-bottom text-[10px] leading-none text-primary"
+                  :class="props.article.is_read ? 'opacity-70' : ''"
+                  >译</span
+                >{{ props.article.translated_title || props.article.title }}
               </h3>
             </div>
             <p
