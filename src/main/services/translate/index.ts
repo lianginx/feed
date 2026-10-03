@@ -19,6 +19,8 @@ import { createRateLimiter, type RateLimiter } from './rateLimit'
 
 export interface TranslateResult {
   title: string
+  /** title 是否为真正的译文（false = 已回退成原文标题），供列表回写判断是否展示「译」标志 */
+  titleTranslated: boolean
   /** 译文摘要；未翻译（失败或跳过）时为 null，调用方回退原文摘要 */
   summary: string | null
   content: string
@@ -72,6 +74,7 @@ export async function translateArticle(
     const header = await backfillHeader(article, cached, to)
     return {
       title: header.title ?? article.title,
+      titleTranslated: header.title !== null,
       summary: header.summary,
       content: cached.translated_content ?? content,
       degraded: false,
@@ -90,7 +93,14 @@ export async function translateArticle(
 
   let detected = detectLanguage(sampleText)
   if (isSameLanguage(detected, to)) {
-    return { title: article.title, summary: null, content, degraded: false, skipped: true }
+    return {
+      title: article.title,
+      titleTranslated: false,
+      summary: null,
+      content,
+      degraded: false,
+      skipped: true
+    }
   }
 
   if (provider instanceof EdgeTranslator) {
@@ -98,7 +108,14 @@ export async function translateArticle(
     if (edgeDetected) detected = toDetectedLang(edgeDetected)
   }
   if (isSameLanguage(detected, to)) {
-    return { title: article.title, summary: null, content, degraded: false, skipped: true }
+    return {
+      title: article.title,
+      titleTranslated: false,
+      summary: null,
+      content,
+      degraded: false,
+      skipped: true
+    }
   }
 
   if (!provider) throw new Error('未配置翻译服务，请在设置中启用翻译')
@@ -107,9 +124,10 @@ export async function translateArticle(
 
   const summaryText = toTranslatableSummary(article.summary)
   const hasTitle = Boolean(article.title.trim())
+  const needSummary = Boolean(summaryText)
   const headerTexts: string[] = []
   if (hasTitle) headerTexts.push(article.title)
-  if (summaryText) headerTexts.push(summaryText)
+  if (needSummary) headerTexts.push(summaryText)
 
   let translatedTitle: string | null = null
   let translatedSummary: string | null = null
@@ -124,9 +142,9 @@ export async function translateArticle(
       MAX_RETRIES,
       throttle
     )
-    let cursor = 0
-    if (hasTitle) translatedTitle = results[cursor++] ?? null
-    if (summaryText) translatedSummary = results[cursor] ?? null
+    const mapped = mapHeaderResults({ needTitle: hasTitle, needSummary }, results)
+    translatedTitle = mapped.title
+    translatedSummary = mapped.summary
   }
 
   const batches = packPieces(pieces, provider.getLengthLimit())
@@ -189,6 +207,7 @@ export async function translateArticle(
 
   return {
     title: translatedTitle ?? article.title,
+    titleTranslated: translatedTitle !== null,
     summary: translatedSummary,
     content: rebuilt.html,
     degraded,
@@ -232,6 +251,7 @@ async function backfillHeader(
       article.id,
       settings.translate.provider,
       to,
+      cached.source_hash,
       title,
       summary
     )

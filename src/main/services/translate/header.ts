@@ -27,13 +27,18 @@ export function planHeaderBackfill(
   return { needTitle, needSummary, texts }
 }
 
-/** 把翻译结果按 plan 的顺序映射回字段；未请求或翻译失败的字段为 null */
+/** 空串/纯空白与 null 同等看待：视为该字段没翻出来，不入缓存也不回写 */
+function normalizeHeaderResult(value: string | null | undefined): string | null {
+  return value && value.trim() ? value : null
+}
+
+/** 把翻译结果按 plan 的顺序映射回字段；未请求、翻译失败或返回空白的字段为 null */
 export function mapHeaderResults(
   plan: Pick<HeaderBackfillPlan, 'needTitle' | 'needSummary'>,
   results: (string | null)[]
 ): { title: string | null; summary: string | null } {
   let cursor = 0
-  const title = plan.needTitle ? (results[cursor++] ?? null) : null
-  const summary = plan.needSummary ? (results[cursor] ?? null) : null
+  const title = plan.needTitle ? normalizeHeaderResult(results[cursor++]) : null
+  const summary = plan.needSummary ? normalizeHeaderResult(results[cursor]) : null
   return { title, summary }
 }

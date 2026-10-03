@@ -65,13 +65,13 @@ describe('cache', () => {
     saveTranslation(db, { article_id: 1, source_hash: hash, ...base })
     const before = getTranslation(db, 1, 'baidu', 'zh', hash)
 
-    updateTranslationHeader(db, 1, 'baidu', 'zh', '新标题', null)
+    updateTranslationHeader(db, 1, 'baidu', 'zh', hash, '新标题', null)
     const afterTitle = getTranslation(db, 1, 'baidu', 'zh', hash)
     expect(afterTitle?.translated_title).toBe('新标题')
     expect(afterTitle?.translated_summary).toBe('摘要')
     expect(afterTitle!.updated_at).toBeGreaterThanOrEqual(before!.updated_at)
 
-    updateTranslationHeader(db, 1, 'baidu', 'zh', null, '新摘要')
+    updateTranslationHeader(db, 1, 'baidu', 'zh', hash, null, '新摘要')
     const afterSummary = getTranslation(db, 1, 'baidu', 'zh', hash)
     expect(afterSummary?.translated_title).toBe('新标题')
     expect(afterSummary?.translated_summary).toBe('新摘要')
@@ -79,8 +79,28 @@ describe('cache', () => {
   })
 
   it('updateTranslationHeader 不存在的记录不报错', () => {
-    expect(() => updateTranslationHeader(db, 99, 'baidu', 'zh', '标题', '摘要')).not.toThrow()
+    expect(() =>
+      updateTranslationHeader(db, 99, 'baidu', 'zh', 'hash', '标题', '摘要')
+    ).not.toThrow()
     expect(getTranslation(db, 99, 'baidu', 'zh', 'hash')).toBeNull()
+  })
+
+  it('updateTranslationHeader 在 source_hash 变化后不写入（迟到的补翻不覆盖新译文）', () => {
+    const hash1 = computeSourceHash('Title', 'Content')
+    const hash2 = computeSourceHash('Title', 'Content changed')
+    saveTranslation(db, {
+      article_id: 1,
+      source_hash: hash2,
+      ...base,
+      translated_title: '新译文标题',
+      translated_summary: '新译文摘要'
+    })
+
+    updateTranslationHeader(db, 1, 'baidu', 'zh', hash1, '旧标题', '旧摘要')
+
+    const rec = getTranslation(db, 1, 'baidu', 'zh', hash2)
+    expect(rec?.translated_title).toBe('新译文标题')
+    expect(rec?.translated_summary).toBe('新译文摘要')
   })
 
   it('头部失败（null）重存时不清掉已成功的译文', () => {

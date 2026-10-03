@@ -51,9 +51,10 @@ export function useTranslate() {
     const result = await window.api.translate.article(articleId, undefined, forceRefresh)
     if (result.success && result.data) {
       const data = result.data as TranslateResult
-      // 列表回写：翻译已成功写入主进程缓存，即使用户已切走该文章也应更新列表条目
+      // 列表回写：翻译已成功写入主进程缓存，即使用户已切走该文章也应更新列表条目。
+      // 标题是否算"已翻译"由主进程显式告知（失败时 title 会回退成原文），不做字符串比较猜测
       if (showInList.value && !data.skipped && !data.degraded) {
-        applyTranslatedArticle(articleId, data.title, data.summary)
+        applyTranslatedArticle(articleId, data.titleTranslated ? data.title : null, data.summary)
       }
       // 展示前校验 articleId：翻译请求进行中切了文章，旧响应不落盘不展示
       if (currentArticle.value?.id !== articleId) return

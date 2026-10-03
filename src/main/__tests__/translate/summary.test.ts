@@ -12,9 +12,9 @@ describe('摘要翻译文本准备', () => {
     expect(toTranslatableSummary('  hello\n\nworld  ')).toBe('hello world')
   })
 
-  it('超长摘要（Atom 无 description 时回退成全文）按上限截断', () => {
+  it('超长摘要（Atom 无 description 时回退成全文）按 300 字符上限截断', () => {
     const long = 'a'.repeat(SUMMARY_CHAR_LIMIT + 500)
-    expect(toTranslatableSummary(long)).toHaveLength(SUMMARY_CHAR_LIMIT)
+    expect(toTranslatableSummary(long)).toHaveLength(300)
   })
 
   it('短摘要原样保留', () => {

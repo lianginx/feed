@@ -75,14 +75,16 @@ export function saveTranslation(db: AppDatabase, rec: TranslationRecord): void {
 
 /**
  * 补写译文头部（标题/摘要）：命中缓存时按需补翻后回填。
- * COALESCE 保证只覆盖本次真正补翻成功的字段；同时抬高 updated_at，
- * 避免刚补翻的缓存行被保留策略立刻清掉。
+ * - COALESCE 保证只覆盖本次真正补翻成功的字段；同时抬高 updated_at，避免刚补翻的行被保留策略立刻清掉；
+ * - `source_hash` 条件保证只更新"还是当初读到的那一版"的行：补翻请求在途时若文章被刷新
+ *   （标题变化会删行、正文变化会整篇重译写入新 hash），迟到的回填不会覆盖新译文。
  */
 export function updateTranslationHeader(
   db: AppDatabase,
   articleId: number,
   provider: string,
   targetLang: string,
+  sourceHash: string,
   translatedTitle: string | null,
   translatedSummary: string | null
 ): void {
@@ -91,14 +93,15 @@ export function updateTranslationHeader(
      SET translated_title = COALESCE(?, translated_title),
          translated_summary = COALESCE(?, translated_summary),
          updated_at = ?
-     WHERE article_id = ? AND provider = ? AND target_lang = ?`
+     WHERE article_id = ? AND provider = ? AND target_lang = ? AND source_hash = ?`
   ).run(
     translatedTitle,
     translatedSummary,
     Math.floor(Date.now() / 1000),
     articleId,
     provider,
-    targetLang
+    targetLang,
+    sourceHash
   )
 }
 

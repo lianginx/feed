@@ -44,9 +44,9 @@ describe('头部补翻计划', () => {
     expect(planHeaderBackfill(empty, 'Hello', null).needSummary).toBe(false)
   })
 
-  it('超长摘要按上限截断后再送翻', () => {
+  it('超长摘要按 300 字符上限截断后再送翻', () => {
     const plan = planHeaderBackfill(empty, 'Hello', 'a'.repeat(SUMMARY_CHAR_LIMIT + 100))
-    expect(plan.texts[1]).toHaveLength(SUMMARY_CHAR_LIMIT)
+    expect(plan.texts[1]).toHaveLength(300)
   })
 })
 
@@ -85,6 +85,17 @@ describe('头部补翻结果映射', () => {
 
   it('无需求时返回 null', () => {
     expect(mapHeaderResults({ needTitle: false, needSummary: false }, [])).toEqual({
+      title: null,
+      summary: null
+    })
+  })
+
+  it('空串/纯空白与 null 同等视为没翻出来', () => {
+    expect(mapHeaderResults({ needTitle: true, needSummary: true }, ['', '   '])).toEqual({
+      title: null,
+      summary: null
+    })
+    expect(mapHeaderResults({ needTitle: true, needSummary: false }, ['  '])).toEqual({
       title: null,
       summary: null
     })

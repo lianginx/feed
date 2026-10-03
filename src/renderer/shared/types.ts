@@ -32,6 +32,8 @@ export interface TranslateConfig {
 /** 一次翻译的结果（由主进程翻译服务返回） */
 export interface TranslateResult {
   title: string
+  /** title 是否为真正的译文（false = 已回退成原文标题），供列表回写判断是否展示「译」标志 */
+  titleTranslated: boolean
   /** 译文摘要；未翻译（失败或跳过）时为 null */
   summary: string | null
   content: string

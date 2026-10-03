@@ -176,13 +176,12 @@ export function useArticles() {
     })
   }
 
-  /** 翻译完成后就地更新列表条目的译文标题与摘要（避免整页重载丢失滚动位置与分页游标） */
-  function applyTranslatedArticle(id: number, title: string, summary: string | null) {
+  /** 翻译完成后就地更新列表条目的译文标题与摘要（避免整页重载丢失滚动位置与分页游标）。
+   *  传 null 表示该字段没真正翻出来（主进程已回退成原文），不写入、也就不显示「译」标志 */
+  function applyTranslatedArticle(id: number, title: string | null, summary: string | null) {
     const item = articles.value.find((a) => a.id === id)
     if (!item) return
-    // 头部翻译失败时主进程回退成原文标题，与原文相同即视为未翻译（缓存里该字段为 NULL），
-    // 否则会出现"英文标题却带「译」标志"的假象
-    if (title && title !== item.title) item.translated_title = title
+    if (title) item.translated_title = title
     if (summary) item.translated_summary = summary
   }
 
