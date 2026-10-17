@@ -22,6 +22,37 @@ describe('parseBiliDate（B 站空间页日期文本 → ISO，实测格式规�
     expect(parseBiliDate('昨天', now)).toBe(new Date(now.getTime() - 86_400_000).toISOString())
   })
 
+  it('相对时间：昨天 HH:mm（站点对 24 小时外、1 天内的条目附带时刻）', () => {
+    expect(parseBiliDate('昨天 20:00', now)).toBe(
+      new Date('2026-08-06T20:00:00+08:00').toISOString()
+    )
+    expect(parseBiliDate('昨天00:05', now)).toBe(
+      new Date('2026-08-06T00:05:00+08:00').toISOString()
+    )
+    expect(parseBiliDate('昨天 08:07', now)).toBe(
+      new Date('2026-08-06T08:07:00+08:00').toISOString()
+    )
+  })
+
+  it('相对时间：昨天 HH:mm 跨月正确归一', () => {
+    const firstDay = new Date('2026-10-01T02:00:00+08:00')
+    expect(parseBiliDate('昨天 23:30', firstDay)).toBe(
+      new Date('2026-09-30T23:30:00+08:00').toISOString()
+    )
+  })
+
+  it('相对时间：x天前（站点仅 2、3 天档，取该日历日 00:00）', () => {
+    expect(parseBiliDate('2天前', now)).toBe(new Date('2026-08-05T00:00:00+08:00').toISOString())
+    expect(parseBiliDate('3天前', now)).toBe(new Date('2026-08-04T00:00:00+08:00').toISOString())
+  })
+
+  it('相对时间：x天前跨月正确归一', () => {
+    const firstDay = new Date('2026-10-01T02:00:00+08:00')
+    expect(parseBiliDate('2天前', firstDay)).toBe(
+      new Date('2026-09-29T00:00:00+08:00').toISOString()
+    )
+  })
+
   it('当年 MM-DD', () => {
     expect(parseBiliDate('08-05', now)).toBe(new Date('2026-08-05T00:00:00+08:00').toISOString())
   })

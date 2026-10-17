@@ -7,31 +7,59 @@ function normalizeUrl(url: string): string {
   return url.startsWith('//') ? 'https:' + url : url
 }
 
+/** B 站展示时间为东八区（北京时间） */
+const BILI_OFFSET_MS = 8 * 3_600_000
+const DAY_MS = 86_400_000
+
+/** 取某时刻在东八区的日历日 */
+function biliDay(ms: number): { year: number; month: number; day: number } {
+  const d = new Date(ms + BILI_OFFSET_MS)
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() }
+}
+
+/** 东八区年月日时分 → ISO；月/日越界由 Date.UTC 归一（如 day=0 即上月最后一天） */
+function biliIso(year: number, month: number, day: number, hour = 0, minute = 0): string {
+  return new Date(Date.UTC(year, month - 1, day, hour - 8, minute)).toISOString()
+}
+
 /** 按东八区当日 00:00 构造 ISO 时间 */
 function toIsoDate(year: number | string, month: string, day: string): string {
-  return new Date(
-    `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00+08:00`
-  ).toISOString()
+  return biliIso(Number(year), Number(month), Number(day))
 }
 
 /**
  * 解析 B 站卡片日期文本为 ISO 时间。
- * 实测 B 站空间页分级显示：刚刚 / x分钟前 / x小时前 / 昨天 / M月D日(当年) / YYYY年M月D日(往年)；
- * 旧版曾用 MM-DD / YYYY-MM-DD，继续兼容。
+ * 实测 B 站空间页日期组件按距今时间分级显示：
+ * 刚刚 / x分钟前 / x小时前 / 昨天 HH:mm / x天前（仅 2、3 天档）/ M月D日(当年) / YYYY年M月D日(往年)；
+ * 旧版曾用 昨天 / MM-DD / YYYY-MM-DD，继续兼容。
  * 相对时间基于 now（默认当前时间）反推；跨年 M月D日 / MM-DD（1 月看到 12月30日 属去年）自动校正。
- * 无法识别返回 undefined。
+ * 「x天前」拿不到时刻，取该日历日 00:00。无法识别返回 undefined。
  */
 export function parseBiliDate(text: string, now: Date = new Date()): string | undefined {
   const t = text.trim()
   const nowMs = now.getTime()
 
-  // 相对时间：刚刚 / x分钟前 / x小时前 / 昨天
+  // 相对时间：刚刚 / x分钟前 / x小时前
   if (t === '刚刚') return new Date(nowMs).toISOString()
   const minutesAgo = t.match(/^(\d+)\s*分钟前$/)
   if (minutesAgo) return new Date(nowMs - Number(minutesAgo[1]) * 60_000).toISOString()
   const hoursAgo = t.match(/^(\d+)\s*小时前$/)
   if (hoursAgo) return new Date(nowMs - Number(hoursAgo[1]) * 3_600_000).toISOString()
-  if (t === '昨天') return new Date(nowMs - 86_400_000).toISOString()
+
+  // 昨天 / 昨天 20:00（24 小时外的昨天条目带时刻）
+  const yesterday = t.match(/^昨天(?:\s*(\d{1,2}):(\d{2}))?$/)
+  if (yesterday) {
+    if (!yesterday[1]) return new Date(nowMs - DAY_MS).toISOString()
+    const { year, month, day } = biliDay(nowMs)
+    return biliIso(year, month, day - 1, Number(yesterday[1]), Number(yesterday[2]))
+  }
+
+  // 2天前 / 3天前：站点只在 2、3 天档用相对日，时刻未知，按该日历日 00:00 近似
+  const daysAgo = t.match(/^(\d+)\s*天前$/)
+  if (daysAgo) {
+    const { year, month, day } = biliDay(nowMs)
+    return biliIso(year, month, day - Number(daysAgo[1]))
+  }
 
   // 往年：YYYY-MM-DD / YYYY年M月D日
   const withYear =
@@ -41,7 +69,7 @@ export function parseBiliDate(text: string, now: Date = new Date()): string | un
   // 当年：M月D日 / MM-DD（只可能是过去日期，若落在未来则属去年）
   const monthDay = t.match(/^(\d{1,2})月(\d{1,2})日$/) ?? t.match(/^(\d{2})-(\d{2})$/)
   if (monthDay) {
-    const year = now.getFullYear()
+    const year = biliDay(nowMs).year
     const parsed = new Date(
       `${year}-${monthDay[1].padStart(2, '0')}-${monthDay[2].padStart(2, '0')}T00:00:00+08:00`
     )
